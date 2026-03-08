@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteFlow</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-ui, sans-serif; margin: 0; overflow-x: auto; }
+
+/* Header */
+.nf-header {
+  background: #1e293b; border-bottom: 1px solid #334155;
+  padding: 0.7rem 1.2rem; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.nf-header h1 { font-size: 1.2rem; font-weight: 600; margin: 0; }
+.header-actions { display: flex; gap: 0.5rem; }
+
+/* Board */
+.board {
+  display: flex; gap: 1rem; padding: 1rem 1.2rem; align-items: flex-start;
+  min-height: calc(100vh - 56px);
+}
+.column {
+  min-width: 300px; width: 300px; flex-shrink: 0;
+  background: #1e293b; border-radius: 10px; border: 1px solid #334155;
+  display: flex; flex-direction: column; max-height: calc(100vh - 80px);
+}
+.column-header {
+  padding: 0.7rem 0.8rem; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #334155; flex-shrink: 0; cursor: default;
+}
+.column-title {
+  font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;
+}
+.column-count {
+  background: #334155; color: #94a3b8; font-size: 0.7rem;
+  padding: 0.1rem 0.45rem; border-radius: 8px; margin-left: 0.4rem;
+}
+.column-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.column-body {
+  padding: 0.5rem; flex: 1; overflow-y: auto; min-height: 60px;
+}
+.column-body.drag-over { background: rgba(59, 130, 246, 0.08); border-radius: 0 0 10px 10px; }
+.column-footer { padding: 0.5rem; border-top: 1px solid #334155; flex-shrink: 0; }
+.column-add-btn {
+  width: 100%; background: none; border: 1px dashed #475569; color: #64748b;
+  border-radius: 6px; padding: 0.4rem; font-size: 0.8rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.column-add-btn:hover { border-color: #94a3b8; color: #94a3b8; }
+
+/* Cards */
+.nf-card {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  user-select: none;
+}
+.nf-card:hover { border-color: #475569; }
+.nf-card.dragging { opacity: 0.4; }
+.nf-card.expanded { cursor: default; border-color: #3b82f6; }
+.nf-card-done { opacity: 0.5; }
+.nf-card-done .nf-title { text-decoration: line-through; color: #6b7280; }
+.nf-id { color: #64748b; font-size: 0.7rem; font-family: monospace; margin-right: 0.35rem; }
+.nf-title { font-weight: 500; font-size: 0.85rem; }
+.nf-meta { color: #64748b; font-size: 0.72rem; margin-top: 0.2rem; }
+.tag-pill {
+  background: #334155; color: #94a3b8; font-size: 0.65rem;
+  padding: 0.05rem 0.35rem; border-radius: 3px; margin-left: 0.2rem;
+}
+
+/* Expanded card sections */
+.card-detail { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid #1e293b; }
+.section-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+.notes-body {
+  white-space: pre-wrap; color: #cbd5e1; font-size: 0.82rem;
+  background: #1e293b; border-radius: 6px; padding: 0.5rem; min-height: 2rem;
+}
+.comment {
+  background: #1e293b; border-radius: 6px; padding: 0.4rem 0.6rem;
+  margin-bottom: 0.3rem; font-size: 0.8rem;
+}
+.comment-ts { color: #64748b; font-size: 0.7rem; }
+.comment-text { color: #cbd5e1; margin-top: 0.1rem; }
+.comment-delete { cursor: pointer; color: #64748b; font-size: 0.7rem; float: right; }
+.comment-delete:hover { color: #ef4444; }
+.card-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.card-actions .btn { font-size: 0.72rem; padding: 0.2rem 0.5rem; }
+
+/* Emoji Picker */
+.emoji-picker { margin-top: 0.3rem; }
+.emoji-search {
+  background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+  border-radius: 6px; padding: 0.35rem 0.6rem; width: 100%; font-size: 0.82rem;
+  margin-bottom: 0.4rem;
+}
+.emoji-search:focus { outline: none; border-color: #3b82f6; }
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+  max-height: 180px; overflow-y: auto; padding: 2px;
+}
+.emoji-cell {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; padding: 0.3rem; border-radius: 6px;
+  cursor: pointer; transition: background 0.1s; user-select: none;
+}
+.emoji-cell:hover { background: #334155; }
+.emoji-cell.selected { background: #3b82f6; border-radius: 6px; }
+.emoji-grid::-webkit-scrollbar { width: 4px; }
+.emoji-grid::-webkit-scrollbar-track { background: transparent; }
+.emoji-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.selected-emoji-preview {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.4rem;
+}
+.selected-emoji-preview .preview-icon { font-size: 1.5rem; }
+
+/* Add Column */
+.add-column-card {
+  min-width: 280px; width: 280px; flex-shrink: 0;
+  background: transparent; border: 2px dashed #334155; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 120px; cursor: pointer; color: #64748b; font-size: 0.9rem;
+  transition: all 0.15s;
+}
+.add-column-card:hover { border-color: #64748b; color: #94a3b8; }
+
+/* Done strip */
+.done-strip {
+  background: #1e293b; border-top: 1px solid #334155;
+  padding: 0.6rem 1.2rem; position: sticky; bottom: 0; z-index: 50;
+}
+.done-toggle { cursor: pointer; color: #64748b; font-size: 0.82rem; user-select: none; }
+.done-toggle:hover { color: #94a3b8; }
+.done-items { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.done-chip {
+  background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+  padding: 0.3rem 0.6rem; font-size: 0.78rem; color: #6b7280;
+  cursor: pointer; text-decoration: line-through; transition: border-color 0.15s;
+}
+.done-chip:hover { border-color: #475569; color: #94a3b8; }
+
+/* Modals */
+.modal-content { background: #1e293b; border: 1px solid #334155; }
+.modal-content .form-control, .modal-content .form-select { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+.modal-content .form-control:focus, .modal-content .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 0.15rem rgba(59,130,246,0.25); }
+
+/* Inline add */
+.inline-add { display: none; }
+.inline-add.active { display: block; }
+.inline-add input {
+  background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+  border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.85rem;
+}
+.inline-add input:focus { outline: none; border-color: #3b82f6; }
+
+/* Scrollbar */
+.column-body::-webkit-scrollbar { width: 4px; }
+.column-body::-webkit-scrollbar-track { background: transparent; }
+.column-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="nf-header">
+  <h1>NoteFlow</h1>
+  <div class="header-actions">
+    <button class="btn btn-outline-secondary btn-sm" onclick="openAddColumnModal()">+ Column</button>
+  </div>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="done-strip" id="doneStrip" style="display:none">
+  <span class="done-toggle" onclick="toggleDone()">
+    <span id="doneArrow">&#9654;</span> Done <span class="column-count" id="doneCount">0</span>
+  </span>
+  <div class="done-items" id="doneItems" style="display:none"></div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Edit Item</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="mb-3">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-control" id="editTitle">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="editBody" rows="4"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Due</label>
+          <input type="datetime-local" class="form-control" id="editDue">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tags (comma-separated)</label>
+          <input type="text" class="form-control" id="editTags">
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Column Modal -->
+<div class="modal fade" id="addColumnModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">New Column</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-control" id="colName" placeholder="e.g. Research">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Color</label>
+          <input type="color" class="form-control form-control-color" id="colColor" value="#6366f1">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Icon</label>
+          <input type="hidden" id="colIcon" value="📌">
+          <div class="selected-emoji-preview">
+            <span class="preview-icon" id="emojiPreview">📌</span>
+            <span id="emojiLabel">pin</span>
+          </div>
+          <input type="text" class="emoji-search" id="emojiSearch" placeholder="Search emojis..." oninput="filterEmojis()">
+          <div class="emoji-grid" id="emojiGrid"></div>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="addColumnSubmit()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let items = [];
+let columns = [];
+let expandedId = null;
+let showDone = false;
+let dragItemId = null;
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  return res.json();
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// ── Data Loading ──
+
+async function loadAll() {
+  const [itemsRes, colsRes] = await Promise.all([
+    api('GET', '/api/items'),
+    api('GET', '/api/columns'),
+  ]);
+  items = itemsRes.items || [];
+  columns = colsRes.columns || [];
+  render();
+}
+
+// ── Rendering ──
+
+function renderCard(item, colColor) {
+  const isExpanded = expandedId === item.id;
+  const isDone = item.status === 'done';
+  const doneClass = isDone ? 'nf-card-done' : '';
+  const expandClass = isExpanded ? 'expanded' : '';
+
+  let meta = [];
+  if (item.due) meta.push('Due: ' + formatDate(item.due));
+  if (item.remind) meta.push('Remind: ' + formatDateTime(item.remind));
+  if (item.recurrence) meta.push(item.recurrence);
+
+  const tags = (item.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('');
+  const commentCount = (item.subnotes || []).length;
+  const commentHint = commentCount > 0 ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem">\uD83D\uDCAC ${commentCount}</span>` : '';
+
+  let html = `<div class="nf-card ${doneClass} ${expandClass}"
+    draggable="${isExpanded ? 'false' : 'true'}"
+    data-id="${item.id}"
+    onclick="toggleExpand('${item.id}')"
+    ondragstart="onDragStart(event, '${item.id}')"
+    ondragend="onDragEnd(event)">`;
+
+  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}</div>`;
+
+  if (meta.length) {
+    html += `<div class="nf-meta">${meta.join(' &middot; ')}</div>`;
+  }
+
+  if (isExpanded) {
+    html += `<div class="card-detail" onclick="event.stopPropagation()">`;
+
+    // Notes (body)
+    html += `<div class="section-label">Notes</div>`;
+    if (item.body) {
+      html += `<div class="notes-body">${escapeHtml(item.body)}</div>`;
+    } else {
+      html += `<div class="notes-body" style="color:#64748b;font-style:italic">No notes yet</div>`;
+    }
+
+    // Comments (subnotes)
+    html += `<div class="section-label" style="margin-top:0.6rem">Comments</div>`;
+    const comments = item.subnotes || [];
+    if (comments.length === 0) {
+      html += `<div style="color:#64748b;font-size:0.8rem;font-style:italic">No comments</div>`;
+    } else {
+      for (let i = 0; i < comments.length; i++) {
+        const c = comments[i];
+        html += `<div class="comment">`;
+        html += `<span class="comment-delete" onclick="deleteComment('${item.id}', ${i})" title="Delete">\u2715</span>`;
+        html += `<div class="comment-ts">${formatDateTime(c.ts)}</div>`;
+        html += `<div class="comment-text">${escapeHtml(c.text)}</div>`;
+        html += `</div>`;
+      }
+    }
+
+    // Add comment input
+    html += `<div style="margin-top:0.4rem"><div class="input-group input-group-sm">`;
+    html += `<input type="text" class="form-control" style="background:#0f172a;border-color:#334155;color:#e2e8f0;font-size:0.8rem"
+              id="comment-${item.id}" placeholder="Add a comment..."
+              onkeydown="if(event.key==='Enter')addComment('${item.id}')">`;
+    html += `<button class="btn btn-outline-secondary btn-sm" onclick="addComment('${item.id}')">Post</button>`;
+    html += `</div></div>`;
+
+    // Actions
+    html += `<div class="card-actions">`;
+    if (isDone) {
+      html += `<button class="btn btn-outline-success" onclick="reopenItem('${item.id}')">Reopen</button>`;
+    } else {
+      html += `<button class="btn btn-outline-success" onclick="markDone('${item.id}')">Done</button>`;
+    }
+    html += `<button class="btn btn-outline-info" onclick="openEdit('${item.id}')">Edit</button>`;
+    html += `<button class="btn btn-outline-danger" onclick="deleteItemConfirm('${item.id}')">Delete</button>`;
+    html += `</div>`;
+
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function render() {
+  const board = document.getElementById('board');
+  const active = items.filter(i => i.status !== 'done');
+  const done = items.filter(i => i.status === 'done');
+
+  // Group active items by type
+  const grouped = {};
+  for (const item of active) {
+    if (!grouped[item.type]) grouped[item.type] = [];
+    grouped[item.type].push(item);
+  }
+
+  let html = '';
+
+  for (const col of columns) {
+    const group = grouped[col.id] || [];
+
+    html += `<div class="column" data-col="${col.id}">`;
+
+    // Header
+    html += `<div class="column-header">`;
+    html += `<div class="column-title">`;
+    html += `<span class="column-dot" style="background:${col.color}"></span>`;
+    html += `<span>${col.icon} ${escapeHtml(col.label)}</span>`;
+    html += `<span class="column-count">${group.length}</span>`;
+    html += `</div>`;
+    // Delete button for custom columns
+    const builtins = new Set(['task', 'reminder', 'idea', 'note']);
+    if (!builtins.has(col.id)) {
+      html += `<span style="cursor:pointer;color:#64748b;font-size:0.75rem" onclick="deleteColumnConfirm('${col.id}')" title="Delete column">\u2715</span>`;
+    }
+    html += `</div>`;
+
+    // Body (drop zone)
+    html += `<div class="column-body" data-col="${col.id}"
+      ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event, '${col.id}')">`;
+    for (const item of group) {
+      html += renderCard(item, col.color);
+    }
+    html += `</div>`;
+
+    // Footer: inline add
+    html += `<div class="column-footer">`;
+    html += `<div class="inline-add" id="add-${col.id}">`;
+    html += `<input type="text" id="addInput-${col.id}" placeholder="Item title..."
+      onkeydown="if(event.key==='Enter')quickAdd('${col.id}'); if(event.key==='Escape')closeInlineAdd('${col.id}')">`;
+    html += `</div>`;
+    html += `<button class="column-add-btn" id="addBtn-${col.id}" onclick="openInlineAdd('${col.id}')">+ Add item</button>`;
+    html += `</div>`;
+
+    html += `</div>`;
+  }
+
+  // Add column card
+  html += `<div class="add-column-card" onclick="openAddColumnModal()">+ Add Column</div>`;
+
+  board.innerHTML = html;
+
+  // Done strip
+  const doneStrip = document.getElementById('doneStrip');
+  if (done.length > 0) {
+    doneStrip.style.display = '';
+    document.getElementById('doneCount').textContent = done.length;
+    const doneContainer = document.getElementById('doneItems');
+    if (showDone) {
+      doneContainer.style.display = 'flex';
+      document.getElementById('doneArrow').innerHTML = '&#9660;';
+      let doneHtml = '';
+      for (const item of done) {
+        const col = columns.find(c => c.id === item.type);
+        const dotColor = col ? col.color : '#6b7280';
+        doneHtml += `<div class="done-chip" onclick="toggleExpand('${item.id}')"
+          draggable="true" data-id="${item.id}"
+          ondragstart="onDragStart(event, '${item.id}')" ondragend="onDragEnd(event)">`;
+        doneHtml += `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:0.3rem"></span>`;
+        doneHtml += `[${item.id}] ${escapeHtml(item.title)}`;
+        doneHtml += `</div>`;
+      }
+      doneContainer.innerHTML = doneHtml;
+    } else {
+      doneContainer.style.display = 'none';
+      document.getElementById('doneArrow').innerHTML = '&#9654;';
+    }
+  } else {
+    doneStrip.style.display = 'none';
+  }
+
+  // Re-focus expanded card's comment input if needed
+  if (expandedId) {
+    const input = document.getElementById(`comment-${expandedId}`);
+    // Don't auto-focus to avoid scroll jumps
+  }
+}
+
+// ── Interactions ──
+
+function toggleExpand(id) { expandedId = expandedId === id ? null : id; render(); }
+function toggleDone() { showDone = !showDone; render(); }
+
+function openInlineAdd(colId) {
+  document.getElementById(`add-${colId}`).classList.add('active');
+  document.getElementById(`addBtn-${colId}`).style.display = 'none';
+  document.getElementById(`addInput-${colId}`).focus();
+}
+
+function closeInlineAdd(colId) {
+  document.getElementById(`add-${colId}`).classList.remove('active');
+  document.getElementById(`addBtn-${colId}`).style.display = '';
+  document.getElementById(`addInput-${colId}`).value = '';
+}
+
+async function quickAdd(colId) {
+  const input = document.getElementById(`addInput-${colId}`);
+  const title = input.value.trim();
+  if (!title) return;
+  await api('POST', '/api/items', { type: colId, title, body: '' });
+  input.value = '';
+  closeInlineAdd(colId);
+  await loadAll();
+}
+
+async function markDone(id) {
+  await api('POST', `/api/items/${id}/done`);
+  expandedId = null;
+  await loadAll();
+}
+
+async function reopenItem(id) {
+  await api('POST', `/api/items/${id}/reopen`);
+  await loadAll();
+}
+
+async function addComment(id) {
+  const input = document.getElementById(`comment-${id}`);
+  const text = input.value.trim();
+  if (!text) return;
+  await api('POST', `/api/items/${id}/subnotes`, { text });
+  await loadAll();
+}
+
+async function deleteComment(id, index) {
+  await api('DELETE', `/api/items/${id}/subnotes/${index}`);
+  await loadAll();
+}
+
+function openEdit(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('editId').value = item.id;
+  document.getElementById('editTitle').value = item.title;
+  document.getElementById('editBody').value = item.body || '';
+  document.getElementById('editTags').value = (item.tags || []).join(', ');
+  if (item.due) {
+    const d = new Date(item.due);
+    document.getElementById('editDue').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  } else {
+    document.getElementById('editDue').value = '';
+  }
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+async function saveEdit() {
+  const id = document.getElementById('editId').value;
+  const title = document.getElementById('editTitle').value.trim();
+  const body = document.getElementById('editBody').value;
+  const due = document.getElementById('editDue').value || null;
+  const tagsRaw = document.getElementById('editTags').value;
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  if (!title) return;
+  await api('PUT', `/api/items/${id}`, { title, body, due, tags });
+  bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+  await loadAll();
+}
+
+async function deleteItemConfirm(id) {
+  const item = items.find(i => i.id === id);
+  if (!item || !confirm(`Delete [${id}] ${item.title}?`)) return;
+  await api('DELETE', `/api/items/${id}`);
+  expandedId = null;
+  await loadAll();
+}
+
+// ── Drag & Drop ──
+
+function onDragStart(e, id) {
+  dragItemId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`.nf-card[data-id="${id}"]`) || document.querySelector(`.done-chip[data-id="${id}"]`);
+    if (el) el.classList.add('dragging');
+  });
+}
+
+function onDragEnd(e) {
+  document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  dragItemId = null;
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function onDrop(e, colId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain') || dragItemId;
+  if (!id) return;
+
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  // If dropping into a column, change type and reopen if done
+  const updates = { type: colId };
+  await api('PUT', `/api/items/${id}`, updates);
+
+  // If was done, reopen it
+  if (item.status === 'done') {
+    await api('POST', `/api/items/${id}/reopen`);
+  }
+
+  expandedId = null;
+  await loadAll();
+}
+
+// ── Columns + Emoji Picker ──
+
+const EMOJI_DATA = [
+  {e:'📌',k:'pin tack'},  {e:'📎',k:'paperclip clip'},  {e:'📁',k:'folder file'},  {e:'📂',k:'folder open'},
+  {e:'📋',k:'clipboard list'},  {e:'📝',k:'memo write note'},  {e:'📄',k:'document page'},  {e:'📑',k:'tabs bookmark'},
+  {e:'📊',k:'chart bar graph stats'},  {e:'📈',k:'chart up trend growth'},  {e:'📉',k:'chart down decline'},  {e:'📐',k:'ruler triangle'},
+  {e:'🗂',k:'card index dividers organize'},  {e:'🗃',k:'card file box archive'},  {e:'🗄',k:'cabinet storage'},  {e:'📦',k:'package box'},
+  {e:'🗑',k:'trash delete waste bin'},  {e:'📮',k:'mailbox post'},  {e:'📬',k:'mailbox incoming'},  {e:'📧',k:'email mail letter'},
+  {e:'💻',k:'laptop computer tech'},  {e:'🖥',k:'desktop monitor screen'},  {e:'⌨️',k:'keyboard type'},  {e:'🖱',k:'mouse click'},
+  {e:'💾',k:'floppy disk save'},  {e:'💿',k:'cd disc'},  {e:'🔌',k:'plug electric power'},  {e:'🔋',k:'battery power energy'},
+  {e:'⚙️',k:'gear settings config'},  {e:'🔧',k:'wrench tool fix'},  {e:'🔨',k:'hammer build'},  {e:'🛠',k:'tools hammer wrench'},
+  {e:'🔩',k:'nut bolt'},  {e:'🔗',k:'link chain url'},  {e:'🧲',k:'magnet attract'},  {e:'🧪',k:'test tube lab experiment'},
+  {e:'🔬',k:'microscope research science'},  {e:'🔭',k:'telescope explore discover'},  {e:'🧬',k:'dna genetics biology'},  {e:'🧫',k:'petri dish culture'},
+  {e:'🧮',k:'abacus math calculate'},  {e:'🌡',k:'thermometer temperature'},  {e:'⚗️',k:'alchemy experiment flask'},  {e:'💡',k:'bulb idea light'},
+  {e:'💬',k:'speech bubble chat comment'},  {e:'💭',k:'thought bubble think'},  {e:'🗨',k:'speech left'},  {e:'🗣',k:'speaking head talk'},
+  {e:'📢',k:'megaphone announce loud'},  {e:'📣',k:'cheering megaphone'},  {e:'🔔',k:'bell notification alert'},  {e:'🔕',k:'bell muted silent'},
+  {e:'✅',k:'check done complete'},  {e:'❌',k:'cross no cancel'},  {e:'⚠️',k:'warning caution alert'},  {e:'❗',k:'exclamation important'},
+  {e:'❓',k:'question unknown ask'},  {e:'🔴',k:'red circle stop'},  {e:'🟡',k:'yellow circle caution'},  {e:'🟢',k:'green circle go'},
+  {e:'🔵',k:'blue circle info'},  {e:'🟣',k:'purple circle'},  {e:'🟠',k:'orange circle'},  {e:'⭐',k:'star favorite'},
+  {e:'🏷',k:'label tag'},  {e:'🚩',k:'flag mark milestone'},  {e:'🏁',k:'finish flag race'},  {e:'🎯',k:'target goal bullseye'},
+  {e:'📅',k:'calendar date schedule'},  {e:'⏰',k:'alarm clock time'},  {e:'⏳',k:'hourglass wait time'},  {e:'🕐',k:'clock time'},
+  {e:'🔄',k:'arrows refresh sync cycle'},  {e:'⏩',k:'fast forward skip'},  {e:'⏸',k:'pause stop'},  {e:'▶️',k:'play start go'},
+  {e:'👤',k:'person user profile'},  {e:'👥',k:'people group team'},  {e:'🤝',k:'handshake deal partner'},  {e:'👁',k:'eye watch observe'},
+  {e:'🧠',k:'brain think smart'},  {e:'💪',k:'strong arm muscle'},  {e:'🏃',k:'run sprint fast'},  {e:'🧑‍💻',k:'coder developer tech'},
+  {e:'💰',k:'money bag cash'},  {e:'💵',k:'dollar bill cash'},  {e:'💳',k:'credit card payment'},  {e:'🏦',k:'bank finance'},
+  {e:'🏢',k:'office building company'},  {e:'🗓',k:'calendar schedule spiral'},  {e:'🎓',k:'graduation cap learn education'},
+  {e:'🌍',k:'earth globe world'},  {e:'🌱',k:'seedling grow plant'},  {e:'🔥',k:'fire hot trending'},  {e:'⚡',k:'lightning bolt fast zap'},
+  {e:'🌊',k:'wave water ocean'},  {e:'🏔',k:'mountain peak'},  {e:'🚀',k:'rocket launch ship'},  {e:'✨',k:'sparkle magic new'},
+  {e:'🎨',k:'art palette paint design'},  {e:'🎵',k:'music note song'},  {e:'📷',k:'camera photo'},  {e:'🎬',k:'clapperboard film movie video'},
+  {e:'🏠',k:'home house'},  {e:'🔐',k:'lock key security'},  {e:'🔑',k:'key unlock access'},  {e:'🛡',k:'shield protect defense security'},
+  {e:'♻️',k:'recycle reuse green'},  {e:'💎',k:'gem diamond premium'},  {e:'🧩',k:'puzzle piece'},  {e:'🗺',k:'map world plan'},
+];
+
+let selectedEmoji = '📌';
+
+function renderEmojiGrid(filter = '') {
+  const grid = document.getElementById('emojiGrid');
+  const q = filter.toLowerCase();
+  const filtered = q ? EMOJI_DATA.filter(d => d.k.includes(q) || d.e === q) : EMOJI_DATA;
+  grid.innerHTML = filtered.map(d =>
+    `<div class="emoji-cell${d.e === selectedEmoji ? ' selected' : ''}" onclick="selectEmoji('${d.e}', '${d.k.split(' ')[0]}')" title="${d.k}">${d.e}</div>`
+  ).join('');
+}
+
+function selectEmoji(emoji, label) {
+  selectedEmoji = emoji;
+  document.getElementById('colIcon').value = emoji;
+  document.getElementById('emojiPreview').textContent = emoji;
+  document.getElementById('emojiLabel').textContent = label;
+  renderEmojiGrid(document.getElementById('emojiSearch').value);
+}
+
+function filterEmojis() {
+  renderEmojiGrid(document.getElementById('emojiSearch').value);
+}
+
+function openAddColumnModal() {
+  document.getElementById('colName').value = '';
+  document.getElementById('colColor').value = '#6366f1';
+  selectedEmoji = '📌';
+  document.getElementById('colIcon').value = '📌';
+  document.getElementById('emojiPreview').textContent = '📌';
+  document.getElementById('emojiLabel').textContent = 'pin';
+  document.getElementById('emojiSearch').value = '';
+  renderEmojiGrid();
+  new bootstrap.Modal(document.getElementById('addColumnModal')).show();
+}
+
+async function addColumnSubmit() {
+  const label = document.getElementById('colName').value.trim();
+  if (!label) return;
+  const color = document.getElementById('colColor').value;
+  const icon = document.getElementById('colIcon').value || '📌';
+  await api('POST', '/api/columns', { label, color, icon });
+  bootstrap.Modal.getInstance(document.getElementById('addColumnModal')).hide();
+  await loadAll();
+}
+
+async function deleteColumnConfirm(colId) {
+  const col = columns.find(c => c.id === colId);
+  if (!col) return;
+  const itemCount = items.filter(i => i.type === colId && i.status !== 'done').length;
+  const msg = itemCount > 0
+    ? `Delete column "${col.label}"? Its ${itemCount} item(s) will move to Tasks.`
+    : `Delete column "${col.label}"?`;
+  if (!confirm(msg)) return;
+  await api('DELETE', `/api/columns/${colId}`);
+  await loadAll();
+}
+
+// ── Init ──
+
+loadAll();
+setInterval(loadAll, 2000);
+</script>
+</body>
+</html>

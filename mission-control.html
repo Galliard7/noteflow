@@ -1,0 +1,2437 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-ui, sans-serif; margin: 0; overflow-x: auto; }
+
+/* ── App shell: sidebar + main ── */
+.mc-shell { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ── */
+.mc-sidebar {
+  width: 56px; flex-shrink: 0;
+  background: #1e293b; border-right: 1px solid #334155;
+  display: flex; flex-direction: column;
+  padding: 0.8rem 0; gap: 0.2rem; z-index: 100;
+  transition: width 0.2s ease;
+  overflow: hidden;
+}
+.mc-sidebar.expanded { width: 180px; }
+
+.mc-sidebar-top { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.mc-sidebar.expanded .mc-sidebar-top { align-items: stretch; padding: 0 0.5rem; }
+
+.mc-logo {
+  font-size: 1.1rem; font-weight: 700; color: #e2e8f0;
+  margin-bottom: 0.6rem; letter-spacing: -0.5px;
+  text-align: center; white-space: nowrap;
+}
+.mc-sidebar.expanded .mc-logo { text-align: left; padding-left: 0.35rem; }
+.mc-sidebar.expanded .mc-logo-short { display: none !important; }
+.mc-sidebar.expanded .mc-logo-full { display: inline !important; }
+
+.tab-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; color: #64748b;
+  border-radius: 8px; font-size: 1.15rem; cursor: pointer;
+  transition: all 0.15s; position: relative; gap: 0.5rem;
+  white-space: nowrap; overflow: hidden;
+}
+.tab-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.06); }
+.tab-btn.active { color: #e2e8f0; background: #334155; border-color: #475569; }
+
+/* Label: tooltip when collapsed, inline when expanded */
+.tab-btn .tab-label {
+  display: none; position: absolute; left: 52px; top: 50%; transform: translateY(-50%);
+  background: #1e293b; border: 1px solid #475569; border-radius: 5px;
+  padding: 0.2rem 0.5rem; font-size: 0.75rem; white-space: nowrap;
+  pointer-events: none; color: #e2e8f0;
+}
+.tab-btn:hover .tab-label { display: block; }
+
+/* Expanded sidebar: show labels inline */
+.mc-sidebar.expanded .tab-btn {
+  width: 100%; justify-content: flex-start; padding: 0 0.6rem;
+}
+.mc-sidebar.expanded .tab-btn .tab-label {
+  display: inline; position: static; transform: none;
+  background: none; border: none; padding: 0;
+  font-size: 0.82rem; font-weight: 500;
+}
+
+/* Toggle button at bottom */
+.sidebar-toggle {
+  margin-top: auto; align-self: center;
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid #334155; color: #64748b;
+  border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+  transition: all 0.15s;
+}
+.sidebar-toggle:hover { color: #e2e8f0; border-color: #475569; }
+.mc-sidebar.expanded .sidebar-toggle { align-self: flex-end; margin-right: 0.5rem; }
+
+/* ── Main content area ── */
+.mc-main { flex: 1; overflow-x: auto; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* ── Board layout (shared by both tabs) ── */
+.board {
+  display: flex; gap: 1rem; padding: 1rem 1.2rem; align-items: flex-start;
+  min-height: calc(100vh - 44px); flex: 1;
+}
+.column {
+  min-width: 300px; width: 300px; flex-shrink: 0;
+  background: #1e293b; border-radius: 10px; border: 1px solid #334155;
+  display: flex; flex-direction: column; max-height: calc(100vh - 60px);
+}
+.column-header {
+  padding: 0.7rem 0.8rem; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #334155; flex-shrink: 0;
+}
+.column-title {
+  font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;
+}
+.column-count {
+  background: #334155; color: #94a3b8; font-size: 0.7rem;
+  padding: 0.1rem 0.45rem; border-radius: 8px; margin-left: 0.4rem;
+}
+.column-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.column-body {
+  padding: 0.5rem; flex: 1; overflow-y: auto; min-height: 60px;
+}
+.column-body::-webkit-scrollbar { width: 4px; }
+.column-body::-webkit-scrollbar-track { background: transparent; }
+.column-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+/* ── NoteFlow tab styles ── */
+.column-body.drag-over { background: rgba(59, 130, 246, 0.08); border-radius: 0 0 10px 10px; }
+.column.col-dragging { opacity: 0.4; }
+.column.col-drag-over { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+.project-card.pc-dragging { opacity: 0.4; }
+.project-card.pc-drag-over { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+.column-footer { padding: 0.5rem; border-top: 1px solid #334155; flex-shrink: 0; }
+.column-add-btn {
+  width: 100%; background: none; border: 1px dashed #475569; color: #64748b;
+  border-radius: 6px; padding: 0.4rem; font-size: 0.8rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.column-add-btn:hover { border-color: #94a3b8; color: #94a3b8; }
+.inline-add { display: none; }
+.inline-add.active { display: block; }
+.inline-add input {
+  background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+  border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; font-size: 0.85rem;
+}
+.inline-add input:focus { outline: none; border-color: #3b82f6; }
+
+/* ── Cards (NoteFlow) ── */
+.nf-card {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  user-select: none;
+}
+.nf-card:hover { border-color: #475569; }
+.nf-card.dragging { opacity: 0.4; }
+.nf-card.expanded { cursor: default; border-color: #3b82f6; }
+.nf-card-done { opacity: 0.5; }
+.nf-card-done .nf-title { text-decoration: line-through; color: #6b7280; }
+.nf-id { color: #64748b; font-size: 0.7rem; font-family: monospace; margin-right: 0.35rem; }
+.nf-title { font-weight: 500; font-size: 0.85rem; }
+.nf-meta { color: #64748b; font-size: 0.72rem; margin-top: 0.2rem; }
+.tag-pill {
+  background: #334155; color: #94a3b8; font-size: 0.65rem;
+  padding: 0.05rem 0.35rem; border-radius: 3px; margin-left: 0.2rem;
+}
+
+/* Expanded card sections */
+.card-detail { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid #1e293b; }
+.section-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+.notes-body {
+  white-space: pre-wrap; color: #cbd5e1; font-size: 0.82rem;
+  background: #1e293b; border-radius: 6px; padding: 0.5rem; min-height: 2rem;
+}
+.comment {
+  background: #1e293b; border-radius: 6px; padding: 0.4rem 0.6rem;
+  margin-bottom: 0.3rem; font-size: 0.8rem;
+}
+.comment-ts { color: #64748b; font-size: 0.7rem; }
+.comment-text { color: #cbd5e1; margin-top: 0.1rem; }
+.comment-delete { cursor: pointer; color: #64748b; font-size: 0.7rem; float: right; }
+.comment-delete:hover { color: #ef4444; }
+.card-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.card-actions .btn { font-size: 0.72rem; padding: 0.2rem 0.5rem; }
+
+/* Emoji Picker */
+.emoji-picker { margin-top: 0.3rem; }
+.emoji-search {
+  background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+  border-radius: 6px; padding: 0.35rem 0.6rem; width: 100%; font-size: 0.82rem;
+  margin-bottom: 0.4rem;
+}
+.emoji-search:focus { outline: none; border-color: #3b82f6; }
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+  max-height: 180px; overflow-y: auto; padding: 2px;
+}
+.emoji-cell {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; padding: 0.3rem; border-radius: 6px;
+  cursor: pointer; transition: background 0.1s; user-select: none;
+}
+.emoji-cell:hover { background: #334155; }
+.emoji-cell.selected { background: #3b82f6; border-radius: 6px; }
+.emoji-grid::-webkit-scrollbar { width: 4px; }
+.emoji-grid::-webkit-scrollbar-track { background: transparent; }
+.emoji-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.selected-emoji-preview {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.4rem;
+}
+.selected-emoji-preview .preview-icon { font-size: 1.5rem; }
+
+/* Add Column */
+.add-column-card {
+  min-width: 280px; width: 280px; flex-shrink: 0;
+  background: transparent; border: 2px dashed #334155; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 120px; cursor: pointer; color: #64748b; font-size: 0.9rem;
+  transition: all 0.15s;
+}
+.add-column-card:hover { border-color: #64748b; color: #94a3b8; }
+
+/* Project combobox */
+.project-combo {
+  position: relative; display: inline-block;
+}
+.project-combo input {
+  background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+  border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.78rem;
+  width: 160px; outline: none;
+}
+.modal-body .project-combo { display: block; }
+.modal-body .project-combo input { width: 100%; padding: 0.375rem 0.75rem; font-size: 0.875rem; border-radius: 0.375rem; }
+.project-combo input:focus { border-color: #3b82f6; }
+.project-combo .combo-dropdown {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1050;
+  background: #1e293b; border: 1px solid #334155; border-radius: 4px;
+  max-height: 160px; overflow-y: auto; margin-top: 2px;
+}
+.project-combo .combo-dropdown.open { display: block; }
+.project-combo .combo-option {
+  padding: 0.3rem 0.5rem; font-size: 0.78rem; color: #e2e8f0; cursor: pointer;
+}
+.project-combo .combo-option:hover, .project-combo .combo-option.highlighted {
+  background: #334155;
+}
+.project-combo .combo-option .combo-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 0.4rem; vertical-align: middle;
+}
+.project-combo .combo-new {
+  color: #3b82f6; font-style: italic; border-top: 1px solid #334155;
+}
+
+/* Done strip */
+.done-strip {
+  background: #1e293b; border-top: 1px solid #334155;
+  padding: 0.6rem 1.2rem; position: sticky; bottom: 0; z-index: 50;
+}
+.done-toggle { cursor: pointer; color: #64748b; font-size: 0.82rem; user-select: none; }
+.done-toggle:hover { color: #94a3b8; }
+.done-items { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.done-chip {
+  background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+  padding: 0.3rem 0.6rem; font-size: 0.78rem; color: #6b7280;
+  cursor: pointer; text-decoration: line-through; transition: border-color 0.15s;
+}
+.done-chip:hover { border-color: #475569; color: #94a3b8; }
+
+/* Done expanded card */
+.done-expanded-card {
+  width: 100%; max-width: 420px;
+  margin-bottom: 0.5rem;
+}
+
+/* Linked card badge */
+.linked-card-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: #1e293b; border: 1px solid #334155; border-radius: 4px;
+  padding: 0.15rem 0.4rem; font-size: 0.7rem; color: #94a3b8;
+  margin-top: 0.25rem; cursor: default;
+}
+.linked-card-status {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 0.15rem;
+}
+
+/* Archive trigger */
+.archive-trigger {
+  text-align: center; padding: 0.3rem 0; margin-top: 0.3rem;
+  color: #475569; font-size: 0.72rem; cursor: pointer;
+  transition: color 0.15s; user-select: none;
+}
+.archive-trigger:hover { color: #94a3b8; }
+
+/* Archive drawer */
+.archive-drawer-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 900; display: none;
+}
+.archive-drawer-overlay.open { display: block; }
+.archive-drawer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 65vh; background: #1a1f2e;
+  border-top: 1px solid #334155; border-radius: 16px 16px 0 0;
+  z-index: 910; display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.archive-drawer.open { transform: translateY(0); }
+.archive-grip {
+  display: flex; justify-content: center; padding: 0.6rem 0 0.3rem;
+  cursor: pointer; flex-shrink: 0;
+}
+.archive-grip-bar {
+  width: 40px; height: 4px; background: #475569; border-radius: 2px;
+}
+.archive-header {
+  padding: 0 1.2rem 0.6rem; display: flex; align-items: center;
+  justify-content: space-between; flex-shrink: 0;
+  border-bottom: 1px solid #334155;
+}
+.archive-header-title { font-weight: 600; font-size: 0.95rem; color: #e2e8f0; }
+.archive-header-close {
+  background: none; border: 1px solid #334155; color: #94a3b8;
+  border-radius: 6px; width: 28px; height: 28px; display: flex;
+  align-items: center; justify-content: center; cursor: pointer;
+  font-size: 0.9rem; transition: all 0.15s;
+}
+.archive-header-close:hover { color: #e2e8f0; border-color: #475569; }
+.archive-body {
+  flex: 1; overflow-y: auto; padding: 1rem 1.2rem;
+}
+.archive-body::-webkit-scrollbar { width: 5px; }
+.archive-body::-webkit-scrollbar-track { background: transparent; }
+.archive-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.archive-month-header {
+  font-size: 0.78rem; font-weight: 600; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 0.6rem 0 0.3rem; border-bottom: 1px solid rgba(51,65,85,0.4);
+  margin-bottom: 0.5rem;
+}
+.archive-card {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.5rem;
+  opacity: 0.7; cursor: pointer; transition: opacity 0.15s, border-color 0.15s;
+}
+.archive-card:hover { opacity: 0.9; border-color: #475569; }
+.archive-card.expanded { opacity: 1; border-color: #3b82f6; cursor: default; }
+
+/* ── Kanban Cards (Projects tab) ── */
+.kb-card {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.kb-card:hover { border-color: #475569; }
+.kb-card.expanded { border-color: #3b82f6; }
+.kb-title { font-weight: 500; font-size: 0.85rem; }
+.kb-desc { color: #94a3b8; font-size: 0.78rem; margin-top: 0.2rem; }
+.kb-badge {
+  display: inline-block; font-size: 0.65rem; padding: 0.08rem 0.4rem;
+  border-radius: 3px; font-weight: 500; margin-top: 0.3rem;
+}
+.kb-comment-count { color: #64748b; font-size: 0.72rem; margin-left: 0.3rem; }
+
+/* ── Projects toolbar ── */
+.kb-toolbar {
+  padding: 0.5rem 1.2rem; display: flex; align-items: center; gap: 0.6rem;
+  border-bottom: 1px solid #1e293b;
+}
+.view-toggle { display: flex; gap: 0; }
+.view-btn {
+  background: #1e293b; border: 1px solid #334155; color: #94a3b8;
+  padding: 0.25rem 0.6rem; font-size: 0.78rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.view-btn:first-child { border-radius: 5px 0 0 5px; }
+.view-btn:last-child { border-radius: 0 5px 5px 0; border-left: none; }
+.view-btn.active { background: #334155; color: #e2e8f0; }
+.view-btn:hover:not(.active) { color: #e2e8f0; }
+
+/* ── Modals ── */
+.modal-content { background: #1e293b; border: 1px solid #334155; }
+.modal-content .form-control, .modal-content .form-select { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+.modal-content .form-control:focus, .modal-content .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 0.15rem rgba(59,130,246,0.25); }
+
+/* ── Tab content ── */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── Projects Tab ── */
+.projects-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem; padding: 1.2rem;
+}
+.project-card {
+  background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+  padding: 1.2rem; cursor: pointer; transition: all 0.15s;
+  display: flex; flex-direction: column; gap: 0.6rem;
+}
+.project-card:hover { border-color: #475569; transform: translateY(-1px); }
+.project-card-header { display: flex; align-items: center; gap: 0.5rem; }
+.project-card-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.project-card-name { font-weight: 700; font-size: 1.05rem; color: #f1f5f9; }
+.project-card-summary { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; }
+.project-progress-bar {
+  height: 8px; background: #334155; border-radius: 4px; overflow: hidden;
+}
+.project-progress-fill {
+  height: 100%; border-radius: 4px; transition: width 0.3s ease;
+}
+.project-progress-label {
+  font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between;
+}
+.project-phase-info { font-size: 0.8rem; color: #94a3b8; }
+.project-phase-info strong { color: #cbd5e1; }
+.project-tasks-count { font-size: 0.78rem; color: #64748b; }
+
+/* Project detail view */
+#project-detail { padding: 1.2rem; overflow-y: auto; height: calc(100vh - 10px); }
+.project-detail-back {
+  background: none; border: 1px solid #334155; color: #94a3b8;
+  border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.82rem;
+  cursor: pointer; transition: all 0.15s; margin-bottom: 1rem;
+}
+.project-detail-back:hover { color: #e2e8f0; border-color: #475569; }
+.project-detail-header {
+  display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem;
+}
+.project-detail-name { font-weight: 700; font-size: 1.3rem; color: #f1f5f9; }
+.project-detail-summary { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1.2rem; line-height: 1.5; }
+.project-section-title {
+  font-weight: 600; font-size: 0.85rem; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid #334155; padding-bottom: 0.4rem; margin: 1.2rem 0 0.8rem;
+}
+.phase-item {
+  display: flex; gap: 0.6rem; padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(51,65,85,0.4);
+}
+.phase-item:last-child { border-bottom: none; }
+.phase-icon { font-size: 1rem; flex-shrink: 0; width: 1.3rem; text-align: center; line-height: 1.5; }
+.phase-content { flex: 1; }
+.phase-name { font-weight: 600; font-size: 0.9rem; color: #e2e8f0; }
+.phase-name.done { color: #10b981; }
+.phase-name.active { color: #3b82f6; }
+.phase-desc { font-size: 0.8rem; color: #94a3b8; margin-top: 0.15rem; }
+.related-task-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.6rem; margin-bottom: 0.3rem;
+  background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+  font-size: 0.85rem;
+}
+.related-task-status {
+  font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.4rem;
+  border-radius: 4px; white-space: nowrap;
+}
+.file-link-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0; font-size: 0.85rem; color: #94a3b8;
+}
+.file-link-icon { flex-shrink: 0; }
+.file-link-label { color: #cbd5e1; font-weight: 500; }
+.file-link-path { color: #64748b; font-size: 0.78rem; }
+
+/* ── File Viewer Modal ── */
+.file-viewer-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 1000; display: flex; align-items: center; justify-content: center;
+}
+.file-viewer {
+  width: 90vw; max-width: 900px; height: 85vh;
+  background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.file-viewer-header {
+  padding: 0.7rem 1rem; border-bottom: 1px solid #334155;
+  display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
+}
+.file-viewer-breadcrumb {
+  display: flex; align-items: center; gap: 0.15rem; flex: 1;
+  overflow-x: auto; font-size: 0.82rem; white-space: nowrap;
+}
+.file-viewer-breadcrumb span { color: #64748b; }
+.file-viewer-crumb {
+  color: #94a3b8; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px;
+  transition: all 0.1s;
+}
+.file-viewer-crumb:hover { color: #e2e8f0; background: rgba(255,255,255,0.06); }
+.file-viewer-crumb.current { color: #e2e8f0; cursor: default; }
+.file-viewer-crumb.current:hover { background: none; }
+.file-viewer-close {
+  background: none; border: 1px solid #334155; color: #94a3b8;
+  border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: 1rem; flex-shrink: 0;
+  transition: all 0.15s;
+}
+.file-viewer-close:hover { color: #e2e8f0; border-color: #475569; }
+.file-viewer-body {
+  flex: 1; overflow-y: auto; padding: 1.2rem;
+}
+.file-viewer-body::-webkit-scrollbar { width: 6px; }
+.file-viewer-body::-webkit-scrollbar-track { background: transparent; }
+.file-viewer-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+/* Markdown rendered content */
+.file-viewer-md { line-height: 1.7; color: #cbd5e1; }
+.file-viewer-md h1 { font-size: 1.5rem; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 0.4rem; margin: 1.5rem 0 0.8rem; }
+.file-viewer-md h2 { font-size: 1.25rem; color: #f1f5f9; border-bottom: 1px solid rgba(51,65,85,0.5); padding-bottom: 0.3rem; margin: 1.3rem 0 0.6rem; }
+.file-viewer-md h3 { font-size: 1.1rem; color: #e2e8f0; margin: 1.1rem 0 0.5rem; }
+.file-viewer-md h4, .file-viewer-md h5, .file-viewer-md h6 { font-size: 0.95rem; color: #e2e8f0; margin: 1rem 0 0.4rem; }
+.file-viewer-md p { margin: 0.6rem 0; }
+.file-viewer-md ul, .file-viewer-md ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+.file-viewer-md li { margin: 0.25rem 0; }
+.file-viewer-md code {
+  background: #0f172a; color: #e879f9; padding: 0.15rem 0.4rem;
+  border-radius: 4px; font-size: 0.85em;
+}
+.file-viewer-md pre {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  padding: 0.8rem 1rem; overflow-x: auto; margin: 0.6rem 0;
+}
+.file-viewer-md pre code { background: none; color: #e2e8f0; padding: 0; }
+.file-viewer-md blockquote {
+  border-left: 3px solid #3b82f6; padding-left: 0.8rem;
+  color: #94a3b8; margin: 0.6rem 0;
+}
+.file-viewer-md table { border-collapse: collapse; width: 100%; margin: 0.6rem 0; }
+.file-viewer-md th, .file-viewer-md td {
+  border: 1px solid #334155; padding: 0.4rem 0.6rem; font-size: 0.85rem;
+}
+.file-viewer-md th { background: #0f172a; color: #e2e8f0; font-weight: 600; }
+.file-viewer-md a { color: #60a5fa; }
+.file-viewer-md hr { border: none; border-top: 1px solid #334155; margin: 1rem 0; }
+.file-viewer-md img { max-width: 100%; border-radius: 6px; }
+
+/* Plain text / non-markdown */
+.file-viewer-plain {
+  white-space: pre-wrap; font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;
+}
+
+/* Directory listing */
+.dir-entry {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.6rem; margin-bottom: 0.2rem;
+  border-radius: 6px; cursor: pointer; transition: background 0.1s;
+  font-size: 0.9rem;
+}
+.dir-entry:hover { background: rgba(255,255,255,0.05); }
+.dir-entry-icon { font-size: 1.1rem; flex-shrink: 0; width: 1.4rem; text-align: center; }
+.dir-entry-name { color: #e2e8f0; }
+.dir-entry-name.dir { color: #60a5fa; font-weight: 500; }
+
+/* ── Live Activity Panel ── */
+.activity-panel {
+  width: 280px; flex-shrink: 0;
+  background: #1e293b; border-left: 1px solid #334155;
+  display: flex; flex-direction: column; height: 100vh;
+  transition: width 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+.activity-panel.collapsed { width: 0; border-left: none; }
+.activity-header {
+  padding: 0.7rem 0.8rem; border-bottom: 1px solid #334155;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.activity-header-title { font-weight: 600; font-size: 0.85rem; color: #e2e8f0; white-space: nowrap; }
+.activity-toggle-btn {
+  background: none; border: 1px solid #334155; color: #64748b;
+  border-radius: 5px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.75rem; transition: all 0.15s;
+}
+.activity-toggle-btn:hover { color: #e2e8f0; border-color: #475569; }
+.activity-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+.activity-list::-webkit-scrollbar { width: 4px; }
+.activity-list::-webkit-scrollbar-track { background: transparent; }
+.activity-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.activity-entry {
+  padding: 0.5rem 0.6rem; margin-bottom: 0.4rem;
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  transition: opacity 0.2s;
+}
+.activity-entry.stale { opacity: 0.5; }
+.activity-entry-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem; }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.activity-label {
+  font-size: 0.7rem; font-weight: 600; padding: 0.05rem 0.35rem;
+  border-radius: 3px; white-space: nowrap;
+}
+.activity-ts { font-size: 0.68rem; color: #64748b; margin-left: auto; white-space: nowrap; }
+.activity-text { font-size: 0.8rem; color: #cbd5e1; word-break: break-word; }
+.activity-clear {
+  cursor: pointer; color: #64748b; font-size: 0.65rem; float: right;
+  margin-top: -0.2rem;
+}
+.activity-clear:hover { color: #ef4444; }
+.activity-empty { color: #64748b; font-size: 0.82rem; text-align: center; padding: 2rem 0.5rem; font-style: italic; }
+
+/* Activity panel external toggle (shown when collapsed) */
+.activity-expand-btn {
+  position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+  background: #1e293b; border: 1px solid #334155; border-right: none;
+  color: #64748b; border-radius: 6px 0 0 6px;
+  padding: 0.5rem 0.25rem; cursor: pointer; z-index: 200;
+  font-size: 0.75rem; transition: all 0.15s; display: none;
+}
+.activity-expand-btn:hover { color: #e2e8f0; border-color: #475569; }
+.activity-expand-btn.visible { display: block; }
+
+/* Status column delete button */
+.status-delete-btn {
+  cursor: pointer; color: #64748b; font-size: 0.75rem;
+  transition: color 0.15s; margin-left: 0.3rem;
+}
+.status-delete-btn:hover { color: #ef4444; }
+</style>
+</head>
+<body>
+
+<div class="mc-shell">
+
+  <!-- ── Sidebar ── -->
+  <nav class="mc-sidebar" id="sidebar">
+    <div class="mc-sidebar-top">
+      <div class="mc-logo"><span class="mc-logo-short">MC</span><span class="mc-logo-full" style="display:none">Mission Control</span></div>
+      <button class="tab-btn active" onclick="switchTab('noteflow')" title="NoteFlow">
+        &#x1F4DD;<span class="tab-label">NoteFlow</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('tasks')" title="Tasks">
+        &#x2611;<span class="tab-label">Tasks</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('projects')" title="Projects">
+        &#x1F4CA;<span class="tab-label">Projects</span>
+      </button>
+    </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#x276F;</button>
+  </nav>
+
+  <!-- ── Main content ── -->
+  <div class="mc-main">
+
+    <!-- ═══════ NoteFlow Tab ═══════ -->
+    <div class="tab-content active" id="tab-noteflow">
+      <div style="padding:0.3rem 1.2rem 0; display:flex; justify-content:flex-end">
+        <button class="btn btn-outline-secondary btn-sm" onclick="openAddColumnModal()" style="font-size:0.75rem">+ Column</button>
+      </div>
+      <div class="board" id="nf-board"></div>
+      <div class="done-strip" id="doneStrip" style="display:none">
+        <span class="done-toggle" onclick="toggleDone()">
+          <span id="doneArrow">&#9654;</span> Done <span class="column-count" id="doneCount">0</span>
+        </span>
+        <div class="done-items" id="doneItems" style="display:none"></div>
+        <div class="archive-trigger" id="archiveTrigger" style="display:none" onclick="openArchiveDrawer()">Archive (<span id="archiveCount">0</span>)</div>
+      </div>
+    </div>
+
+    <!-- ═══════ Projects Tab ═══════ -->
+    <div class="tab-content" id="tab-tasks">
+      <div class="kb-toolbar">
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setKbView('status')">By Status</button>
+          <button class="view-btn" onclick="setKbView('project')">By Project</button>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="openAddCardModal()" style="font-size:0.75rem">+ Card</button>
+      </div>
+      <div class="board" id="kb-board"></div>
+    </div>
+
+    <!-- ═══════ Projects Tab ═══════ -->
+    <div class="tab-content" id="tab-projects">
+      <div id="projects-portfolio" style="display:block">
+        <div class="projects-grid" id="projects-grid"></div>
+      </div>
+      <div id="project-detail" style="display:none"></div>
+    </div>
+
+  </div><!-- /mc-main -->
+
+  <!-- ── Live Activity Panel (visible only on Tasks tab) ── -->
+  <div class="activity-panel" id="activityPanel" style="display:none">
+    <div class="activity-header">
+      <span class="activity-header-title">Live Activity</span>
+      <button class="activity-toggle-btn" onclick="toggleActivityPanel()" title="Collapse">&#x276F;</button>
+    </div>
+    <div class="activity-list" id="activityList">
+      <div class="activity-empty">No active sessions</div>
+    </div>
+  </div>
+  <button class="activity-expand-btn" id="activityExpandBtn" onclick="toggleActivityPanel()" title="Show Live Activity">&#x276E;</button>
+
+</div><!-- /mc-shell -->
+
+<!-- ═══════ Archive Drawer ═══════ -->
+<div class="archive-drawer-overlay" id="archiveOverlay" onclick="closeArchiveDrawer()"></div>
+<div class="archive-drawer" id="archiveDrawer">
+  <div class="archive-grip" onclick="closeArchiveDrawer()"><div class="archive-grip-bar"></div></div>
+  <div class="archive-header">
+    <span class="archive-header-title">Archive</span>
+    <button class="archive-header-close" onclick="closeArchiveDrawer()">&times;</button>
+  </div>
+  <div class="archive-body" id="archiveBody">
+    <div style="color:#64748b;text-align:center;padding:2rem;font-style:italic">No archived items</div>
+  </div>
+</div>
+
+<!-- ═══════ File Viewer ═══════ -->
+<div class="file-viewer-overlay" id="fileViewerOverlay" style="display:none" onclick="if(event.target===this)closeFileViewer()">
+  <div class="file-viewer">
+    <div class="file-viewer-header">
+      <div class="file-viewer-breadcrumb" id="fileViewerBreadcrumb"></div>
+      <button class="file-viewer-close" onclick="closeFileViewer()">&times;</button>
+    </div>
+    <div class="file-viewer-body" id="fileViewerBody"></div>
+  </div>
+</div>
+
+<!-- ═══════ Modals ═══════ -->
+
+<!-- NoteFlow Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Edit Item</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="editTitle"></div>
+        <div class="mb-3"><label class="form-label">Notes</label><textarea class="form-control" id="editBody" rows="4"></textarea></div>
+        <div class="mb-3"><label class="form-label">Due</label><input type="datetime-local" class="form-control" id="editDue"></div>
+        <div class="mb-3"><label class="form-label">Tags (comma-separated)</label><input type="text" class="form-control" id="editTags"></div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NoteFlow Add Column Modal -->
+<div class="modal fade" id="addColumnModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">New Column</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Name</label><input type="text" class="form-control" id="colName" placeholder="e.g. Research"></div>
+        <div class="mb-3"><label class="form-label">Color</label><input type="color" class="form-control form-control-color" id="colColor" value="#6366f1"></div>
+        <div class="mb-3">
+          <label class="form-label">Icon</label>
+          <input type="hidden" id="colIcon" value="&#x1F4CC;">
+          <div class="selected-emoji-preview">
+            <span class="preview-icon" id="emojiPreview">&#x1F4CC;</span>
+            <span id="emojiLabel">pin</span>
+          </div>
+          <input type="text" class="emoji-search" id="emojiSearch" placeholder="Search emojis..." oninput="filterEmojis()">
+          <div class="emoji-grid" id="emojiGrid"></div>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="addColumnSubmit()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Board Add Card Modal -->
+<div class="modal fade" id="addCardModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">New Card</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="newCardTitle"></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="newCardDesc" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Project</label><div id="newCardProjectCombo"></div></div>
+        <div class="mb-3"><label class="form-label">Status</label>
+          <select class="form-select" id="newCardStatus"></select>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="addCardSubmit()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Board Card Detail Modal -->
+<div class="modal fade" id="cardDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" id="cardDetailContent"></div>
+  </div>
+</div>
+
+<!-- Board Edit Card Modal -->
+<div class="modal fade" id="editCardModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Edit Card</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editCardSlug">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="editCardTitle"></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="editCardDescription" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Project</label><div id="editCardProjectCombo"></div></div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveCardEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Status Modal -->
+<div class="modal fade" id="addStatusModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">New Status</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Name</label><input type="text" class="form-control" id="statusName" placeholder="e.g. Backlog"></div>
+        <div class="mb-3"><label class="form-label">Color</label><input type="color" class="form-control form-control-color" id="statusColor" value="#8b5cf6"></div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="addStatusSubmit()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ══════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════
+let currentTab = 'noteflow';
+
+// NoteFlow state
+let nfItems = [];
+let nfColumns = [];
+let nfExpandedId = null;
+let nfShowDone = false;
+let nfDragItemId = null;
+let archiveItems = [];
+let archiveExpandedId = null;
+
+// Board state
+let board = { projects: [], statuses: [], cards: [], decisions: [], log: [], activity: [] };
+let kbView = 'status';
+let kbExpandedSlug = null;
+let activityPanelVisible = true;
+const BUILTIN_STATUSES = new Set(['pending', 'active', 'done']);
+
+// ══════════════════════════════════════════════
+// Shared utils
+// ══════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  return res.json();
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// ══════════════════════════════════════════════
+// Tab switching
+// ══════════════════════════════════════════════
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const btn = sb.querySelector('.sidebar-toggle');
+  sb.classList.toggle('expanded');
+  btn.innerHTML = sb.classList.contains('expanded') ? '&#x276E;' : '&#x276F;';
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.mc-sidebar .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('title').toLowerCase() === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+
+  // Show activity panel only on Tasks tab
+  const panel = document.getElementById('activityPanel');
+  const expandBtn = document.getElementById('activityExpandBtn');
+  if (tab === 'tasks') {
+    panel.style.display = '';
+    if (!activityPanelVisible) expandBtn.classList.add('visible');
+  } else {
+    panel.style.display = 'none';
+    expandBtn.classList.remove('visible');
+  }
+
+  if (tab === 'noteflow') loadNoteFlow();
+  else if (tab === 'tasks') loadBoard();
+  else if (tab === 'projects') loadProjects();
+}
+
+// ══════════════════════════════════════════════
+//  NOTEFLOW TAB — copied from dashboard.html
+// ══════════════════════════════════════════════
+
+async function loadNoteFlow() {
+  const [itemsRes, colsRes, boardRes, archiveRes] = await Promise.all([
+    api('GET', '/api/items'),
+    api('GET', '/api/columns'),
+    api('GET', '/api/board'),
+    api('GET', '/api/archive'),
+  ]);
+  nfItems = itemsRes.items || [];
+  nfColumns = colsRes.columns || [];
+  if (!boardRes.error) board = boardRes;
+  archiveItems = archiveRes.items || [];
+  renderNoteFlow();
+}
+
+function renderLinkedCardBadge(linkedSlug) {
+  if (!linkedSlug) return '';
+  const card = (board.cards || []).find(c => c.slug === linkedSlug);
+  if (!card) return `<div class="linked-card-badge" title="Linked card: ${escapeHtml(linkedSlug)}">&#x1F517; ${escapeHtml(linkedSlug)}</div>`;
+  const color = getStatusColor(card.status);
+  return `<div class="linked-card-badge" title="Linked: ${escapeHtml(card.title)}"><span class="linked-card-status" style="background:${color}"></span>&#x1F517; ${escapeHtml(card.title)}</div>`;
+}
+
+function renderLinkedCardSection(linkedSlug) {
+  if (!linkedSlug) return '';
+  const card = (board.cards || []).find(c => c.slug === linkedSlug);
+  if (!card) return `<div class="section-label">Linked Card</div><div style="color:#64748b;font-size:0.8rem;font-style:italic">Card "${escapeHtml(linkedSlug)}" not found</div>`;
+  const color = getStatusColor(card.status);
+  const proj = board.projects.find(p => p.id === card.project);
+  const projName = proj ? proj.name : card.project || 'None';
+  let html = `<div class="section-label">Linked Card</div>`;
+  html += `<div style="background:#1e293b;border-radius:6px;padding:0.5rem;font-size:0.82rem">`;
+  html += `<div style="display:flex;align-items:center;gap:0.4rem">`;
+  html += `<span class="linked-card-status" style="background:${color};width:8px;height:8px"></span>`;
+  html += `<span style="font-weight:500;color:#e2e8f0">${escapeHtml(card.title)}</span>`;
+  html += `</div>`;
+  html += `<div style="font-size:0.72rem;color:#64748b;margin-top:0.2rem">Status: <span style="color:${color}">${escapeHtml(card.status)}</span> &middot; Project: ${escapeHtml(projName)}</div>`;
+  html += `</div>`;
+  return html;
+}
+
+function renderNfCard(item, colColor) {
+  const isExpanded = nfExpandedId === item.id;
+  const isDone = item.status === 'done';
+  const doneClass = isDone ? 'nf-card-done' : '';
+  const expandClass = isExpanded ? 'expanded' : '';
+
+  let meta = [];
+  if (item.due) meta.push('Due: ' + formatDate(item.due));
+  if (item.remind) meta.push('Remind: ' + formatDateTime(item.remind));
+  if (item.recurrence) meta.push(item.recurrence);
+
+  const tags = (item.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('');
+  const commentCount = (item.subnotes || []).length;
+  const commentHint = commentCount > 0 ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem">\uD83D\uDCAC ${commentCount}</span>` : '';
+
+  let html = `<div class="nf-card ${doneClass} ${expandClass}"
+    draggable="${isExpanded ? 'false' : 'true'}"
+    data-id="${item.id}"
+    onclick="nfToggleExpand('${item.id}')"
+    ondragstart="nfDragStart(event, '${item.id}')"
+    ondragend="nfDragEnd(event)">`;
+  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}</div>`;
+  if (meta.length) html += `<div class="nf-meta">${meta.join(' &middot; ')}</div>`;
+  if (item.linked_card) html += renderLinkedCardBadge(item.linked_card);
+
+  if (isExpanded) {
+    html += `<div class="card-detail" onclick="event.stopPropagation()">`;
+
+    if (item.linked_card) html += renderLinkedCardSection(item.linked_card);
+
+    html += `<div class="section-label"${item.linked_card ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
+    html += item.body
+      ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
+      : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes yet</div>`;
+
+    html += `<div class="section-label" style="margin-top:0.6rem">Comments</div>`;
+    const comments = item.subnotes || [];
+    if (!comments.length) {
+      html += `<div style="color:#64748b;font-size:0.8rem;font-style:italic">No comments</div>`;
+    } else {
+      for (let i = 0; i < comments.length; i++) {
+        const c = comments[i];
+        html += `<div class="comment"><span class="comment-delete" onclick="nfDeleteComment('${item.id}', ${i})" title="Delete">\u2715</span>`;
+        html += `<div class="comment-ts">${formatDateTime(c.ts)}</div><div class="comment-text">${escapeHtml(c.text)}</div></div>`;
+      }
+    }
+    html += `<div style="margin-top:0.4rem"><div class="input-group input-group-sm">`;
+    html += `<input type="text" class="form-control" style="background:#0f172a;border-color:#334155;color:#e2e8f0;font-size:0.8rem"
+              id="nf-comment-${item.id}" placeholder="Add a comment..."
+              onkeydown="if(event.key==='Enter')nfAddComment('${item.id}')">`;
+    html += `<button class="btn btn-outline-secondary btn-sm" onclick="nfAddComment('${item.id}')">Post</button></div></div>`;
+
+    html += `<div class="card-actions">`;
+    html += isDone
+      ? `<button class="btn btn-outline-success" onclick="nfReopenItem('${item.id}')">Reopen</button>`
+      : `<button class="btn btn-outline-success" onclick="nfMarkDone('${item.id}')">Done</button>`;
+    html += `<button class="btn btn-outline-info" onclick="nfOpenEdit('${item.id}')">Edit</button>`;
+    html += `<button class="btn btn-outline-danger" onclick="nfDeleteItem('${item.id}')">Delete</button>`;
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderNoteFlow() {
+  const boardEl = document.getElementById('nf-board');
+  const active = nfItems.filter(i => i.status !== 'done');
+  const done = nfItems.filter(i => i.status === 'done');
+  const grouped = {};
+  for (const item of active) {
+    if (!grouped[item.type]) grouped[item.type] = [];
+    grouped[item.type].push(item);
+  }
+
+  let html = '';
+  for (const col of nfColumns) {
+    const group = grouped[col.id] || [];
+    html += `<div class="column" data-col="${col.id}" draggable="true"
+      ondragstart="colDragStart(event,'nf','${col.id}')" ondragend="colDragEnd(event)"
+      ondragover="colDragOver(event)" ondragleave="colDragLeave(event)"
+      ondrop="colDrop(event,'nf','${col.id}')">`;
+    html += `<div class="column-header" style="cursor:grab"><div class="column-title">`;
+    html += `<span class="column-dot" style="background:${col.color}"></span>`;
+    html += `<span>${col.icon} ${escapeHtml(col.label)}</span>`;
+    html += `<span class="column-count">${group.length}</span></div>`;
+    const builtins = new Set(['task', 'reminder', 'idea', 'note']);
+    if (!builtins.has(col.id)) {
+      html += `<span style="cursor:pointer;color:#64748b;font-size:0.75rem" onclick="event.stopPropagation();nfDeleteColumn('${col.id}')" title="Delete column">\u2715</span>`;
+    }
+    html += `</div>`;
+    html += `<div class="column-body" data-col="${col.id}" ondragover="nfDragOver(event)" ondragleave="nfDragLeave(event)" ondrop="nfDrop(event, '${col.id}')">`;
+    for (const item of group) html += renderNfCard(item, col.color);
+    html += `</div>`;
+    html += `<div class="column-footer"><div class="inline-add" id="nf-add-${col.id}">`;
+    html += `<input type="text" id="nf-addInput-${col.id}" placeholder="Item title..."
+      onkeydown="if(event.key==='Enter')nfQuickAdd('${col.id}'); if(event.key==='Escape')nfCloseInline('${col.id}')">`;
+    html += `</div><button class="column-add-btn" id="nf-addBtn-${col.id}" onclick="nfOpenInline('${col.id}')">+ Add item</button></div>`;
+    html += `</div>`;
+  }
+  html += `<div class="add-column-card" onclick="openAddColumnModal()">+ Add Column</div>`;
+  boardEl.innerHTML = html;
+
+  // Done strip
+  const doneStrip = document.getElementById('doneStrip');
+  if (done.length > 0) {
+    doneStrip.style.display = '';
+    document.getElementById('doneCount').textContent = done.length;
+    const doneContainer = document.getElementById('doneItems');
+    if (nfShowDone) {
+      doneContainer.style.display = 'flex';
+      document.getElementById('doneArrow').innerHTML = '&#9660;';
+      let doneHtml = '';
+      for (const item of done) {
+        const col = nfColumns.find(c => c.id === item.type);
+        const dotColor = col ? col.color : '#6b7280';
+        if (nfExpandedId === item.id) {
+          doneHtml += `<div class="done-expanded-card">${renderNfCard(item, dotColor)}</div>`;
+        } else {
+          doneHtml += `<div class="done-chip" onclick="nfToggleExpand('${item.id}')"
+            draggable="true" data-id="${item.id}"
+            ondragstart="nfDragStart(event, '${item.id}')" ondragend="nfDragEnd(event)">`;
+          doneHtml += `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:0.3rem"></span>`;
+          doneHtml += `[${item.id}] ${escapeHtml(item.title)}</div>`;
+        }
+      }
+      doneContainer.innerHTML = doneHtml;
+    } else {
+      doneContainer.style.display = 'none';
+      document.getElementById('doneArrow').innerHTML = '&#9654;';
+    }
+  } else {
+    doneStrip.style.display = 'none';
+  }
+
+  // Archive trigger
+  const archiveTrigger = document.getElementById('archiveTrigger');
+  if (archiveItems.length > 0) {
+    archiveTrigger.style.display = '';
+    document.getElementById('archiveCount').textContent = archiveItems.length;
+  } else {
+    archiveTrigger.style.display = 'none';
+  }
+}
+
+// NoteFlow interactions
+function nfToggleExpand(id) { nfExpandedId = nfExpandedId === id ? null : id; renderNoteFlow(); }
+function toggleDone() { nfShowDone = !nfShowDone; renderNoteFlow(); }
+function nfOpenInline(colId) {
+  document.getElementById(`nf-add-${colId}`).classList.add('active');
+  document.getElementById(`nf-addBtn-${colId}`).style.display = 'none';
+  document.getElementById(`nf-addInput-${colId}`).focus();
+}
+function nfCloseInline(colId) {
+  document.getElementById(`nf-add-${colId}`).classList.remove('active');
+  document.getElementById(`nf-addBtn-${colId}`).style.display = '';
+  document.getElementById(`nf-addInput-${colId}`).value = '';
+}
+async function nfQuickAdd(colId) {
+  const input = document.getElementById(`nf-addInput-${colId}`);
+  const title = input.value.trim();
+  if (!title) return;
+  await api('POST', '/api/items', { type: colId, title, body: '' });
+  input.value = '';
+  nfCloseInline(colId);
+  await loadNoteFlow();
+}
+async function nfMarkDone(id) { await api('POST', `/api/items/${id}/done`); nfExpandedId = null; await loadNoteFlow(); }
+async function nfReopenItem(id) { await api('POST', `/api/items/${id}/reopen`); await loadNoteFlow(); }
+async function nfAddComment(id) {
+  const input = document.getElementById(`nf-comment-${id}`);
+  const text = input.value.trim();
+  if (!text) return;
+  await api('POST', `/api/items/${id}/subnotes`, { text });
+  await loadNoteFlow();
+}
+async function nfDeleteComment(id, index) { await api('DELETE', `/api/items/${id}/subnotes/${index}`); await loadNoteFlow(); }
+function nfOpenEdit(id) {
+  const item = nfItems.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('editId').value = item.id;
+  document.getElementById('editTitle').value = item.title;
+  document.getElementById('editBody').value = item.body || '';
+  document.getElementById('editTags').value = (item.tags || []).join(', ');
+  if (item.due) {
+    const d = new Date(item.due);
+    document.getElementById('editDue').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  } else { document.getElementById('editDue').value = ''; }
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+async function saveEdit() {
+  const id = document.getElementById('editId').value;
+  const title = document.getElementById('editTitle').value.trim();
+  const body = document.getElementById('editBody').value;
+  const due = document.getElementById('editDue').value || null;
+  const tagsRaw = document.getElementById('editTags').value;
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  if (!title) return;
+  await api('PUT', `/api/items/${id}`, { title, body, due, tags });
+  bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+  await loadNoteFlow();
+}
+async function nfDeleteItem(id) {
+  const item = nfItems.find(i => i.id === id);
+  if (!item || !confirm(`Delete [${id}] ${item.title}?`)) return;
+  await api('DELETE', `/api/items/${id}`);
+  nfExpandedId = null;
+  await loadNoteFlow();
+}
+
+// NoteFlow drag & drop
+function nfDragStart(e, id) {
+  e.stopPropagation(); // prevent column drag
+  nfDragItemId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`.nf-card[data-id="${id}"]`) || document.querySelector(`.done-chip[data-id="${id}"]`);
+    if (el) el.classList.add('dragging');
+  });
+}
+function nfDragEnd(e) {
+  document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  nfDragItemId = null;
+}
+function nfDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
+function nfDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+async function nfDrop(e, colId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain') || nfDragItemId;
+  if (!id) return;
+  const item = nfItems.find(i => i.id === id);
+  if (!item) return;
+  await api('PUT', `/api/items/${id}`, { type: colId });
+  if (item.status === 'done') await api('POST', `/api/items/${id}/reopen`);
+  nfExpandedId = null;
+  await loadNoteFlow();
+}
+
+// NoteFlow columns + Emoji Picker
+const EMOJI_DATA = [
+  // Objects & Symbols
+  {e:'📌',k:'pin tack'},  {e:'📎',k:'paperclip clip'},  {e:'📁',k:'folder file'},  {e:'📂',k:'folder open'},
+  {e:'📋',k:'clipboard list'},  {e:'📝',k:'memo write note'},  {e:'📄',k:'document page'},  {e:'📑',k:'tabs bookmark'},
+  {e:'📊',k:'chart bar graph stats'},  {e:'📈',k:'chart up trend growth'},  {e:'📉',k:'chart down decline'},  {e:'📐',k:'ruler triangle'},
+  {e:'🗂',k:'card index dividers organize'},  {e:'🗃',k:'card file box archive'},  {e:'🗄',k:'cabinet storage'},  {e:'📦',k:'package box'},
+  {e:'🗑',k:'trash delete waste bin'},  {e:'📮',k:'mailbox post'},  {e:'📬',k:'mailbox incoming'},  {e:'📧',k:'email mail letter'},
+  // Tech & Tools
+  {e:'💻',k:'laptop computer tech'},  {e:'🖥',k:'desktop monitor screen'},  {e:'⌨️',k:'keyboard type'},  {e:'🖱',k:'mouse click'},
+  {e:'💾',k:'floppy disk save'},  {e:'💿',k:'cd disc'},  {e:'🔌',k:'plug electric power'},  {e:'🔋',k:'battery power energy'},
+  {e:'⚙️',k:'gear settings config'},  {e:'🔧',k:'wrench tool fix'},  {e:'🔨',k:'hammer build'},  {e:'🛠',k:'tools hammer wrench'},
+  {e:'🔩',k:'nut bolt'},  {e:'🔗',k:'link chain url'},  {e:'🧲',k:'magnet attract'},  {e:'🧪',k:'test tube lab experiment'},
+  // Science & Research
+  {e:'🔬',k:'microscope research science'},  {e:'🔭',k:'telescope explore discover'},  {e:'🧬',k:'dna genetics biology'},  {e:'🧫',k:'petri dish culture'},
+  {e:'🧮',k:'abacus math calculate'},  {e:'🌡',k:'thermometer temperature'},  {e:'⚗️',k:'alchemy experiment flask'},  {e:'💡',k:'bulb idea light'},
+  // Communication
+  {e:'💬',k:'speech bubble chat comment'},  {e:'💭',k:'thought bubble think'},  {e:'🗨',k:'speech left'},  {e:'🗣',k:'speaking head talk'},
+  {e:'📢',k:'megaphone announce loud'},  {e:'📣',k:'cheering megaphone'},  {e:'🔔',k:'bell notification alert'},  {e:'🔕',k:'bell muted silent'},
+  // Status & Indicators
+  {e:'✅',k:'check done complete'},  {e:'❌',k:'cross no cancel'},  {e:'⚠️',k:'warning caution alert'},  {e:'❗',k:'exclamation important'},
+  {e:'❓',k:'question unknown ask'},  {e:'🔴',k:'red circle stop'},  {e:'🟡',k:'yellow circle caution'},  {e:'🟢',k:'green circle go'},
+  {e:'🔵',k:'blue circle info'},  {e:'🟣',k:'purple circle'},  {e:'🟠',k:'orange circle'},  {e:'⭐',k:'star favorite'},
+  {e:'🏷',k:'label tag'},  {e:'🚩',k:'flag mark milestone'},  {e:'🏁',k:'finish flag race'},  {e:'🎯',k:'target goal bullseye'},
+  // Time & Calendar
+  {e:'📅',k:'calendar date schedule'},  {e:'⏰',k:'alarm clock time'},  {e:'⏳',k:'hourglass wait time'},  {e:'🕐',k:'clock time'},
+  {e:'🔄',k:'arrows refresh sync cycle'},  {e:'⏩',k:'fast forward skip'},  {e:'⏸',k:'pause stop'},  {e:'▶️',k:'play start go'},
+  // People & Activities
+  {e:'👤',k:'person user profile'},  {e:'👥',k:'people group team'},  {e:'🤝',k:'handshake deal partner'},  {e:'👁',k:'eye watch observe'},
+  {e:'🧠',k:'brain think smart'},  {e:'💪',k:'strong arm muscle'},  {e:'🏃',k:'run sprint fast'},  {e:'🧑‍💻',k:'coder developer tech'},
+  // Finance & Business
+  {e:'💰',k:'money bag cash'},  {e:'💵',k:'dollar bill cash'},  {e:'💳',k:'credit card payment'},  {e:'🏦',k:'bank finance'},
+  {e:'📊',k:'chart graph data'},  {e:'🏢',k:'office building company'},  {e:'🗓',k:'calendar schedule spiral'},  {e:'🎓',k:'graduation cap learn education'},
+  // Nature & Misc
+  {e:'🌍',k:'earth globe world'},  {e:'🌱',k:'seedling grow plant'},  {e:'🔥',k:'fire hot trending'},  {e:'⚡',k:'lightning bolt fast zap'},
+  {e:'🌊',k:'wave water ocean'},  {e:'🏔',k:'mountain peak'},  {e:'🚀',k:'rocket launch ship'},  {e:'✨',k:'sparkle magic new'},
+  {e:'🎨',k:'art palette paint design'},  {e:'🎵',k:'music note song'},  {e:'📷',k:'camera photo'},  {e:'🎬',k:'clapperboard film movie video'},
+  {e:'🏠',k:'home house'},  {e:'🔐',k:'lock key security'},  {e:'🔑',k:'key unlock access'},  {e:'🛡',k:'shield protect defense security'},
+  {e:'♻️',k:'recycle reuse green'},  {e:'💎',k:'gem diamond premium'},  {e:'🧩',k:'puzzle piece'},  {e:'🗺',k:'map world plan'},
+];
+
+let selectedEmoji = '📌';
+
+function renderEmojiGrid(filter = '') {
+  const grid = document.getElementById('emojiGrid');
+  const q = filter.toLowerCase();
+  const filtered = q ? EMOJI_DATA.filter(d => d.k.includes(q) || d.e === q) : EMOJI_DATA;
+  grid.innerHTML = filtered.map(d =>
+    `<div class="emoji-cell${d.e === selectedEmoji ? ' selected' : ''}" onclick="selectEmoji('${d.e}', '${d.k.split(' ')[0]}')" title="${d.k}">${d.e}</div>`
+  ).join('');
+}
+
+function selectEmoji(emoji, label) {
+  selectedEmoji = emoji;
+  document.getElementById('colIcon').value = emoji;
+  document.getElementById('emojiPreview').textContent = emoji;
+  document.getElementById('emojiLabel').textContent = label;
+  renderEmojiGrid(document.getElementById('emojiSearch').value);
+}
+
+function filterEmojis() {
+  renderEmojiGrid(document.getElementById('emojiSearch').value);
+}
+
+function openAddColumnModal() {
+  document.getElementById('colName').value = '';
+  document.getElementById('colColor').value = '#6366f1';
+  selectedEmoji = '📌';
+  document.getElementById('colIcon').value = '📌';
+  document.getElementById('emojiPreview').textContent = '📌';
+  document.getElementById('emojiLabel').textContent = 'pin';
+  document.getElementById('emojiSearch').value = '';
+  renderEmojiGrid();
+  new bootstrap.Modal(document.getElementById('addColumnModal')).show();
+}
+async function addColumnSubmit() {
+  const label = document.getElementById('colName').value.trim();
+  if (!label) return;
+  const color = document.getElementById('colColor').value;
+  const icon = document.getElementById('colIcon').value || '📌';
+  await api('POST', '/api/columns', { label, color, icon });
+  bootstrap.Modal.getInstance(document.getElementById('addColumnModal')).hide();
+  await loadNoteFlow();
+}
+async function nfDeleteColumn(colId) {
+  const col = nfColumns.find(c => c.id === colId);
+  if (!col) return;
+  const itemCount = nfItems.filter(i => i.type === colId && i.status !== 'done').length;
+  const msg = itemCount > 0 ? `Delete "${col.label}"? ${itemCount} item(s) will move to Tasks.` : `Delete "${col.label}"?`;
+  if (!confirm(msg)) return;
+  await api('DELETE', `/api/columns/${colId}`);
+  await loadNoteFlow();
+}
+
+// ══════════════════════════════════════════════
+//  Column drag-and-drop (NoteFlow + Tasks)
+// ══════════════════════════════════════════════
+
+let colDragType = null; // 'nf' or 'kb'
+let colDragId = null;
+
+function colDragStart(e, type, id) {
+  // Only start column drag from the header (not from child cards)
+  const header = e.currentTarget.querySelector('.column-header');
+  if (header && !header.contains(e.target)) {
+    e.preventDefault();
+    return;
+  }
+  colDragType = type;
+  colDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('application/col-drag', id);
+  requestAnimationFrame(() => e.currentTarget.classList.add('col-dragging'));
+}
+
+function colDragEnd(e) {
+  document.querySelectorAll('.col-dragging').forEach(el => el.classList.remove('col-dragging'));
+  document.querySelectorAll('.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
+  colDragType = null;
+  colDragId = null;
+}
+
+function colDragOver(e) {
+  if (!colDragId) return; // not a column drag
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // Find the closest column
+  const col = e.currentTarget.closest('.column');
+  if (col) {
+    document.querySelectorAll('.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
+    col.classList.add('col-drag-over');
+  }
+}
+
+function colDragLeave(e) {
+  const col = e.currentTarget.closest('.column');
+  if (col) col.classList.remove('col-drag-over');
+}
+
+async function colDrop(e, type, targetId) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.col-drag-over').forEach(el => el.classList.remove('col-drag-over'));
+
+  if (!colDragId || colDragType !== type || colDragId === targetId) return;
+
+  if (type === 'nf') {
+    // Reorder NoteFlow columns
+    const order = nfColumns.map(c => c.id);
+    const fromIdx = order.indexOf(colDragId);
+    const toIdx = order.indexOf(targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    order.splice(fromIdx, 1);
+    order.splice(toIdx, 0, colDragId);
+    await api('PUT', '/api/columns/reorder', { order });
+    await loadNoteFlow();
+  } else if (type === 'kb') {
+    // Reorder Tasks statuses
+    const order = (board.statuses || []).map(s => s.id || s);
+    const fromIdx = order.indexOf(colDragId);
+    const toIdx = order.indexOf(targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    order.splice(fromIdx, 1);
+    order.splice(toIdx, 0, colDragId);
+    await api('PUT', '/api/board/statuses/reorder', { order });
+    await loadBoard();
+  }
+}
+
+// ══════════════════════════════════════════════
+//  Project card drag-and-drop (Projects tab)
+// ══════════════════════════════════════════════
+
+let pcDragId = null;
+let pcDidDrag = false;
+
+function pcDragStart(e, projectId) {
+  pcDragId = projectId;
+  pcDidDrag = false;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('application/pc-drag', projectId);
+  requestAnimationFrame(() => e.currentTarget.classList.add('pc-dragging'));
+}
+
+function pcDragEnd(e) {
+  document.querySelectorAll('.pc-dragging').forEach(el => el.classList.remove('pc-dragging'));
+  document.querySelectorAll('.pc-drag-over').forEach(el => el.classList.remove('pc-drag-over'));
+  // Reset pcDidDrag after a tick so the click handler can check it
+  setTimeout(() => { pcDidDrag = false; }, 50);
+  pcDragId = null;
+}
+
+function pcDragOver(e) {
+  if (!pcDragId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const card = e.currentTarget.closest('.project-card');
+  if (card) {
+    document.querySelectorAll('.pc-drag-over').forEach(el => el.classList.remove('pc-drag-over'));
+    card.classList.add('pc-drag-over');
+  }
+}
+
+function pcDragLeave(e) {
+  const card = e.currentTarget.closest('.project-card');
+  if (card) card.classList.remove('pc-drag-over');
+}
+
+async function pcDrop(e, targetId) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.pc-drag-over').forEach(el => el.classList.remove('pc-drag-over'));
+
+  if (!pcDragId || pcDragId === targetId) return;
+  pcDidDrag = true;
+
+  const order = projectsData.map(p => p.id);
+  const fromIdx = order.indexOf(pcDragId);
+  const toIdx = order.indexOf(targetId);
+  if (fromIdx < 0 || toIdx < 0) return;
+  order.splice(fromIdx, 1);
+  order.splice(toIdx, 0, pcDragId);
+  await api('PUT', '/api/board/projects/reorder', { order });
+  await loadProjects();
+}
+
+// ══════════════════════════════════════════════
+//  TASKS TAB — Kanban board
+// ══════════════════════════════════════════════
+
+async function loadBoard() {
+  const res = await api('GET', '/api/board');
+  if (!res.error) board = res;
+  renderBoard();
+  renderActivity();
+}
+
+function getProjectColor(projectId) {
+  const proj = board.projects.find(p => p.id === projectId);
+  return proj ? proj.color : '#64748b';
+}
+
+function getProjectName(projectId) {
+  const proj = board.projects.find(p => p.id === projectId);
+  return proj ? proj.name : projectId || 'Unassigned';
+}
+
+function getStatusColor(statusId) {
+  const s = (board.statuses || []).find(s => (s.id || s) === statusId);
+  if (s && s.color) return s.color;
+  const fallback = { pending: '#f59e0b', active: '#3b82f6', done: '#10b981' };
+  return fallback[statusId] || '#64748b';
+}
+
+function getStatusLabel(statusId) {
+  const s = (board.statuses || []).find(s => (s.id || s) === statusId);
+  if (s && s.label) return s.label;
+  return statusId ? statusId.charAt(0).toUpperCase() + statusId.slice(1) : statusId;
+}
+
+function renderKbCard(card) {
+  const isExpanded = false; // expansion via modal
+  const commentCount = (card.comments || []).length;
+  const commentHint = commentCount > 0 ? `<span class="kb-comment-count">\uD83D\uDCAC ${commentCount}</span>` : '';
+
+  let badgeColor, badgeLabel;
+  if (kbView === 'status') {
+    badgeColor = getProjectColor(card.project);
+    badgeLabel = getProjectName(card.project);
+  } else {
+    badgeColor = getStatusColor(card.status);
+    badgeLabel = getStatusLabel(card.status);
+  }
+
+  let html = `<div class="kb-card" data-card-slug="${card.slug}" onclick="openCardDetail('${card.slug}')">`;
+  html += `<div class="kb-title">${escapeHtml(card.title)}${commentHint}</div>`;
+  if (card.description) {
+    const shortDesc = card.description.length > 80 ? card.description.slice(0, 80) + '...' : card.description;
+    html += `<div class="kb-desc">${escapeHtml(shortDesc)}</div>`;
+  }
+  html += `<div><span class="kb-badge" style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44">${escapeHtml(badgeLabel)}</span></div>`;
+  html += `</div>`;
+  return html;
+}
+
+function renderBoard() {
+  const boardEl = document.getElementById('kb-board');
+  let html = '';
+
+  if (kbView === 'status') {
+    const statuses = board.statuses || [];
+    for (const statusObj of statuses) {
+      const sid = statusObj.id || statusObj;
+      const label = statusObj.label || (sid.charAt(0).toUpperCase() + sid.slice(1));
+      const color = statusObj.color || '#64748b';
+      const cards = board.cards.filter(c => c.status === sid);
+      const isBuiltin = BUILTIN_STATUSES.has(sid);
+
+      html += `<div class="column" data-status="${sid}" draggable="true"
+        ondragstart="colDragStart(event,'kb','${sid}')" ondragend="colDragEnd(event)"
+        ondragover="colDragOver(event)" ondragleave="colDragLeave(event)"
+        ondrop="colDrop(event,'kb','${sid}')">`;
+      html += `<div class="column-header" style="cursor:grab"><div class="column-title">`;
+      html += `<span class="column-dot" style="background:${color}"></span>`;
+      html += `<span>${escapeHtml(label)}</span>`;
+      html += `<span class="column-count">${cards.length}</span>`;
+      html += `</div>`;
+      if (!isBuiltin) {
+        html += `<span class="status-delete-btn" onclick="event.stopPropagation();kbDeleteStatus('${sid}')" title="Delete status">\u2715</span>`;
+      }
+      html += `</div>`;
+      html += `<div class="column-body">`;
+      for (const card of cards) html += renderKbCard(card);
+      html += `</div></div>`;
+    }
+    html += `<div class="add-column-card" onclick="openAddStatusModal()">+ Add Status</div>`;
+  } else {
+    // By project
+    for (const proj of board.projects) {
+      const cards = board.cards.filter(c => c.project === proj.id);
+      if (!cards.length) continue; // skip empty projects
+      html += `<div class="column">`;
+      html += `<div class="column-header"><div class="column-title">`;
+      html += `<span class="column-dot" style="background:${proj.color}"></span>`;
+      html += `<span>${escapeHtml(proj.name)}</span>`;
+      html += `<span class="column-count">${cards.length}</span>`;
+      html += `</div></div>`;
+      html += `<div class="column-body">`;
+      for (const card of cards) html += renderKbCard(card);
+      html += `</div></div>`;
+    }
+    // Unassigned cards
+    const unassigned = board.cards.filter(c => !c.project || !board.projects.find(p => p.id === c.project));
+    if (unassigned.length) {
+      html += `<div class="column"><div class="column-header"><div class="column-title">`;
+      html += `<span class="column-dot" style="background:#64748b"></span><span>Unassigned</span>`;
+      html += `<span class="column-count">${unassigned.length}</span></div></div>`;
+      html += `<div class="column-body">`;
+      for (const card of unassigned) html += renderKbCard(card);
+      html += `</div></div>`;
+    }
+  }
+
+  boardEl.innerHTML = html;
+}
+
+function setKbView(view) {
+  kbView = view;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(view)));
+  renderBoard();
+}
+
+// ── Project combobox helpers ──
+
+function makeProjectSlug(name) {
+  return name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+
+function renderProjectCombo(elementId, currentProjectId, onChange) {
+  // Returns HTML string for a project combobox. onChange receives (projectId, isNew, projectName).
+  const proj = board.projects.find(p => p.id === currentProjectId);
+  const displayName = proj ? proj.name : '';
+  return `<div class="project-combo" id="${elementId}-wrap">
+    <input type="text" id="${elementId}" value="${escapeHtml(displayName)}" placeholder="None"
+      autocomplete="off"
+      onfocus="openProjectCombo('${elementId}')"
+      oninput="filterProjectCombo('${elementId}')"
+      onkeydown="projectComboKeydown(event, '${elementId}')">
+    <div class="combo-dropdown" id="${elementId}-dropdown"></div>
+  </div>`;
+}
+
+let _activeComboCleanup = null;
+
+function openProjectCombo(id) {
+  filterProjectCombo(id);
+  const dd = document.getElementById(id + '-dropdown');
+  dd.classList.add('open');
+  // Close on outside click
+  if (_activeComboCleanup) _activeComboCleanup();
+  const handler = (e) => {
+    const wrap = document.getElementById(id + '-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      dd.classList.remove('open');
+      document.removeEventListener('mousedown', handler);
+      _activeComboCleanup = null;
+    }
+  };
+  setTimeout(() => document.addEventListener('mousedown', handler), 0);
+  _activeComboCleanup = () => { document.removeEventListener('mousedown', handler); _activeComboCleanup = null; };
+}
+
+function filterProjectCombo(id) {
+  const input = document.getElementById(id);
+  const dd = document.getElementById(id + '-dropdown');
+  const query = input.value.trim().toLowerCase();
+
+  let html = '';
+  html += `<div class="combo-option" onmousedown="selectProjectCombo('${id}', '', '')">
+    <span style="color:#64748b;font-style:italic">None</span></div>`;
+
+  const matches = board.projects.filter(p => !query || p.name.toLowerCase().includes(query));
+  for (const p of matches) {
+    html += `<div class="combo-option" onmousedown="selectProjectCombo('${id}', '${p.id}', '${escapeHtml(p.name)}')">
+      <span class="combo-dot" style="background:${p.color}"></span>${escapeHtml(p.name)}</div>`;
+  }
+
+  // If typed text doesn't exactly match any project, show "Create" option
+  const exactMatch = board.projects.find(p => p.name.toLowerCase() === query);
+  if (query && !exactMatch) {
+    html += `<div class="combo-option combo-new" onmousedown="selectProjectCombo('${id}', '__new__', '${escapeHtml(input.value.trim())}')">
+      + Create &ldquo;${escapeHtml(input.value.trim())}&rdquo;</div>`;
+  }
+
+  dd.innerHTML = html;
+}
+
+function projectComboKeydown(e, id) {
+  if (e.key === 'Escape') {
+    document.getElementById(id + '-dropdown').classList.remove('open');
+    document.getElementById(id).blur();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const input = document.getElementById(id);
+    const query = input.value.trim().toLowerCase();
+    const match = board.projects.find(p => p.name.toLowerCase() === query);
+    if (match) {
+      selectProjectCombo(id, match.id, match.name);
+    } else if (query) {
+      selectProjectCombo(id, '__new__', input.value.trim());
+    } else {
+      selectProjectCombo(id, '', '');
+    }
+  }
+}
+
+function selectProjectCombo(id, projectId, projectName) {
+  const input = document.getElementById(id);
+  const dd = document.getElementById(id + '-dropdown');
+  input.value = projectName;
+  dd.classList.remove('open');
+  // Fire the registered callback
+  const event = new CustomEvent('projectSelected', { detail: { projectId, projectName } });
+  input.dispatchEvent(event);
+}
+
+async function ensureProject(projectId, projectName) {
+  // If projectId is '__new__', create the project and return the real ID.
+  // Otherwise return projectId as-is (or null for empty).
+  if (projectId === '__new__') {
+    const newId = makeProjectSlug(projectName);
+    // Check if slug already exists (edge case)
+    const existing = board.projects.find(p => p.id === newId);
+    if (existing) return newId;
+    await api('POST', '/api/board/projects', { id: newId, name: projectName });
+    await loadBoard();
+    return newId;
+  }
+  return projectId || null;
+}
+
+// Card detail modal
+function openCardDetail(slug) {
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card) return;
+
+  const proj = board.projects.find(p => p.id === card.project);
+  const projName = proj ? proj.name : card.project || 'None';
+  const projColor = proj ? proj.color : '#64748b';
+  const statusColor = getStatusColor(card.status);
+
+  let html = `<div class="modal-header border-secondary">`;
+  html += `<h5 class="modal-title">${escapeHtml(card.title)}</h5>`;
+  html += `<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>`;
+  html += `<div class="modal-body">`;
+
+  // Badges row
+  html += `<div style="display:flex;gap:0.5rem;margin-bottom:0.8rem">`;
+  html += `<span class="kb-badge" style="background:${projColor}22;color:${projColor};border:1px solid ${projColor}44">${escapeHtml(projName)}</span>`;
+  html += `<span class="kb-badge" style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${card.status}</span>`;
+  html += `</div>`;
+
+  // Description
+  html += `<div class="section-label">Description</div>`;
+  html += card.description
+    ? `<div class="notes-body">${escapeHtml(card.description)}</div>`
+    : `<div class="notes-body" style="color:#64748b;font-style:italic">No description</div>`;
+
+  // Comments
+  html += `<div class="section-label" style="margin-top:0.8rem">Comments</div>`;
+  const comments = card.comments || [];
+  if (!comments.length) {
+    html += `<div style="color:#64748b;font-size:0.8rem;font-style:italic">No comments</div>`;
+  } else {
+    for (const c of comments) {
+      html += `<div class="comment">`;
+      html += `<div class="comment-ts">[${escapeHtml(c.author)}] ${formatDateTime(c.ts)}</div>`;
+      html += `<div class="comment-text">${escapeHtml(c.text)}</div></div>`;
+    }
+  }
+
+  // Add comment
+  html += `<div style="margin-top:0.5rem"><div class="input-group input-group-sm">`;
+  html += `<input type="text" class="form-control" style="background:#0f172a;border-color:#334155;color:#e2e8f0;font-size:0.8rem"
+            id="kb-comment-${slug}" placeholder="Add a comment..."
+            onkeydown="if(event.key==='Enter')kbAddComment('${slug}')">`;
+  html += `<button class="btn btn-outline-secondary btn-sm" onclick="kbAddComment('${slug}')">Post</button></div></div>`;
+
+  html += `</div>`;
+
+  // Footer with actions
+  html += `<div class="modal-footer border-secondary" style="justify-content:space-between">`;
+  html += `<div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap">`;
+  html += `<div style="display:flex;gap:0.3rem;align-items:center">`;
+  html += `<label style="font-size:0.78rem;color:#94a3b8;margin-right:0.3rem">Status:</label>`;
+  html += `<select class="form-select form-select-sm" style="width:auto;background:#0f172a;border-color:#334155;color:#e2e8f0;font-size:0.78rem" id="moveStatus-${slug}" onchange="kbMoveCard('${slug}', this.value)">`;
+  for (const s of (board.statuses || [])) {
+    const sid = s.id || s;
+    const slabel = s.label || (sid.charAt(0).toUpperCase() + sid.slice(1));
+    html += `<option value="${sid}" ${sid === card.status ? 'selected' : ''}>${escapeHtml(slabel)}</option>`;
+  }
+  html += `</select></div>`;
+  html += `<div style="display:flex;gap:0.3rem;align-items:center">`;
+  html += `<label style="font-size:0.78rem;color:#94a3b8;margin-right:0.3rem">Project:</label>`;
+  html += renderProjectCombo(`detailProject-${slug}`, card.project);
+  html += `</div>`;
+  html += `</div>`;
+  html += `<div style="display:flex;gap:0.4rem">`;
+  html += `<button class="btn btn-outline-info btn-sm" onclick="openEditCard('${slug}')" style="font-size:0.72rem">Edit</button>`;
+  html += `<button class="btn btn-outline-danger btn-sm" onclick="kbDeleteCard('${slug}')" style="font-size:0.72rem">Delete</button>`;
+  html += `</div></div>`;
+
+  document.getElementById('cardDetailContent').innerHTML = html;
+
+  // Wire up project combobox callback
+  const comboInput = document.getElementById(`detailProject-${slug}`);
+  if (comboInput) {
+    comboInput.addEventListener('projectSelected', async (e) => {
+      const { projectId, projectName } = e.detail;
+      const realId = await ensureProject(projectId, projectName);
+      await api('PUT', `/api/board/cards/${slug}`, { project: realId });
+      await loadBoard();
+      bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
+      setTimeout(() => openCardDetail(slug), 200);
+    });
+  }
+
+  new bootstrap.Modal(document.getElementById('cardDetailModal')).show();
+}
+
+async function kbAddComment(slug) {
+  const input = document.getElementById(`kb-comment-${slug}`);
+  const text = input.value.trim();
+  if (!text) return;
+  await api('POST', `/api/board/cards/${slug}/comments`, { text, author: 'user' });
+  await loadBoard();
+  // Re-open the detail modal with updated data
+  bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
+  setTimeout(() => openCardDetail(slug), 200);
+}
+
+async function kbMoveCard(slug, status) {
+  await api('POST', `/api/board/cards/${slug}/move`, { status });
+  await loadBoard();
+  bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
+  setTimeout(() => openCardDetail(slug), 200);
+}
+
+async function kbDeleteCard(slug) {
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card || !confirm(`Delete "${card.title}"?`)) return;
+  await api('DELETE', `/api/board/cards/${slug}`);
+  bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
+  await loadBoard();
+}
+
+// Add card modal
+let _newCardProjectSelection = { projectId: '', projectName: '' };
+
+function openAddCardModal() {
+  document.getElementById('newCardTitle').value = '';
+  document.getElementById('newCardDesc').value = '';
+  _newCardProjectSelection = { projectId: '', projectName: '' };
+  // Render project combobox
+  document.getElementById('newCardProjectCombo').innerHTML = renderProjectCombo('newCardProject', null);
+  const comboInput = document.getElementById('newCardProject');
+  comboInput.addEventListener('projectSelected', (e) => {
+    _newCardProjectSelection = e.detail;
+  });
+  // Populate status dropdown dynamically
+  const statusSel = document.getElementById('newCardStatus');
+  statusSel.innerHTML = '';
+  for (const s of (board.statuses || [])) {
+    const sid = s.id || s;
+    const slabel = s.label || (sid.charAt(0).toUpperCase() + sid.slice(1));
+    statusSel.innerHTML += `<option value="${sid}" ${sid === 'pending' ? 'selected' : ''}>${escapeHtml(slabel)}</option>`;
+  }
+  new bootstrap.Modal(document.getElementById('addCardModal')).show();
+}
+
+async function addCardSubmit() {
+  const title = document.getElementById('newCardTitle').value.trim();
+  if (!title) return;
+  const desc = document.getElementById('newCardDesc').value;
+  const status = document.getElementById('newCardStatus').value;
+  const project = await ensureProject(_newCardProjectSelection.projectId, _newCardProjectSelection.projectName);
+  await api('POST', '/api/board/cards', { title, description: desc, project, status });
+  bootstrap.Modal.getInstance(document.getElementById('addCardModal')).hide();
+  await loadBoard();
+}
+
+// Edit card modal
+let _editCardProjectSelection = { projectId: '', projectName: '' };
+
+function openEditCard(slug) {
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card) return;
+  // Close detail modal first
+  const detailModal = bootstrap.Modal.getInstance(document.getElementById('cardDetailModal'));
+  if (detailModal) detailModal.hide();
+
+  document.getElementById('editCardSlug').value = slug;
+  document.getElementById('editCardTitle').value = card.title;
+  document.getElementById('editCardDescription').value = card.description || '';
+  // Render project combobox with current project
+  const proj = board.projects.find(p => p.id === card.project);
+  _editCardProjectSelection = { projectId: card.project || '', projectName: proj ? proj.name : '' };
+  document.getElementById('editCardProjectCombo').innerHTML = renderProjectCombo('editCardProject', card.project);
+  const comboInput = document.getElementById('editCardProject');
+  comboInput.addEventListener('projectSelected', (e) => {
+    _editCardProjectSelection = e.detail;
+  });
+  setTimeout(() => new bootstrap.Modal(document.getElementById('editCardModal')).show(), 250);
+}
+
+async function saveCardEdit() {
+  const slug = document.getElementById('editCardSlug').value;
+  const title = document.getElementById('editCardTitle').value.trim();
+  const description = document.getElementById('editCardDescription').value;
+  if (!title) return;
+  const project = await ensureProject(_editCardProjectSelection.projectId, _editCardProjectSelection.projectName);
+  await api('PUT', `/api/board/cards/${slug}`, { title, description, project });
+  bootstrap.Modal.getInstance(document.getElementById('editCardModal')).hide();
+  await loadBoard();
+}
+
+// ══════════════════════════════════════════════
+//  Status Management (Tasks tab)
+// ══════════════════════════════════════════════
+
+function openAddStatusModal() {
+  document.getElementById('statusName').value = '';
+  document.getElementById('statusColor').value = '#8b5cf6';
+  new bootstrap.Modal(document.getElementById('addStatusModal')).show();
+}
+
+async function addStatusSubmit() {
+  const label = document.getElementById('statusName').value.trim();
+  if (!label) return;
+  const color = document.getElementById('statusColor').value;
+  await api('POST', '/api/board/statuses', { label, color });
+  bootstrap.Modal.getInstance(document.getElementById('addStatusModal')).hide();
+  await loadBoard();
+}
+
+async function kbDeleteStatus(statusId) {
+  const statusObj = (board.statuses || []).find(s => (s.id || s) === statusId);
+  const label = statusObj ? statusObj.label : statusId;
+  const cardCount = board.cards.filter(c => c.status === statusId).length;
+  const msg = cardCount > 0
+    ? `Delete "${label}"? ${cardCount} card(s) will move to Pending.`
+    : `Delete "${label}"?`;
+  if (!confirm(msg)) return;
+  await api('DELETE', `/api/board/statuses/${statusId}`);
+  await loadBoard();
+}
+
+// ══════════════════════════════════════════════
+//  Live Activity Panel
+// ══════════════════════════════════════════════
+
+function toggleActivityPanel() {
+  const panel = document.getElementById('activityPanel');
+  const btn = document.getElementById('activityExpandBtn');
+  activityPanelVisible = !activityPanelVisible;
+  panel.classList.toggle('collapsed', !activityPanelVisible);
+  btn.classList.toggle('visible', !activityPanelVisible);
+}
+
+function relativeTime(iso) {
+  if (!iso) return '';
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diffSec = Math.floor((now - then) / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+function renderActivity() {
+  const list = document.getElementById('activityList');
+
+  // Active cards from board state
+  const activeCards = (board.cards || []).filter(c => c.status === 'active');
+  // Manual activity entries
+  const manualEntries = board.activity || [];
+
+  if (!activeCards.length && !manualEntries.length) {
+    list.innerHTML = '<div class="activity-empty">No active work</div>';
+    return;
+  }
+
+  const now = Date.now();
+  const STALE_MS = 30 * 60 * 1000;
+
+  // Project color lookup
+  const projMap = {};
+  (board.projects || []).forEach(p => { projMap[p.id] = p; });
+
+  let html = '';
+
+  // Active cards section
+  if (activeCards.length) {
+    html += `<div style="font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;padding:0.3rem 0.2rem 0.4rem;font-weight:600">Active Tasks (${activeCards.length})</div>`;
+    for (const card of activeCards) {
+      const proj = card.project ? projMap[card.project] : null;
+      const color = proj ? proj.color : '#3b82f6';
+      const projLabel = proj ? proj.name : '';
+      const updated = relativeTime(card.updated);
+
+      html += `<div class="activity-entry" style="cursor:pointer" onclick="openCardFromActivity('${escapeHtml(card.slug)}')">`;
+      html += `<div class="activity-entry-header">`;
+      html += `<span class="activity-dot" style="background:#10b981"></span>`;
+      if (projLabel) {
+        html += `<span class="activity-label" style="background:${color}22;color:${color}">${escapeHtml(projLabel)}</span>`;
+      }
+      html += `<span class="activity-ts">${updated}</span>`;
+      html += `</div>`;
+      html += `<div class="activity-text">${escapeHtml(card.title)}</div>`;
+      if (card.comments && card.comments.length) {
+        const last = card.comments[card.comments.length - 1];
+        html += `<div style="font-size:0.72rem;color:#64748b;margin-top:0.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(last.text)}">&#x1F4AC; ${escapeHtml(last.text)}</div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // Manual session entries
+  if (manualEntries.length) {
+    html += `<div style="font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;padding:0.5rem 0.2rem 0.4rem;font-weight:600;border-top:1px solid #334155;margin-top:0.3rem">Sessions</div>`;
+    for (const entry of manualEntries) {
+      const age = now - new Date(entry.ts).getTime();
+      const isStale = age > STALE_MS;
+      const dotColor = isStale ? '#64748b' : '#10b981';
+      const staleClass = isStale ? 'stale' : '';
+
+      html += `<div class="activity-entry ${staleClass}">`;
+      html += `<span class="activity-clear" onclick="clearActivityEntry('${entry.id}')" title="Remove">\u2715</span>`;
+      html += `<div class="activity-entry-header">`;
+      html += `<span class="activity-dot" style="background:${dotColor}"></span>`;
+      html += `<span class="activity-label" style="background:${entry.color || '#3b82f6'}22;color:${entry.color || '#3b82f6'}">${escapeHtml(entry.label || 'CC')}</span>`;
+      html += `<span class="activity-ts">${relativeTime(entry.ts)}</span>`;
+      html += `</div>`;
+      html += `<div class="activity-text" title="${escapeHtml(entry.text)}">${escapeHtml(entry.text)}</div>`;
+      html += `</div>`;
+    }
+  }
+
+  list.innerHTML = html;
+}
+
+function openCardFromActivity(slug) {
+  // Switch to Tasks tab and expand that card
+  if (currentTab !== 'tasks') switchTab('tasks');
+  kbExpandedSlug = slug;
+  renderBoard();
+  // Scroll card into view
+  setTimeout(() => {
+    const el = document.querySelector(`[data-card-slug="${slug}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+}
+
+async function loadActivity() {
+  // Board data is already loaded by loadBoard(), just re-render
+  renderActivity();
+}
+
+async function clearActivityEntry(activityId) {
+  await api('DELETE', `/api/board/activity/${activityId}`);
+  // Refresh board to get updated activity
+  const res = await api('GET', '/api/board');
+  if (!res.error) board = res;
+  renderActivity();
+}
+
+// ══════════════════════════════════════════════
+//  PROJECTS TAB
+// ══════════════════════════════════════════════
+
+let projectsData = [];
+let selectedProjectId = null;
+
+async function loadProjects() {
+  const res = await api('GET', '/api/board');
+  if (res.error) return;
+  board = res;
+  projectsData = res.projects || [];
+  if (selectedProjectId) renderProjectDetail();
+  else renderProjectsGrid();
+}
+
+function getPhaseProgress(phases) {
+  if (!phases || !phases.length) return { done: 0, total: 0, pct: 0 };
+  const done = phases.filter(p => p.status === 'done').length;
+  return { done, total: phases.length, pct: Math.round((done / phases.length) * 100) };
+}
+
+function getCurrentPhase(phases) {
+  if (!phases || !phases.length) return null;
+  const active = phases.find(p => p.status === 'active');
+  if (active) return { label: active.name, type: 'active' };
+  const nextPending = phases.find(p => p.status === 'pending');
+  if (nextPending) {
+    const allDone = phases.every(p => p.status === 'done');
+    if (allDone) return { label: 'All phases complete', type: 'done' };
+    return { label: nextPending.name, type: 'next' };
+  }
+  return { label: 'All phases complete', type: 'done' };
+}
+
+function getRelatedTasks(projectId) {
+  return (board.cards || []).filter(c => c.project === projectId);
+}
+
+function renderProjectsGrid() {
+  const grid = document.getElementById('projects-grid');
+  if (!projectsData.length) {
+    grid.innerHTML = '<div style="color:#64748b;padding:2rem;text-align:center;font-style:italic">No projects found</div>';
+    return;
+  }
+
+  grid.innerHTML = projectsData.map(proj => {
+    const { done, total, pct } = getPhaseProgress(proj.phases);
+    const current = getCurrentPhase(proj.phases);
+    const tasks = getRelatedTasks(proj.id);
+    const hasPhases = proj.phases && proj.phases.length > 0;
+
+    let phaseHtml = '';
+    if (hasPhases) {
+      let phaseInfo = '';
+      if (current) {
+        if (current.type === 'active') phaseInfo = `<strong>Active:</strong> ${escapeHtml(current.label)}`;
+        else if (current.type === 'next') phaseInfo = `<strong>Next:</strong> ${escapeHtml(current.label)}`;
+        else phaseInfo = `<strong>${escapeHtml(current.label)}</strong>`;
+      }
+      phaseHtml = `
+        <div class="project-progress-label">
+          <span>${pct}%</span><span>${done}/${total} phases</span>
+        </div>
+        <div class="project-progress-bar">
+          <div class="project-progress-fill" style="width:${pct}%;background:${proj.color || '#6366f1'}"></div>
+        </div>
+        ${phaseInfo ? `<div class="project-phase-info">${phaseInfo}</div>` : ''}
+      `;
+    }
+
+    return `
+      <div class="project-card" data-project="${proj.id}" draggable="true"
+        ondragstart="pcDragStart(event,'${proj.id}')" ondragend="pcDragEnd(event)"
+        ondragover="pcDragOver(event)" ondragleave="pcDragLeave(event)"
+        ondrop="pcDrop(event,'${proj.id}')"
+        onclick="if(!pcDidDrag)openProjectDetail('${proj.id}')">
+        <div class="project-card-header">
+          <span class="project-card-dot" style="background:${proj.color || '#6366f1'}"></span>
+          <span class="project-card-name">${escapeHtml(proj.name)}</span>
+        </div>
+        ${proj.summary ? `<div class="project-card-summary">${escapeHtml(proj.summary)}</div>` : ''}
+        ${phaseHtml}
+        ${tasks.length ? `<div class="project-tasks-count">${tasks.length} related task${tasks.length !== 1 ? 's' : ''}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function openProjectDetail(projectId) {
+  selectedProjectId = projectId;
+  document.getElementById('projects-portfolio').style.display = 'none';
+  document.getElementById('project-detail').style.display = 'block';
+  renderProjectDetail();
+}
+
+function closeProjectDetail() {
+  selectedProjectId = null;
+  document.getElementById('project-detail').style.display = 'none';
+  document.getElementById('projects-portfolio').style.display = 'block';
+  renderProjectsGrid();
+}
+
+function renderProjectDetail() {
+  const proj = projectsData.find(p => p.id === selectedProjectId);
+  if (!proj) { closeProjectDetail(); return; }
+
+  const container = document.getElementById('project-detail');
+  const { done, total, pct } = getPhaseProgress(proj.phases);
+  const tasks = getRelatedTasks(proj.id);
+  const hasPhases = proj.phases && proj.phases.length > 0;
+
+  // Status color map
+  const statusColors = {};
+  (board.statuses || []).forEach(s => { statusColors[s.id] = s.color; });
+
+  let phasesHtml = '';
+  if (hasPhases) {
+    const phaseItems = proj.phases.map(ph => {
+      let icon, nameClass;
+      if (ph.status === 'done') { icon = '&#x2705;'; nameClass = 'done'; }
+      else if (ph.status === 'active') { icon = '&#x1F535;'; nameClass = 'active'; }
+      else { icon = '&#x26AA;'; nameClass = ''; }
+      return `
+        <div class="phase-item">
+          <span class="phase-icon">${icon}</span>
+          <div class="phase-content">
+            <div class="phase-name ${nameClass}">${escapeHtml(ph.name)}</div>
+            ${ph.description ? `<div class="phase-desc">${escapeHtml(ph.description)}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    phasesHtml = `
+      <div class="project-section-title">Phases</div>
+      <div class="project-progress-label" style="margin-bottom:0.3rem">
+        <span>${pct}%</span><span>${done}/${total} phases</span>
+      </div>
+      <div class="project-progress-bar" style="margin-bottom:0.8rem">
+        <div class="project-progress-fill" style="width:${pct}%;background:${proj.color || '#6366f1'}"></div>
+      </div>
+      ${phaseItems}
+    `;
+  }
+
+  let tasksHtml = '';
+  if (tasks.length) {
+    const taskItems = tasks.map(card => {
+      const color = statusColors[card.status] || '#64748b';
+      return `
+        <div class="related-task-item">
+          <span class="related-task-status" style="background:${color}20;color:${color}">${escapeHtml(card.status)}</span>
+          <span style="color:#e2e8f0">${escapeHtml(card.title)}</span>
+        </div>
+      `;
+    }).join('');
+    tasksHtml = `
+      <div class="project-section-title">Related Tasks</div>
+      ${taskItems}
+    `;
+  }
+
+  let linksHtml = '';
+  const links = proj.links || [];
+  if (proj.spec) links.length || links.push({ label: 'Spec', path: proj.spec });
+  if (proj.code) {
+    const hasCode = links.some(l => l.label === 'Code');
+    if (!hasCode) links.push({ label: 'Code', path: proj.code });
+  }
+  if (links.length) {
+    const linkItems = links.map(lnk => `
+      <div class="file-link-item" onclick="openFileViewer('${escapeHtml(lnk.path)}')" style="cursor:pointer;border-radius:6px;padding:0.5rem 0.6rem;transition:background 0.1s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background=''">
+        <span class="file-link-icon">${lnk.label === 'Code' ? '&#x1F4C2;' : '&#x1F4C4;'}</span>
+        <span class="file-link-label">${escapeHtml(lnk.label)}</span>
+        <span class="file-link-path">${escapeHtml(lnk.path)}</span>
+      </div>
+    `).join('');
+    linksHtml = `
+      <div class="project-section-title">Files</div>
+      ${linkItems}
+    `;
+  }
+
+  container.innerHTML = `
+    <button class="project-detail-back" onclick="closeProjectDetail()">&larr; Back to Projects</button>
+    <div class="project-detail-header">
+      <span class="project-card-dot" style="background:${proj.color || '#6366f1'}"></span>
+      <span class="project-detail-name">${escapeHtml(proj.name)}</span>
+    </div>
+    ${proj.summary ? `<div class="project-detail-summary">${escapeHtml(proj.summary)}</div>` : ''}
+    ${phasesHtml}
+    ${tasksHtml}
+    ${linksHtml}
+  `;
+}
+
+// ══════════════════════════════════════════════
+//  FILE VIEWER
+// ══════════════════════════════════════════════
+
+let fileViewerHistory = []; // stack of paths for breadcrumb
+
+function isMarkdown(name) {
+  return /\.(md|markdown|mdx)$/i.test(name);
+}
+
+async function openFileViewer(path) {
+  fileViewerHistory = [path];
+  await loadFileContent(path);
+  document.getElementById('fileViewerOverlay').style.display = 'flex';
+}
+
+function closeFileViewer() {
+  document.getElementById('fileViewerOverlay').style.display = 'none';
+  fileViewerHistory = [];
+}
+
+async function navigateFile(path) {
+  // If path is already in history, pop back to it
+  const idx = fileViewerHistory.indexOf(path);
+  if (idx >= 0) {
+    fileViewerHistory = fileViewerHistory.slice(0, idx + 1);
+  } else {
+    fileViewerHistory.push(path);
+  }
+  await loadFileContent(path);
+}
+
+function renderBreadcrumb(currentPath) {
+  const bc = document.getElementById('fileViewerBreadcrumb');
+  // Build crumbs from history
+  const crumbs = fileViewerHistory.map((p, i) => {
+    const name = p.split('/').filter(Boolean).pop() || p;
+    const isCurrent = i === fileViewerHistory.length - 1;
+    if (isCurrent) {
+      return `<span class="file-viewer-crumb current">${escapeHtml(name)}</span>`;
+    }
+    return `<span class="file-viewer-crumb" onclick="navigateFile('${escapeHtml(p)}')">${escapeHtml(name)}</span>`;
+  });
+  bc.innerHTML = crumbs.join('<span> / </span>');
+}
+
+async function loadFileContent(path) {
+  const body = document.getElementById('fileViewerBody');
+  body.innerHTML = '<div style="color:#64748b;padding:2rem;text-align:center">Loading...</div>';
+  renderBreadcrumb(path);
+
+  try {
+    const res = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+    const data = await res.json();
+
+    if (data.error) {
+      body.innerHTML = `<div style="color:#ef4444;padding:1rem">${escapeHtml(data.error)}</div>`;
+      return;
+    }
+
+    if (data.type === 'directory') {
+      renderDirectoryListing(data, path);
+    } else {
+      renderFileContent(data);
+    }
+  } catch (e) {
+    body.innerHTML = `<div style="color:#ef4444;padding:1rem">Failed to load: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderDirectoryListing(data, basePath) {
+  const body = document.getElementById('fileViewerBody');
+  if (!data.entries || !data.entries.length) {
+    body.innerHTML = '<div style="color:#64748b;padding:1rem;font-style:italic">Empty directory</div>';
+    return;
+  }
+
+  // Sort: directories first, then files
+  const sorted = [...data.entries].sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const cleanBase = basePath.replace(/\/+$/, '');
+  body.innerHTML = sorted.map(entry => {
+    const entryPath = `${cleanBase}/${entry.name}`;
+    const icon = entry.type === 'directory' ? '&#x1F4C1;' : getFileIcon(entry.name);
+    const nameClass = entry.type === 'directory' ? 'dir' : '';
+    return `
+      <div class="dir-entry" onclick="navigateFile('${escapeHtml(entryPath)}')">
+        <span class="dir-entry-icon">${icon}</span>
+        <span class="dir-entry-name ${nameClass}">${escapeHtml(entry.name)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function getFileIcon(name) {
+  if (isMarkdown(name)) return '&#x1F4DD;';
+  if (/\.(py)$/i.test(name)) return '&#x1F40D;';
+  if (/\.(js|ts|jsx|tsx)$/i.test(name)) return '&#x1F4DC;';
+  if (/\.(json|yaml|yml|toml)$/i.test(name)) return '&#x2699;';
+  if (/\.(html|css)$/i.test(name)) return '&#x1F310;';
+  if (/\.(sh|bash|zsh)$/i.test(name)) return '&#x1F4BB;';
+  return '&#x1F4C4;';
+}
+
+function renderFileContent(data) {
+  const body = document.getElementById('fileViewerBody');
+  if (isMarkdown(data.name)) {
+    body.innerHTML = `<div class="file-viewer-md">${marked.parse(data.content)}</div>`;
+  } else {
+    body.innerHTML = `<div class="file-viewer-plain">${escapeHtml(data.content)}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ARCHIVE DRAWER
+// ══════════════════════════════════════════════
+
+function openArchiveDrawer() {
+  document.getElementById('archiveOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('archiveDrawer').classList.add('open'), 10);
+  renderArchive();
+}
+
+function closeArchiveDrawer() {
+  document.getElementById('archiveDrawer').classList.remove('open');
+  setTimeout(() => document.getElementById('archiveOverlay').classList.remove('open'), 350);
+  archiveExpandedId = null;
+}
+
+function renderArchiveCard(item) {
+  const isExpanded = archiveExpandedId === item.id;
+  const col = nfColumns.find(c => c.id === item.type);
+  const dotColor = col ? col.color : '#6b7280';
+  const expandClass = isExpanded ? 'expanded' : '';
+
+  let html = `<div class="archive-card ${expandClass}" onclick="archiveToggleExpand('${item.id}')">`;
+  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title" style="text-decoration:line-through;color:#6b7280">${escapeHtml(item.title)}</span></div>`;
+  if (item.linked_card) html += renderLinkedCardBadge(item.linked_card);
+
+  if (isExpanded) {
+    html += `<div class="card-detail" onclick="event.stopPropagation()">`;
+
+    if (item.linked_card) html += renderLinkedCardSection(item.linked_card);
+
+    html += `<div class="section-label"${item.linked_card ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
+    html += item.body
+      ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
+      : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes</div>`;
+
+    html += `<div class="section-label" style="margin-top:0.6rem">Comments</div>`;
+    const comments = item.subnotes || [];
+    if (!comments.length) {
+      html += `<div style="color:#64748b;font-size:0.8rem;font-style:italic">No comments</div>`;
+    } else {
+      for (const c of comments) {
+        html += `<div class="comment"><div class="comment-ts">${formatDateTime(c.ts)}</div><div class="comment-text">${escapeHtml(c.text)}</div></div>`;
+      }
+    }
+
+    // History
+    const history = item.history || [];
+    if (history.length) {
+      html += `<div class="section-label" style="margin-top:0.6rem">History</div>`;
+      for (const h of history) {
+        html += `<div style="font-size:0.75rem;color:#64748b;margin-bottom:0.15rem">${formatDateTime(h.ts)} — ${escapeHtml(h.action)}</div>`;
+      }
+    }
+
+    if (item.archived_at) {
+      html += `<div style="font-size:0.72rem;color:#475569;margin-top:0.4rem;font-style:italic">Archived: ${formatDateTime(item.archived_at)}</div>`;
+    }
+
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderArchive() {
+  const body = document.getElementById('archiveBody');
+  if (!archiveItems.length) {
+    body.innerHTML = '<div style="color:#64748b;text-align:center;padding:2rem;font-style:italic">No archived items</div>';
+    return;
+  }
+
+  // Group by month, most recent first
+  const grouped = {};
+  for (const item of archiveItems) {
+    const ts = item.archived_at || item.created;
+    const d = new Date(ts);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    if (!grouped[key]) grouped[key] = { label, items: [] };
+    grouped[key].items.push(item);
+  }
+
+  const sortedKeys = Object.keys(grouped).sort().reverse();
+  let html = '';
+  for (const key of sortedKeys) {
+    const group = grouped[key];
+    html += `<div class="archive-month-header">${escapeHtml(group.label)}</div>`;
+    for (const item of group.items) {
+      html += renderArchiveCard(item);
+    }
+  }
+  body.innerHTML = html;
+}
+
+function archiveToggleExpand(id) {
+  archiveExpandedId = archiveExpandedId === id ? null : id;
+  renderArchive();
+}
+
+// Close file viewer / archive drawer on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('archiveDrawer').classList.contains('open')) {
+      closeArchiveDrawer();
+    } else if (document.getElementById('fileViewerOverlay').style.display !== 'none') {
+      closeFileViewer();
+    }
+  }
+});
+
+// ══════════════════════════════════════════════
+//  Init + Polling
+// ══════════════════════════════════════════════
+loadNoteFlow();
+setInterval(() => {
+  if (currentTab === 'noteflow') loadNoteFlow();
+  else if (currentTab === 'tasks') loadBoard();
+  else if (currentTab === 'projects') loadProjects();
+}, 3000);
+</script>
+</body>
+</html>
