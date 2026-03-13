@@ -10,11 +10,38 @@ from nf_lib import load_store, save_store, find_item, now_iso
 from mc_lib import load_board, save_board, add_card, find_card, move_card
 
 
+def _infer_statuses(board):
+    """Infer initial and terminal status IDs from the board's statuses array.
+    Initial = first status (semantically 'not started').
+    Terminal = status whose label most clearly means 'finished' (fallback: last)."""
+    statuses = board.get("statuses", [])
+    if not statuses:
+        return "pending", "done"  # safe fallback
+
+    initial_id = statuses[0]["id"] if isinstance(statuses[0], dict) else statuses[0]
+
+    # Find terminal by label semantics
+    terminal_keywords = {"done", "complete", "completed", "finished", "closed"}
+    terminal_id = None
+    for s in statuses:
+        label = (s["label"] if isinstance(s, dict) else s).lower()
+        if label in terminal_keywords:
+            terminal_id = s["id"] if isinstance(s, dict) else s
+            break
+    if not terminal_id:
+        # Fallback: last status in the array
+        last = statuses[-1]
+        terminal_id = last["id"] if isinstance(last, dict) else last
+
+    return initial_id, terminal_id
+
+
 def sync_tasks():
     """Find open NoteFlow tasks without linked MC cards, create cards, link them.
     Also sync done status bidirectionally."""
     store = load_store()
     board = load_board()
+    initial_status, terminal_status = _infer_statuses(board)
 
     created = []
     synced_done = []
@@ -33,7 +60,7 @@ def sync_tasks():
             board,
             title=item["title"],
             description=item.get("body", ""),
-            status="pending",
+            status=initial_status,
             project=None,
             plan_file=None,
         )
@@ -63,15 +90,15 @@ def sync_tasks():
                 continue
 
             # NoteFlow done → MC card done
-            if item["status"] == "done" and card["status"] != "done":
-                move_card(board, slug, "done")
+            if item["status"] == "done" and card["status"] != terminal_status:
+                move_card(board, slug, terminal_status)
                 board = load_board()
                 synced_done.append({"direction": "nf→mc", "nf_id": item["id"], "mc_slug": slug})
 
             # MC card done → NoteFlow done (only if ALL linked cards are done)
-            elif card["status"] == "done" and item["status"] == "open":
+            elif card["status"] == terminal_status and item["status"] == "open":
                 all_done = all(
-                    (find_card(board, s) or {}).get("status") == "done"
+                    (find_card(board, s) or {}).get("status") == terminal_status
                     for s in slugs
                 )
                 if all_done:

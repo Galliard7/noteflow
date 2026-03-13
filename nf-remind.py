@@ -83,13 +83,12 @@ def set_reminder(item_id, recurrence_override=None):
         "--message", message,
         "--session", "isolated",
         "--light-context",
-        "--exact",
         "--tz", "America/Chicago",
     ]
 
     if recurrence:
         cron_expr = build_cron_expr(remind_dt, recurrence)
-        cmd.extend(["--cron", cron_expr])
+        cmd.extend(["--exact", "--cron", cron_expr])
     else:
         # One-shot: use --at with ISO datetime, auto-delete after run
         cmd.extend(["--at", target["remind"], "--delete-after-run"])
