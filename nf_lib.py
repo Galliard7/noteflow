@@ -5,11 +5,30 @@ import os
 from datetime import datetime, timedelta
 
 WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
-STORE_DIR = os.path.join(WORKSPACE, "noteflow")
+STORE_DIR = os.path.join(WORKSPACE, "data", "noteflow")
 STORE_PATH = os.path.join(STORE_DIR, "store.json")
 ARCHIVE_PATH = os.path.join(STORE_DIR, "archive.json")
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
-TELEGRAM_CHAT_ID = "521360368"
+def _resolve_telegram_chat_id():
+    """Resolve Telegram chat ID from env var or cc-remote state."""
+    env_val = os.environ.get("TELEGRAM_CHAT_ID")
+    if env_val:
+        return env_val
+    # Fallback: read from cc-remote's persisted state
+    cc_state_path = os.path.join(WORKSPACE, "data", "cc-remote", "state.json")
+    if os.path.exists(cc_state_path):
+        try:
+            with open(cc_state_path) as f:
+                state = json.load(f)
+            cid = state.get("handoff", {}).get("chat_id")
+            if cid:
+                return str(cid)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return ""
+
+
+TELEGRAM_CHAT_ID = _resolve_telegram_chat_id()
 
 
 DEFAULT_COLUMNS = [
@@ -18,6 +37,20 @@ DEFAULT_COLUMNS = [
     {"id": "idea", "label": "Ideas", "icon": "\U0001F4A1", "color": "#f59e0b"},
     {"id": "note", "label": "Notes", "icon": "\U0001F4DD", "color": "#10b981"},
 ]
+
+
+def _migrate_linked_cards(store):
+    """Migrate linked_card (string|null) → linked_cards (array). Idempotent."""
+    changed = False
+    for item in store.get("items", []):
+        if "linked_card" in item:
+            old = item.pop("linked_card")
+            item["linked_cards"] = [old] if old else []
+            changed = True
+        elif "linked_cards" not in item:
+            item["linked_cards"] = []
+            changed = True
+    return changed
 
 
 def load_store():
@@ -29,6 +62,9 @@ def load_store():
     # Ensure columns exist (backward compat)
     if "columns" not in store:
         store["columns"] = list(DEFAULT_COLUMNS)
+    # Migrate linked_card → linked_cards
+    if _migrate_linked_cards(store):
+        save_store(store)
     return store
 
 
@@ -69,7 +105,7 @@ def update_item(store, item_id, updates):
     if not item:
         return None, f"Item {item_id} not found"
 
-    allowed = {"title", "body", "tags", "due", "remind", "recurrence", "type", "linked_card"}
+    allowed = {"title", "body", "tags", "due", "remind", "recurrence", "type", "linked_cards", "references"}
     changes = []
     for key, val in updates.items():
         if key in allowed:
@@ -237,7 +273,8 @@ def archive_done_items(store):
         # Find the 'done' timestamp from history
         done_ts = None
         for h in reversed(item.get("history", [])):
-            if h["action"] == "done":
+            act = h["action"]
+            if act == "done" or act == "completed" or act.startswith("done "):
                 try:
                     done_ts = datetime.fromisoformat(h["ts"])
                 except (ValueError, TypeError):

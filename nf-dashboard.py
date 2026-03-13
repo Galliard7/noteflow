@@ -3,7 +3,9 @@
 
 import json
 import os
+import subprocess
 import sys
+from datetime import datetime
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -19,7 +21,7 @@ from nf_lib import (
 from mc_lib import (
     load_board, save_board, find_card,
     add_card, update_card, delete_card, move_card,
-    add_comment as mc_add_comment,
+    add_comment as mc_add_comment, delete_comment as mc_delete_comment,
     find_project, add_project, update_project, update_phase, reorder_projects,
     add_decision, add_log_entry,
     add_status, delete_status, reorder_statuses,
@@ -31,6 +33,26 @@ PORT = 8765
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 MC_HTML = os.path.join(SCRIPTS_DIR, "mission-control.html")
 DASHBOARD_HTML = os.path.join(SCRIPTS_DIR, "dashboard.html")
+STACK_FILE = os.path.expanduser("~/.openclaw/workspace/data/noteflow/stack.json")
+
+
+def _load_stack():
+    """Load stack items from disk."""
+    try:
+        with open(STACK_FILE, "r") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def _save_stack(items):
+    """Save stack items to disk (atomic write)."""
+    os.makedirs(os.path.dirname(STACK_FILE), exist_ok=True)
+    tmp = STACK_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(items, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, STACK_FILE)
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -90,6 +112,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_list_columns()
         elif parts == ["api", "reminders"]:
             self._api_list_reminders()
+        elif parts == ["api", "cron", "jobs"]:
+            self._api_list_cron_jobs()
         elif parts == ["api", "archive"]:
             self._api_list_archive()
         elif parts == ["api", "board"]:
@@ -98,6 +122,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_board_list_activity()
         elif parts == ["api", "files"]:
             self._api_read_file()
+        elif parts == ["api", "stack"]:
+            self._api_stack_list()
+        elif parts == ["api", "vault", "daily"]:
+            self._api_vault_daily()
         else:
             self._send_error(404, "Not found")
 
@@ -114,6 +142,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_reopen(parts[2])
         elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "subnotes":
             self._api_add_subnote(parts[2])
+        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "cron":
+            self._api_set_cron(parts[2])
         # Board API
         elif parts == ["api", "board", "cards"]:
             self._api_board_add_card()
@@ -131,6 +161,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_board_add_decision()
         elif parts == ["api", "board", "log"]:
             self._api_board_add_log()
+        elif parts == ["api", "stack"]:
+            self._api_stack_add()
         else:
             self._send_error(404, "Not found")
 
@@ -141,8 +173,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_update_item(parts[2])
         elif parts == ["api", "columns", "reorder"]:
             self._api_reorder_columns()
+        elif len(parts) == 3 and parts[:2] == ["api", "columns"]:
+            self._api_update_column(parts[2])
         elif parts == ["api", "board", "statuses", "reorder"]:
             self._api_board_reorder_statuses()
+        elif len(parts) == 4 and parts[:3] == ["api", "board", "statuses"]:
+            self._api_board_update_status(parts[3])
         elif parts == ["api", "board", "projects", "reorder"]:
             self._api_board_reorder_projects()
         elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
@@ -151,6 +187,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_board_update_project(parts[3])
         elif len(parts) == 6 and parts[:3] == ["api", "board", "projects"] and parts[4] == "phases":
             self._api_board_update_phase(parts[3], parts[5])
+        elif parts == ["api", "stack"]:
+            self._api_stack_replace()
+        elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
+            self._api_stack_update(parts[2])
         else:
             self._send_error(404, "Not found")
 
@@ -163,12 +203,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_delete_column(parts[2])
         elif len(parts) == 5 and parts[:2] == ["api", "items"] and parts[3] == "subnotes":
             self._api_delete_subnote(parts[2], parts[4])
+        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "cron":
+            self._api_cancel_cron(parts[2])
+        elif len(parts) == 6 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
+            self._api_board_delete_comment(parts[3], parts[5])
         elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
             self._api_board_delete_card(parts[3])
         elif len(parts) == 4 and parts[:3] == ["api", "board", "statuses"]:
             self._api_board_delete_status(parts[3])
         elif len(parts) == 4 and parts[:3] == ["api", "board", "activity"]:
             self._api_board_delete_activity(parts[3])
+        elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
+            self._api_stack_delete(parts[2])
         else:
             self._send_error(404, "Not found")
 
@@ -226,7 +272,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "due": data.get("due") or None,
             "remind": data.get("remind") or None,
             "recurrence": data.get("recurrence") or None,
-            "linked_card": data.get("linked_card") or None,
+            "linked_cards": data.get("linked_cards") or [],
             "cron_installed": False,
             "snoozed_until": None,
             "subnotes": [],
@@ -321,6 +367,47 @@ class DashboardHandler(BaseHTTPRequestHandler):
             item.setdefault("subnotes", [])
             self._send_json({"item": item})
 
+    def _api_set_cron(self, item_id):
+        """Install an OpenClaw cron job for a NoteFlow item via nf-remind.py."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            data = {}
+
+        recurrence = data.get("recurrence") or None
+        cmd = [sys.executable, os.path.join(SCRIPTS_DIR, "nf-remind.py"), "--set", item_id]
+        if recurrence:
+            cmd += ["--recurrence", recurrence]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            store = load_store()
+            item = find_item(store, item_id)
+            if item:
+                item.setdefault("subnotes", [])
+                self._send_json({"item": item})
+            else:
+                self._send_json({"ok": True})
+        else:
+            err_msg = result.stderr.strip() or result.stdout.strip() or "Failed to set cron"
+            self._send_error(500, err_msg)
+
+    def _api_cancel_cron(self, item_id):
+        """Remove an OpenClaw cron job for a NoteFlow item via nf-remind.py."""
+        cmd = [sys.executable, os.path.join(SCRIPTS_DIR, "nf-remind.py"), "--cancel", item_id]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            store = load_store()
+            item = find_item(store, item_id)
+            if item:
+                item.setdefault("subnotes", [])
+                self._send_json({"item": item})
+            else:
+                self._send_json({"ok": True})
+        else:
+            err_msg = result.stderr.strip() or result.stdout.strip() or "Failed to cancel cron"
+            self._send_error(500, err_msg)
+
     def _api_list_reminders(self):
         store = load_store()
         reminders = [
@@ -336,6 +423,73 @@ class DashboardHandler(BaseHTTPRequestHandler):
         for item in items:
             item.setdefault("subnotes", [])
         self._send_json({"items": items})
+
+    def _load_cron_runs(self, job_id, limit=12):
+        """Load recent run entries for a cron job from jsonl logs."""
+        if not job_id:
+            return []
+        runs_path = os.path.join(self._CRON_RUNS_DIR, f"{job_id}.jsonl")
+        if not os.path.exists(runs_path):
+            return []
+
+        rows = []
+        try:
+            with open(runs_path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    rows.append({
+                        "ts": entry.get("ts"),
+                        "action": entry.get("action"),
+                        "status": entry.get("status"),
+                        "summary": entry.get("summary", ""),
+                        "runAtMs": entry.get("runAtMs"),
+                        "durationMs": entry.get("durationMs"),
+                        "deliveryStatus": entry.get("deliveryStatus"),
+                        "nextRunAtMs": entry.get("nextRunAtMs"),
+                    })
+        except OSError:
+            return []
+
+        return rows[-limit:]
+
+    def _api_list_cron_jobs(self):
+        """Return OpenClaw cron jobs with recent run history for Mission Control."""
+        if not os.path.exists(self._CRON_JOBS_FILE):
+            self._send_json({"jobs": []})
+            return
+
+        try:
+            with open(self._CRON_JOBS_FILE, "r", encoding="utf-8", errors="replace") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            self._send_json({"jobs": []})
+            return
+
+        jobs = []
+        for raw in data.get("jobs", []):
+            job_id = raw.get("id")
+            runs = self._load_cron_runs(job_id)
+            jobs.append({
+                "id": job_id,
+                "name": raw.get("name") or "(unnamed)",
+                "enabled": bool(raw.get("enabled", True)),
+                "createdAtMs": raw.get("createdAtMs"),
+                "updatedAtMs": raw.get("updatedAtMs"),
+                "schedule": raw.get("schedule") or {},
+                "payload": raw.get("payload") or {},
+                "delivery": raw.get("delivery") or {},
+                "state": raw.get("state") or {},
+                "runs": runs,
+            })
+
+        jobs.sort(key=lambda j: (j.get("state", {}).get("nextRunAtMs") or float("inf"), j.get("name", "")))
+        self._send_json({"jobs": jobs, "generatedAt": datetime.now().isoformat()})
 
     # --- API Handlers: Columns ---
 
@@ -392,6 +546,34 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_error(400, err)
         else:
             self._send_json({"columns": get_columns(store)})
+
+    def _api_update_column(self, col_id):
+        """Update a NoteFlow column's label, color, or icon."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+
+        store = load_store()
+        columns = store.get("columns", [])
+        col = None
+        for c in columns:
+            if c["id"] == col_id:
+                col = c
+                break
+        if not col:
+            self._send_error(404, f"Column '{col_id}' not found")
+            return
+
+        if "label" in data:
+            col["label"] = data["label"]
+        if "color" in data:
+            col["color"] = data["color"]
+        if "icon" in data:
+            col["icon"] = data["icon"]
+        save_store(store)
+        self._send_json(col)
 
     # --- API Handlers: Board (Mission Control) ---
 
@@ -461,6 +643,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
         card, err = mc_add_comment(board, slug, text, author)
         if err:
             self._send_error(404, err)
+        else:
+            self._send_json({"card": card})
+
+    def _api_board_delete_comment(self, slug, index_str):
+        try:
+            index = int(index_str)
+        except ValueError:
+            self._send_error(400, "Invalid comment index")
+            return
+        board = load_board()
+        card, err = mc_delete_comment(board, slug, index)
+        if err:
+            self._send_error(400, err)
         else:
             self._send_json({"card": card})
 
@@ -578,6 +773,31 @@ class DashboardHandler(BaseHTTPRequestHandler):
         else:
             self._send_json({"status": status_obj}, 201)
 
+    def _api_board_update_status(self, status_id):
+        """Update a board status's label or color."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+
+        board = load_board()
+        found = None
+        for s in board["statuses"]:
+            if s["id"] == status_id:
+                found = s
+                break
+        if not found:
+            self._send_error(404, f"Status '{status_id}' not found")
+            return
+
+        if "label" in data:
+            found["label"] = data["label"]
+        if "color" in data:
+            found["color"] = data["color"]
+        save_board(board)
+        self._send_json(found)
+
     def _api_board_delete_status(self, status_id):
         board = load_board()
         status_obj, err = delete_status(board, status_id)
@@ -688,10 +908,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
     # --- API Handlers: File browsing ---
 
     _WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
+    _CRON_ROOT = os.path.expanduser("~/.openclaw/cron")
+    _CRON_RUNS_DIR = os.path.join(_CRON_ROOT, "runs")
+    _CRON_JOBS_FILE = os.path.join(_CRON_ROOT, "jobs.json")
     _ALLOWED_ROOTS = [
         os.path.expanduser("~/.openclaw/workspace"),
         os.path.expanduser("~/skill-backends"),
+        os.path.expanduser("~/.openclaw/vaults"),
     ]
+    _VAULT_DAILY = os.path.expanduser("~/.openclaw/vaults/Claw/Daily")
 
     def _resolve_file_path(self, raw_path):
         """Resolve a project-relative path to an absolute path, with safety checks."""
@@ -753,6 +978,110 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 })
             except OSError as e:
                 self._send_error(500, str(e))
+
+    # --- API Handlers: Vault ---
+
+    def _api_vault_daily(self):
+        """List vault daily folders with file counts and file lists."""
+        base = self._VAULT_DAILY
+        if not os.path.isdir(base):
+            self._send_json({"folders": []})
+            return
+        folders = []
+        for name in sorted(os.listdir(base)):
+            full = os.path.join(base, name)
+            if not os.path.isdir(full) or name.startswith("."):
+                continue
+            files = []
+            for fname in sorted(os.listdir(full)):
+                if fname.startswith("."):
+                    continue
+                fpath = os.path.join(full, fname)
+                if os.path.isfile(fpath):
+                    files.append(fname)
+            folders.append({"date": name, "files": files, "count": len(files)})
+        self._send_json({"folders": folders})
+
+    # --- API Handlers: Stack ---
+
+    def _api_stack_list(self):
+        self._send_json({"items": _load_stack()})
+
+    def _api_stack_add(self):
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        title = data.get("title", "").strip()
+        if not title:
+            self._send_error(400, "Title is required")
+            return
+        import random, string
+        item = {
+            "id": "stk-" + "".join(random.choices(string.ascii_lowercase + string.digits, k=8)),
+            "title": title,
+            "source": data.get("source", "custom"),
+            "boardSlug": data.get("boardSlug") or None,
+            "notes": list(data.get("notes", [])),
+            "createdAt": datetime.utcnow().isoformat() + "Z",
+        }
+        items = _load_stack()
+        items.insert(0, item)
+        _save_stack(items)
+        self._send_json({"item": item}, 201)
+
+    def _api_stack_replace(self):
+        """PUT /api/stack — replace entire stack (for reorder / bulk sync from frontend)."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        items = data.get("items")
+        if not isinstance(items, list):
+            self._send_error(400, "items array is required")
+            return
+        _save_stack(items)
+        self._send_json({"ok": True})
+
+    def _api_stack_update(self, item_id):
+        """PUT /api/stack/{id} — update a single stack item."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        items = _load_stack()
+        target = None
+        for it in items:
+            if it.get("id") == item_id:
+                target = it
+                break
+        if not target:
+            self._send_error(404, "Stack item not found")
+            return
+        if "title" in data:
+            target["title"] = data["title"]
+        if "notes" in data:
+            target["notes"] = list(data["notes"])
+        if "boardSlug" in data:
+            target["boardSlug"] = data["boardSlug"]
+        if "source" in data:
+            target["source"] = data["source"]
+        _save_stack(items)
+        self._send_json({"item": target})
+
+    def _api_stack_delete(self, item_id):
+        """DELETE /api/stack/{id} — remove a stack item."""
+        items = _load_stack()
+        new_items = [it for it in items if it.get("id") != item_id]
+        if len(new_items) == len(items):
+            self._send_error(404, "Stack item not found")
+            return
+        removed = [it for it in items if it.get("id") == item_id][0]
+        _save_stack(new_items)
+        self._send_json({"item": removed})
 
 
 def main():

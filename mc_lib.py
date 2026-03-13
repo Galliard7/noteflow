@@ -9,9 +9,10 @@ from datetime import datetime, timezone, timedelta
 WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
 BOARD_DIR = os.path.join(WORKSPACE, "mission-control")
 BOARD_PATH = os.path.join(BOARD_DIR, "board.json")
+STACK_FILE = os.path.join(WORKSPACE, "data", "noteflow", "stack.json")
 
 # Built-in statuses that cannot be deleted
-BUILTIN_STATUSES = {"pending", "active", "done"}
+BUILTIN_STATUSES = set()  # all statuses are user-editable
 
 DEFAULT_STATUSES = [
     {"id": "pending", "label": "Pending", "color": "#f59e0b"},
@@ -134,6 +135,11 @@ def update_card(board, slug, updates):
 
     card["updated"] = _now_iso()
     save_board(board)
+
+    # Auto-remove linked stack cards when status changes to done
+    if updates.get("status") == "done":
+        _remove_from_stack(slug)
+
     return card, None
 
 
@@ -153,6 +159,26 @@ def _valid_status_ids(board):
     return {s["id"] if isinstance(s, dict) else s for s in board.get("statuses", [])}
 
 
+def _remove_from_stack(slug):
+    """Remove stack items linked to the given board card slug."""
+    try:
+        with open(STACK_FILE, "r") as f:
+            items = json.load(f)
+        if not isinstance(items, list):
+            return
+    except (FileNotFoundError, json.JSONDecodeError):
+        return
+
+    filtered = [i for i in items if i.get("boardSlug") != slug]
+    if len(filtered) == len(items):
+        return  # nothing to remove
+
+    tmp = STACK_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(filtered, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, STACK_FILE)
+
+
 def move_card(board, slug, new_status):
     """Change a card's status. Returns (card, error_msg)."""
     card = find_card(board, slug)
@@ -165,6 +191,11 @@ def move_card(board, slug, new_status):
     card["status"] = new_status
     card["updated"] = _now_iso()
     save_board(board)
+
+    # Auto-remove linked stack cards when a board card is completed
+    if new_status == "done":
+        _remove_from_stack(slug)
+
     return card, None
 
 
@@ -179,6 +210,20 @@ def add_comment(board, slug, text, author="cc"):
         "author": author,
         "text": text,
     })
+    card["updated"] = _now_iso()
+    save_board(board)
+    return card, None
+
+
+def delete_comment(board, slug, index):
+    """Delete a comment by index from a card. Returns (card, error_msg)."""
+    card = find_card(board, slug)
+    if not card:
+        return None, f"Card '{slug}' not found"
+    comments = card.get("comments", [])
+    if index < 0 or index >= len(comments):
+        return None, f"Comment index {index} out of range"
+    comments.pop(index)
     card["updated"] = _now_iso()
     save_board(board)
     return card, None

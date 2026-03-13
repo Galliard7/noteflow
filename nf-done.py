@@ -43,8 +43,14 @@ def main():
     had_cron = target.get("cron_installed", False)
     if had_cron:
         remind_script = os.path.join(SCRIPTS_DIR, "nf-remind.py")
-        subprocess.run(["python3", remind_script, "--cancel", args.id])
-        suffix = " (recurring reminder cancelled)"
+        result = subprocess.run(
+            ["python3", remind_script, "--cancel", args.id],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0:
+            suffix = " (recurring reminder cancelled)"
+        else:
+            suffix = f" (WARNING: cron cancel failed: {result.stderr.strip() or result.stdout.strip()})"
     else:
         suffix = ""
 

@@ -53,7 +53,7 @@ def main():
         "due": args.due,
         "remind": args.remind,
         "recurrence": args.recurrence,
-        "linked_card": args.linked_card,
+        "linked_cards": [args.linked_card] if args.linked_card else [],
         "cron_installed": False,
         "snoozed_until": None,
         "history": [{"ts": now, "action": "created"}],
@@ -81,6 +81,7 @@ def main():
         parts.append(f"Recurs: {args.recurrence}")
     if args.linked_card:
         parts.append(f"Linked: {args.linked_card}")
+        # Support multiple --linked-card flags in the future
 
     print(f"Captured → [{item_id}] {args.title}")
     print(f"  {' | '.join(parts)}")

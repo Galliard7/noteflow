@@ -336,11 +336,14 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 /* ── Kanban Cards (Projects tab) ── */
 .kb-card {
   background: #0f172a; border: 1px solid #334155; border-radius: 8px;
-  padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.5rem; cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  user-select: none;
 }
 .kb-card:hover { border-color: #475569; }
+.kb-card.dragging { opacity: 0.4; }
 .kb-card.expanded { border-color: #3b82f6; }
+.kb-column-body.drag-over { background: rgba(59, 130, 246, 0.08); border-radius: 0 0 10px 10px; }
 .kb-title { font-weight: 500; font-size: 0.85rem; }
 .kb-desc { color: #94a3b8; font-size: 0.78rem; margin-top: 0.2rem; }
 .kb-badge {
@@ -448,6 +451,287 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .file-link-icon { flex-shrink: 0; }
 .file-link-label { color: #cbd5e1; font-weight: 500; }
 .file-link-path { color: #64748b; font-size: 0.78rem; }
+.file-group-label {
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  color: #64748b; letter-spacing: 0.04em; margin-top: 0.6rem; margin-bottom: 0.15rem;
+  padding-left: 0.1rem;
+}
+
+/* ── Calendar Tab ── */
+.calendar-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  min-height: calc(100vh - 20px);
+}
+.calendar-main, .calendar-side {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+.calendar-main { padding: 0.9rem; }
+.calendar-side {
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+.calendar-nav {
+  display: flex;
+  gap: 0.35rem;
+}
+.calendar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.calendar-head-center {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.calendar-mode-toggle .view-btn {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+}
+.calendar-grid-head {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+.calendar-grid-head div {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+.calendar-day-cell {
+  min-height: 122px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.12s;
+}
+.calendar-day-cell:hover {
+  border-color: #475569;
+  transform: translateY(-1px);
+}
+.calendar-day-cell.outside {
+  opacity: 0.35;
+}
+.calendar-day-cell.today {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 1px #0ea5e9;
+}
+.calendar-day-cell.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+.calendar-day-num {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+.calendar-mini-event {
+  font-size: 0.68rem;
+  background: #172236;
+  border: 1px solid #2a3b57;
+  color: #bfdbfe;
+  border-radius: 4px;
+  padding: 0.08rem 0.22rem;
+  margin-bottom: 0.18rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calendar-mini-event.task {
+  background: #132a21;
+  border-color: #1f513d;
+  color: #bbf7d0;
+}
+.calendar-mini-more {
+  font-size: 0.66rem;
+  color: #94a3b8;
+  margin-top: 0.1rem;
+}
+.calendar-side-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 0.4rem;
+}
+.calendar-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+.calendar-event-row {
+  width: 100%;
+  text-align: left;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  padding: 0.45rem 0.5rem;
+  cursor: pointer;
+  color: #cbd5e1;
+}
+.calendar-event-row:hover {
+  border-color: #475569;
+}
+.calendar-event-row.active {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+.calendar-event-time {
+  color: #93c5fd;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.calendar-event-name {
+  font-size: 0.8rem;
+  margin-top: 0.12rem;
+}
+.calendar-job-detail {
+  border-top: 1px solid #334155;
+  padding-top: 0.65rem;
+}
+.calendar-detail-grid {
+  display: grid;
+  gap: 0.35rem;
+}
+.calendar-detail-item {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+.calendar-detail-item .k {
+  color: #64748b;
+  margin-right: 0.35rem;
+}
+.calendar-runs {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.3rem;
+}
+.calendar-run {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 0.35rem 0.45rem;
+}
+.calendar-run-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+}
+.calendar-run-status {
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.calendar-run-summary {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  margin-top: 0.18rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calendar-empty {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-style: italic;
+}
+.calendar-task-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #bbf7d0;
+  background: #132a21;
+  border: 1px solid #1f513d;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-top: 0.15rem;
+}
+.calendar-vault-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #e9d5ff;
+  background: #2e1065;
+  border: 1px solid #581c87;
+  border-radius: 4px;
+  padding: 0.08rem 0.3rem;
+  margin-top: 0.12rem;
+}
+.vault-section {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.55rem 0.6rem;
+}
+.vault-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #c4b5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+.vault-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.1s;
+}
+.vault-file-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: #f1f5f9;
+}
+.vault-file-icon {
+  color: #a78bfa;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+@media (max-width: 1180px) {
+  .calendar-shell {
+    grid-template-columns: 1fr;
+  }
+  .calendar-day-cell {
+    min-height: 108px;
+  }
+}
 
 /* ── File Viewer Modal ── */
 .file-viewer-overlay {
@@ -600,6 +884,328 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   transition: color 0.15s; margin-left: 0.3rem;
 }
 .status-delete-btn:hover { color: #ef4444; }
+
+/* ── Stack Tab — Mission Control HUD ── */
+.stack-wrap {
+  padding: 0.7rem 1rem; height: 100%; display: flex; flex-direction: column;
+  gap: 0.5rem; flex: 1; min-width: 0; max-width: 560px; margin: 0 auto;
+}
+
+/* Command bar */
+.stack-cmd {
+  display: flex; gap: 0.4rem; align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: rgba(15,23,42,0.95);
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(59,130,246,0.06);
+}
+.stack-cmd input {
+  flex: 1; min-width: 0; background: transparent; border: 1px solid #334155;
+  color: #e2e8f0; font-size: 0.76rem; padding: 0.28rem 0.5rem;
+  border-radius: 5px; font-family: inherit;
+}
+.stack-cmd input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px rgba(59,130,246,0.25); }
+.stack-cmd input::placeholder { color: #475569; }
+.stack-cmd-sep { width: 1px; height: 16px; background: #334155; flex-shrink: 0; }
+
+/* Unified input with suggestion dropdown */
+.stack-input-wrap { flex: 1; position: relative; min-width: 0; }
+.stack-input-wrap input { width: 100%; }
+.stack-suggest {
+  display: none; position: absolute; left: 0; right: 0; top: 100%; margin-top: 3px;
+  background: #1e293b; border: 1px solid #334155; border-radius: 6px;
+  max-height: 220px; overflow-y: auto; z-index: 120;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+.stack-suggest.open { display: block; }
+.stack-sug-item {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.32rem 0.6rem; cursor: pointer;
+  transition: background 0.1s; font-size: 0.74rem; color: #e2e8f0;
+}
+.stack-sug-item:hover, .stack-sug-item.active { background: #334155; }
+.stack-sug-item .sug-slug { color: #64748b; font-size: 0.6rem; font-family: monospace; }
+.stack-sug-item .sug-status {
+  font-size: 0.55rem; padding: 0.04rem 0.28rem; border-radius: 3px;
+  border: 1px solid #33415544; color: #94a3b8;
+}
+.stack-sug-create {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.35rem 0.6rem; cursor: pointer;
+  border-top: 1px solid #233048; font-size: 0.74rem; color: #94a3b8;
+  transition: background 0.1s;
+}
+.stack-sug-create:hover, .stack-sug-create.active { background: #334155; color: #e2e8f0; }
+.stack-sug-create .sug-plus { color: #3b82f6; font-weight: 700; }
+.stack-btn {
+  background: transparent; border: 1px solid #334155;
+  color: #94a3b8; font-size: 0.7rem; padding: 0.22rem 0.55rem;
+  border-radius: 5px; cursor: pointer; white-space: nowrap;
+  transition: all 0.15s; font-family: inherit;
+}
+.stack-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+.stack-btn.pop { border-color: #f59e0b44; color: #f59e0b; }
+.stack-btn.pop:hover { border-color: #f59e0b; background: #f59e0b11; }
+
+/* Stack list */
+.stack-list {
+  flex: 1; overflow-y: auto;
+  padding: 0.5rem 0;
+}
+.stack-empty {
+  text-align: center; padding: 3rem 1rem; color: #475569;
+  background: #0c1222; border: 1px dashed #1e3a5f; border-radius: 8px;
+}
+.stack-empty-icon { font-size: 2.2rem; margin-bottom: 0.4rem; opacity: 0.25; }
+.stack-empty-text { font-size: 0.78rem; }
+
+/* ── Stack card — pancake stack ── */
+.stack-card {
+  display: flex; flex-direction: column;
+  background: #1e293b;
+  border: 1px solid #233048;
+  border-radius: 8px;
+  margin-bottom: -2px;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  transition: border-color 0.18s, background 0.18s, opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+.stack-card:hover { border-color: #3b82f688; background: #243047; z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
+.stack-card.top { border-left: 3px solid #3b82f6; box-shadow: 0 3px 10px rgba(59,130,246,0.15); z-index: 3; }
+.stack-card.selected { border-color: #22d3ee88; background: #1f3044; z-index: 4; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+.stack-card.dragging { opacity: 0.35; transform: scale(0.95); }
+.stack-card.drag-over { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b44; }
+
+/* Card header — the compact single-line row */
+.stack-card-header {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.45rem;
+  min-height: 30px;
+}
+.stack-drag {
+  cursor: grab; color: #475569; font-size: 0.65rem;
+  user-select: none; line-height: 1; padding: 0.1rem;
+  transition: color 0.15s;
+}
+.stack-drag:hover { color: #94a3b8; }
+.stack-card.dragging .stack-drag { cursor: grabbing; }
+
+/* Position badge */
+.stack-pos {
+  font-size: 0.58rem; font-weight: 700; min-width: 1.5rem;
+  text-align: center; padding: 0.08rem 0.25rem;
+  border-radius: 3px; line-height: 1.3;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.stack-pos.is-top {
+  background: #3b82f6; color: #fff;
+  text-shadow: 0 0 3px rgba(255,255,255,0.25);
+  box-shadow: 0 0 5px rgba(59,130,246,0.35);
+}
+.stack-pos.is-num { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+
+/* Title */
+.stack-card-title {
+  flex: 1; min-width: 0; font-size: 0.76rem; color: #e2e8f0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Badges */
+.stack-badge {
+  font-size: 0.56rem; padding: 0.05rem 0.3rem; border-radius: 3px;
+  border: 1px solid; white-space: nowrap; font-weight: 500;
+}
+.stack-badge.brd { color: #22c55e; border-color: #22c55e44; background: #22c55e08; }
+.stack-badge.cst { color: #64748b; border-color: #33415544; background: #0f172a; }
+.stack-badge.slug { color: #94a3b8; border-color: #33415544; background: #0f172a; font-family: monospace; font-size: 0.54rem; }
+
+/* Note count hint */
+.stack-note-hint { color: #64748b; font-size: 0.58rem; white-space: nowrap; }
+
+/* Kebab menu */
+/* Move arrows */
+.stack-arrows { display: flex; flex-direction: column; gap: 0; margin-left: auto; }
+.stack-arrow-btn {
+  background: none; border: none; cursor: pointer; padding: 0;
+  font-size: 0.7rem; line-height: 1; color: #475569;
+  transition: color 0.15s, transform 0.12s;
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 12px;
+}
+.stack-arrow-btn:hover:not(:disabled) { color: #38bdf8; transform: scale(1.3); }
+.stack-arrow-btn:active:not(:disabled) { color: #22d3ee; transform: scale(0.9); }
+.stack-arrow-btn:disabled { color: #1e293b; cursor: default; }
+
+.stack-kebab-wrap { position: relative; }
+.stack-kebab {
+  background: none; border: none; color: #475569; cursor: pointer;
+  font-size: 0.95rem; padding: 0 0.15rem; line-height: 1;
+  transition: color 0.15s;
+}
+.stack-kebab:hover { color: #e2e8f0; }
+.stack-menu {
+  position: absolute; right: 0; top: 100%; margin-top: 2px;
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 6px; padding: 0.15rem 0;
+  min-width: 130px; z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+}
+.stack-menu-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; color: #cbd5e1;
+  font-size: 0.7rem; padding: 0.3rem 0.65rem;
+  cursor: pointer; transition: background 0.1s; font-family: inherit;
+}
+.stack-menu-item:hover { background: #334155; }
+.stack-menu-item.danger { color: #ef4444; }
+.stack-menu-item.danger:hover { background: #ef444418; }
+
+/* ── Task Pool Sidebar ── */
+.stack-layout {
+  display: flex; flex-direction: row; height: 100%; gap: 0;
+}
+.task-pool {
+  width: 220px; flex-shrink: 0; height: 100%;
+  border-left: 1px solid #1e3a5f;
+  display: flex; flex-direction: column;
+  background: rgba(15,23,42,0.6);
+}
+.task-pool-header {
+  display: flex; gap: 0.25rem; padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #1e3a5f;
+}
+.task-pool-toggle {
+  flex: 1; background: none; border: 1px solid #334155;
+  color: #64748b; font-size: 0.62rem; padding: 0.2rem 0.4rem;
+  border-radius: 10px; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.task-pool-toggle:hover { color: #94a3b8; border-color: #475569; }
+.task-pool-toggle.active {
+  background: #1e3a5f; color: #60a5fa; border-color: #3b82f6;
+}
+.task-pool-list {
+  flex: 1; overflow-y: auto; padding: 0.35rem 0.4rem;
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.task-pool-card {
+  padding: 0.3rem 0.4rem; border: 1px solid #233048;
+  border-radius: 5px; cursor: grab; background: #0f172a;
+  transition: border-color 0.15s, opacity 0.15s;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.task-pool-card:hover { border-color: #3b82f6; }
+.task-pool-card.dragging { opacity: 0.35; }
+.task-pool-card-title {
+  font-size: 0.65rem; color: #cbd5e1; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
+}
+.task-pool-badge {
+  font-size: 0.5rem; padding: 0.08rem 0.3rem;
+  border-radius: 8px; border: 1px solid; white-space: nowrap; flex-shrink: 0;
+}
+.task-pool-empty {
+  color: #475569; font-size: 0.62rem; text-align: center;
+  padding: 1.5rem 0.5rem; font-style: italic;
+}
+.stack-list.drag-pool-over {
+  outline: 2px dashed #f59e0b44; outline-offset: -2px;
+}
+@media (max-width: 768px) {
+  .task-pool { display: none; }
+}
+
+/* ── Expanded card body ── */
+.stack-card-body {
+  padding: 0.25rem 0.45rem 0.35rem;
+  border-top: 1px solid #233048;
+}
+.stack-edit-title {
+  width: 100%; background: #0f172a; border: 1px solid #334155;
+  color: #e2e8f0; border-radius: 4px; padding: 0.2rem 0.4rem;
+  font-size: 0.74rem; font-family: inherit;
+}
+.stack-edit-title:focus { outline: none; border-color: #22d3ee; }
+.stack-card-meta { color: #64748b; font-size: 0.62rem; margin-top: 0.12rem; }
+.stack-notes-list {
+  margin-top: 0.2rem; display: flex; flex-direction: column; gap: 0.12rem;
+  max-height: 120px; overflow-y: auto;
+}
+.stack-note-row {
+  display: flex; align-items: flex-start; gap: 0.2rem;
+  background: #0f172a; border-radius: 3px; padding: 0.12rem 0.25rem;
+}
+.stack-note-text { flex: 1; color: #cbd5e1; font-size: 0.66rem; white-space: pre-wrap; }
+.stack-note-x {
+  color: #475569; cursor: pointer; font-size: 0.58rem; padding: 0 0.1rem;
+  transition: color 0.15s; line-height: 1.4;
+}
+.stack-note-x:hover { color: #ef4444; }
+.stack-add-note { display: flex; gap: 0.2rem; margin-top: 0.15rem; }
+.stack-add-note input {
+  flex: 1; background: #0f172a; border: 1px solid #334155;
+  color: #e2e8f0; border-radius: 3px; padding: 0.12rem 0.25rem;
+  font-size: 0.66rem; font-family: inherit;
+}
+.stack-add-note input:focus { outline: none; border-color: #3b82f6; }
+.stack-add-note button {
+  background: transparent; border: 1px solid #334155;
+  color: #94a3b8; font-size: 0.6rem; padding: 0.08rem 0.28rem;
+  border-radius: 3px; cursor: pointer; font-family: inherit;
+}
+.stack-add-note button:hover { border-color: #3b82f6; color: #e2e8f0; }
+
+/* ── Completion modal ── */
+.stack-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; backdrop-filter: blur(3px);
+  animation: stackFadeIn 0.15s ease;
+}
+@keyframes stackFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.stack-modal {
+  background: #1e293b; border: 1px solid #334155;
+  border-radius: 10px; padding: 1.1rem 1.2rem;
+  max-width: 360px; width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: stackSlideUp 0.2s ease;
+}
+@keyframes stackSlideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.stack-modal h4 { color: #e2e8f0; font-size: 0.88rem; margin: 0 0 0.25rem; font-weight: 600; }
+.stack-modal p { color: #94a3b8; font-size: 0.74rem; margin: 0 0 0.9rem; line-height: 1.4; }
+.stack-modal-task { color: #22d3ee; font-weight: 600; }
+.stack-modal-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.stack-modal-btn {
+  padding: 0.3rem 0.7rem; border-radius: 5px; border: 1px solid;
+  font-size: 0.74rem; cursor: pointer; font-weight: 500;
+  transition: all 0.15s; font-family: inherit;
+}
+.stack-modal-btn.done-btn { background: #22c55e1a; border-color: #22c55e; color: #22c55e; }
+.stack-modal-btn.done-btn:hover { background: #22c55e30; }
+.stack-modal-btn.remove-btn { background: transparent; border-color: #475569; color: #94a3b8; }
+.stack-modal-btn.remove-btn:hover { border-color: #94a3b8; color: #e2e8f0; }
+.stack-modal-btn.cancel-btn { background: transparent; border-color: transparent; color: #64748b; }
+.stack-modal-btn.cancel-btn:hover { color: #94a3b8; }
+.stack-modal-btn.push-btn { background: #3b82f61a; border-color: #3b82f6; color: #3b82f6; }
+.stack-modal-btn.push-btn:hover { background: #3b82f630; }
+.stack-modal select {
+  width: 100%; background: #0f172a; border: 1px solid #334155;
+  color: #e2e8f0; border-radius: 5px; padding: 0.3rem 0.4rem;
+  font-size: 0.74rem; font-family: inherit; margin-bottom: 0.7rem;
+  appearance: none; cursor: pointer;
+}
+.stack-modal select:focus { outline: none; border-color: #3b82f6; }
+.stack-modal label { display: block; color: #94a3b8; font-size: 0.68rem; margin-bottom: 0.2rem; }
+
+@media (max-width: 1024px) {
+  .stack-cmd { flex-wrap: wrap; }
+  .stack-list { min-height: 320px; }
+}
 </style>
 </head>
 <body>
@@ -618,6 +1224,12 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       </button>
       <button class="tab-btn" onclick="switchTab('projects')" title="Projects">
         &#x1F4CA;<span class="tab-label">Projects</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('calendar')" title="Calendar">
+        &#x1F4C5;<span class="tab-label">Calendar</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('stack')" title="Stack">
+        &#x1F4DA;<span class="tab-label">Stack</span>
       </button>
     </div>
     <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#x276F;</button>
@@ -659,6 +1271,68 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         <div class="projects-grid" id="projects-grid"></div>
       </div>
       <div id="project-detail" style="display:none"></div>
+    </div>
+
+    <!-- ═══════ Calendar Tab ═══════ -->
+    <div class="tab-content" id="tab-calendar">
+      <div class="calendar-shell">
+        <div class="calendar-main">
+          <div class="calendar-toolbar">
+            <div class="calendar-nav">
+              <button class="btn btn-outline-secondary btn-sm" onclick="cronPrevMonth()">&larr;</button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="cronNextMonth()">&rarr;</button>
+              <button class="btn btn-outline-info btn-sm" onclick="cronToday()">Today</button>
+            </div>
+            <div class="calendar-head-center">
+              <div class="calendar-title" id="cronMonthLabel">Month</div>
+              <div class="view-toggle calendar-mode-toggle">
+                <button class="view-btn" id="calendarModeTasks" onclick="setCalendarMode('tasks')">Tasks</button>
+                <button class="view-btn" id="calendarModeJobs" onclick="setCalendarMode('jobs')">Cron Jobs</button>
+              </div>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="loadCronCalendar()">Refresh</button>
+          </div>
+          <div class="calendar-grid-head">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div class="calendar-grid" id="cronCalendarGrid"></div>
+        </div>
+        <div class="calendar-side">
+          <div class="calendar-side-title" id="cronDayTitle">Select a day</div>
+          <div id="calendarVaultSection"></div>
+          <div class="calendar-day-events" id="cronDayEvents"></div>
+          <div class="calendar-job-detail" id="cronJobDetail">
+            <div class="calendar-empty">Pick a cron event to see details.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ Stack Tab ═══════ -->
+    <div class="tab-content" id="tab-stack">
+      <div class="stack-layout">
+        <div class="stack-wrap">
+          <div class="stack-cmd">
+            <div class="stack-input-wrap">
+              <input id="stackInput" type="text" placeholder="+ Add task or search board..."
+                oninput="stackInputChanged()" onfocus="stackInputFocus()" autocomplete="off"
+                onkeydown="stackInputKey(event)">
+              <div class="stack-suggest" id="stackSuggest"></div>
+            </div>
+            <button class="stack-btn pop" onclick="stackPopTop()">Pop Top</button>
+          </div>
+          <div class="stack-list" id="stackList"
+            ondragover="stackListDragOver(event)" ondragleave="stackListDragLeave(event)" ondrop="stackListDrop(event)"></div>
+        </div>
+        <div class="task-pool" id="taskPool">
+          <div class="task-pool-header">
+            <button class="task-pool-toggle active" id="poolToggleBoard" onclick="switchPoolSource('board')">Board</button>
+            <button class="task-pool-toggle" id="poolToggleNF" onclick="switchPoolSource('noteflow')">NoteFlow</button>
+          </div>
+          <div class="task-pool-list" id="taskPoolList"></div>
+        </div>
+      </div>
+      <div id="stackCompletionModal"></div>
     </div>
 
   </div><!-- /mc-main -->
@@ -850,7 +1524,28 @@ let board = { projects: [], statuses: [], cards: [], decisions: [], log: [], act
 let kbView = 'status';
 let kbExpandedSlug = null;
 let activityPanelVisible = true;
-const BUILTIN_STATUSES = new Set(['pending', 'active', 'done']);
+const BUILTIN_STATUSES = new Set(); // all statuses are user-editable
+
+// Stack tab state
+const STACK_STORAGE_KEY = 'mc-stack-v1';
+let stackItems = [];
+let poolSource = localStorage.getItem('mc-pool-source') || 'board';
+let poolNfItems = [];
+let poolNfColumns = [];
+
+// Calendar tab state
+let cronJobs = [];
+let cronOccurrencesByDay = {};
+let taskCompletionsByDay = {};
+let vaultDailyByDay = {};  // { "2026-03-11": { files: [...], count: N } }
+let cronCursor = (() => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+})();
+let cronSelectedDayKey = null;
+let cronSelectedOccurrenceId = null;
+let taskSelectedCompletionId = null;
+let calendarMode = localStorage.getItem('mc-calendar-mode') || 'jobs';
 
 // ══════════════════════════════════════════════
 // Shared utils
@@ -893,6 +1588,7 @@ function toggleSidebar() {
 
 function switchTab(tab) {
   currentTab = tab;
+  localStorage.setItem('mc-active-tab', tab);
   document.querySelectorAll('.mc-sidebar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.getAttribute('title').toLowerCase() === tab);
   });
@@ -913,6 +1609,1354 @@ function switchTab(tab) {
   if (tab === 'noteflow') loadNoteFlow();
   else if (tab === 'tasks') loadBoard();
   else if (tab === 'projects') loadProjects();
+  else if (tab === 'calendar') loadCronCalendar();
+  else if (tab === 'stack') loadStackTab();
+}
+
+// ══════════════════════════════════════════════
+//  CALENDAR TAB — OpenClaw cron jobs
+// ══════════════════════════════════════════════
+function pad2(n) { return String(n).padStart(2, '0'); }
+function dayKeyFromDate(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function dayKeyFromMs(ms) { return dayKeyFromDate(new Date(ms)); }
+function dateFromDayKey(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+function formatMsDateTime(ms) {
+  if (!ms && ms !== 0) return '—';
+  const d = new Date(ms);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+  });
+}
+function formatRunStatus(status) {
+  const s = String(status || 'unknown').toLowerCase();
+  if (s === 'ok') return '<span class="calendar-run-status" style="color:#10b981">ok</span>';
+  if (s === 'error' || s === 'failed') return '<span class="calendar-run-status" style="color:#ef4444">error</span>';
+  return `<span class="calendar-run-status" style="color:#94a3b8">${escapeHtml(s)}</span>`;
+}
+function updateCalendarModeButtons() {
+  const tasksBtn = document.getElementById('calendarModeTasks');
+  const jobsBtn = document.getElementById('calendarModeJobs');
+  if (!tasksBtn || !jobsBtn) return;
+  tasksBtn.classList.toggle('active', calendarMode === 'tasks');
+  jobsBtn.classList.toggle('active', calendarMode === 'jobs');
+}
+function setCalendarMode(mode) {
+  calendarMode = mode === 'tasks' ? 'tasks' : 'jobs';
+  localStorage.setItem('mc-calendar-mode', calendarMode);
+  updateCalendarModeButtons();
+  renderCronCalendar();
+  renderCronDayPanel();
+}
+function isWildcardField(field) {
+  return field === '*' || field === '?';
+}
+function parseCronField(field, min, max) {
+  const out = new Set();
+  const src = String(field || '*').trim();
+  if (isWildcardField(src)) {
+    for (let i = min; i <= max; i++) out.add(i);
+    return out;
+  }
+  for (const partRaw of src.split(',')) {
+    const part = partRaw.trim();
+    if (!part) continue;
+    const [baseRaw, stepRaw] = part.split('/');
+    const step = Number(stepRaw) > 0 ? Number(stepRaw) : 1;
+    const base = (baseRaw || '*').trim();
+
+    let rangeStart = min;
+    let rangeEnd = max;
+    if (!isWildcardField(base)) {
+      if (base.includes('-')) {
+        const [a, b] = base.split('-').map(Number);
+        rangeStart = Number.isFinite(a) ? a : min;
+        rangeEnd = Number.isFinite(b) ? b : max;
+      } else {
+        const v = Number(base);
+        if (!Number.isFinite(v)) continue;
+        rangeStart = v;
+        rangeEnd = v;
+      }
+    }
+    rangeStart = Math.max(min, rangeStart);
+    rangeEnd = Math.min(max, rangeEnd);
+    for (let v = rangeStart; v <= rangeEnd; v += step) out.add(v);
+  }
+  return out;
+}
+function buildCronOccurrencesForMonth(job, year, monthIndex) {
+  const schedule = job.schedule || {};
+  if (schedule.kind !== 'cron' || !schedule.expr) return [];
+  const parts = String(schedule.expr).trim().split(/\s+/);
+  if (parts.length !== 5) return [];
+
+  const minuteSet = parseCronField(parts[0], 0, 59);
+  const hourSet = parseCronField(parts[1], 0, 23);
+  const domSet = parseCronField(parts[2], 1, 31);
+  const monthSet = parseCronField(parts[3], 1, 12);
+  const dowSet = parseCronField(parts[4], 0, 6);
+  const domWildcard = isWildcardField(parts[2]);
+  const dowWildcard = isWildcardField(parts[4]);
+
+  const minutes = Array.from(minuteSet).sort((a, b) => a - b);
+  const hours = Array.from(hourSet).sort((a, b) => a - b);
+  // Safety cap for pathological cron patterns (e.g. every minute).
+  if (minutes.length * hours.length > 18) return [];
+
+  const out = [];
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (!monthSet.has(monthIndex + 1)) continue;
+    const date = new Date(year, monthIndex, day);
+    const dayOfWeek = date.getDay();
+    const domMatch = domSet.has(day);
+    const dowMatch = dowSet.has(dayOfWeek);
+    let dayMatch = false;
+    if (domWildcard && dowWildcard) dayMatch = true;
+    else if (domWildcard) dayMatch = dowMatch;
+    else if (dowWildcard) dayMatch = domMatch;
+    else dayMatch = domMatch || dowMatch;
+    if (!dayMatch) continue;
+
+    for (const h of hours) {
+      for (const m of minutes) {
+        const when = new Date(year, monthIndex, day, h, m, 0, 0);
+        const ts = when.getTime();
+        out.push({
+          id: `${job.id}:${ts}`,
+          jobId: job.id,
+          ts,
+          dayKey: dayKeyFromDate(when),
+          timeLabel: `${pad2(h)}:${pad2(m)}`,
+          name: job.name || '(unnamed)',
+        });
+      }
+    }
+  }
+  return out;
+}
+
+function buildCronCalendarData() {
+  const year = cronCursor.getFullYear();
+  const monthIndex = cronCursor.getMonth();
+  cronOccurrencesByDay = {};
+
+  for (const job of cronJobs) {
+    if (!job.enabled) continue;
+    let occurrences = buildCronOccurrencesForMonth(job, year, monthIndex);
+
+    // Fallback: if expr unsupported, still show next run in the correct month.
+    if (!occurrences.length) {
+      const nextRun = job.state && job.state.nextRunAtMs;
+      if (nextRun) {
+        const d = new Date(nextRun);
+        if (d.getFullYear() === year && d.getMonth() === monthIndex) {
+          occurrences = [{
+            id: `${job.id}:${nextRun}`,
+            jobId: job.id,
+            ts: nextRun,
+            dayKey: dayKeyFromMs(nextRun),
+            timeLabel: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            name: job.name || '(unnamed)',
+          }];
+        }
+      }
+    }
+
+    for (const occ of occurrences) {
+      if (!cronOccurrencesByDay[occ.dayKey]) cronOccurrencesByDay[occ.dayKey] = [];
+      cronOccurrencesByDay[occ.dayKey].push(occ);
+    }
+  }
+
+  Object.values(cronOccurrencesByDay).forEach(list => list.sort((a, b) => a.ts - b.ts));
+}
+
+function latestDoneTs(item) {
+  const history = item && Array.isArray(item.history) ? item.history : [];
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h = history[i];
+    if (!h || !h.ts) continue;
+    if (h.action !== 'done' && h.action !== 'completed' && !h.action.startsWith('done ')) continue;
+    const ms = Date.parse(h.ts);
+    if (!Number.isNaN(ms)) return ms;
+  }
+  return null;
+}
+
+function buildTaskCalendarData(activeItems, archivedItems, board) {
+  taskCompletionsByDay = {};
+
+  // Collect NoteFlow task IDs that are linked to MC cards — we'll prefer the card entry
+  const linkedNfIds = new Set();
+
+  // 1. MC card completions — primary source
+  const cards = (board && Array.isArray(board.cards)) ? board.cards : [];
+  const statuses = (board && Array.isArray(board.statuses)) ? board.statuses : [];
+  const terminalIds = new Set(statuses.filter(s =>
+    /done|complete/i.test(s.label || s.id)
+  ).map(s => s.id));
+  // Fallback: if no terminal status found, use "done"
+  if (!terminalIds.size) terminalIds.add('done');
+
+  const projects = (board && Array.isArray(board.projects)) ? board.projects : [];
+  const projectMap = {};
+  for (const p of projects) projectMap[p.id] = p;
+
+  for (const card of cards) {
+    if (!card || !terminalIds.has(card.status)) continue;
+    const ts = Date.parse(card.updated || card.created);
+    if (Number.isNaN(ts)) continue;
+    const dayKey = dayKeyFromMs(ts);
+    const d = new Date(ts);
+    const entry = {
+      id: `card:${card.slug}`,
+      source: 'card',
+      ts,
+      dayKey,
+      timeLabel: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      title: card.title || '(untitled)',
+      card,
+      project: card.project ? projectMap[card.project] : null,
+    };
+    if (!taskCompletionsByDay[dayKey]) taskCompletionsByDay[dayKey] = [];
+    taskCompletionsByDay[dayKey].push(entry);
+    // Track linked NoteFlow IDs to avoid duplication
+    // (NoteFlow items linked to this card via nf-mc-sync)
+  }
+
+  // 2. NoteFlow task completions — for unlinked tasks only
+  const all = [...(activeItems || []), ...(archivedItems || [])];
+  // Build a set of NoteFlow IDs that are linked to any done MC card
+  for (const card of cards) {
+    if (!card || !terminalIds.has(card.status)) continue;
+    // Check if any NoteFlow item links to this card
+    for (const item of all) {
+      if (item && Array.isArray(item.linked_cards) && item.linked_cards.includes(card.slug)) {
+        linkedNfIds.add(item.id);
+      }
+    }
+  }
+
+  for (const item of all) {
+    if (!item || item.type !== 'task') continue;
+    if (linkedNfIds.has(item.id)) continue;  // Already represented by MC card
+    const doneTs = latestDoneTs(item);
+    if (!doneTs) continue;
+
+    const dayKey = dayKeyFromMs(doneTs);
+    const d = new Date(doneTs);
+    const entry = {
+      id: `${item.id}:${doneTs}`,
+      source: 'noteflow',
+      itemId: item.id,
+      ts: doneTs,
+      dayKey,
+      timeLabel: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      title: item.title || '(untitled)',
+      task: item,
+    };
+    if (!taskCompletionsByDay[dayKey]) taskCompletionsByDay[dayKey] = [];
+    taskCompletionsByDay[dayKey].push(entry);
+  }
+  Object.values(taskCompletionsByDay).forEach(list => list.sort((a, b) => a.ts - b.ts));
+}
+
+function getDayEventsForCurrentMode() {
+  if (!cronSelectedDayKey) return [];
+  if (calendarMode === 'tasks') return taskCompletionsByDay[cronSelectedDayKey] || [];
+  return cronOccurrencesByDay[cronSelectedDayKey] || [];
+}
+
+function getEventsForSelectedDay() {
+  return getDayEventsForCurrentMode();
+}
+
+function selectCronDay(dayKey) {
+  cronSelectedDayKey = dayKey;
+  const events = getDayEventsForCurrentMode();
+  if (calendarMode === 'tasks') {
+    if (!events.length) taskSelectedCompletionId = null;
+    else if (!events.some(e => e.id === taskSelectedCompletionId)) taskSelectedCompletionId = events[0].id;
+  } else {
+    if (!events.length) cronSelectedOccurrenceId = null;
+    else if (!events.some(e => e.id === cronSelectedOccurrenceId)) cronSelectedOccurrenceId = events[0].id;
+  }
+  renderCronCalendar();
+  renderCronDayPanel();
+}
+
+function selectCronOccurrence(occId) {
+  cronSelectedOccurrenceId = occId;
+  renderCronDayPanel();
+  renderCronCalendar();
+}
+
+function selectTaskCompletion(eventId) {
+  taskSelectedCompletionId = eventId;
+  renderCronDayPanel();
+  renderCronCalendar();
+}
+
+function renderCronCalendar() {
+  const monthLabel = document.getElementById('cronMonthLabel');
+  const grid = document.getElementById('cronCalendarGrid');
+  if (!monthLabel || !grid) return;
+
+  updateCalendarModeButtons();
+  const year = cronCursor.getFullYear();
+  const monthIndex = cronCursor.getMonth();
+  monthLabel.textContent = cronCursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const first = new Date(year, monthIndex, 1);
+  const firstDow = first.getDay();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const prevDays = new Date(year, monthIndex, 0).getDate();
+  const todayKey = dayKeyFromDate(new Date());
+
+  let html = '';
+  for (let i = firstDow - 1; i >= 0; i--) {
+    const day = prevDays - i;
+    html += `<div class="calendar-day-cell outside"><div class="calendar-day-num">${day}</div></div>`;
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, monthIndex, day);
+    const key = dayKeyFromDate(d);
+    const events = calendarMode === 'tasks' ? (taskCompletionsByDay[key] || []) : (cronOccurrencesByDay[key] || []);
+    const isToday = key === todayKey;
+    const isSelected = key === cronSelectedDayKey;
+    const classes = [
+      'calendar-day-cell',
+      isToday ? 'today' : '',
+      isSelected ? 'selected' : '',
+    ].filter(Boolean).join(' ');
+
+    let cellContent = '';
+    if (calendarMode === 'tasks') {
+      // Show count badge instead of individual task cards
+      if (events.length) {
+        cellContent += `<div class="calendar-task-count">${events.length} done</div>`;
+      }
+      // Show vault checkpoint badge if files exist for this day
+      const vault = vaultDailyByDay[key];
+      if (vault && vault.count > 0) {
+        cellContent += `<div class="calendar-vault-badge">${vault.count} note${vault.count > 1 ? 's' : ''}</div>`;
+      }
+    } else {
+      const eventsHtml = events.slice(0, 2).map(ev =>
+        `<div class="calendar-mini-event" title="${escapeHtml(ev.timeLabel)} ${escapeHtml(ev.name)}">${escapeHtml(ev.timeLabel)} ${escapeHtml(ev.name)}</div>`
+      ).join('');
+      const moreHtml = events.length > 2 ? `<div class="calendar-mini-more">+${events.length - 2} more</div>` : '';
+      cellContent = eventsHtml + moreHtml;
+    }
+
+    html += `
+      <div class="${classes}" onclick="selectCronDay('${key}')">
+        <div class="calendar-day-num">${day}</div>
+        ${cellContent}
+      </div>
+    `;
+  }
+
+  const totalCells = firstDow + daysInMonth;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  for (let day = 1; day <= trailing; day++) {
+    html += `<div class="calendar-day-cell outside"><div class="calendar-day-num">${day}</div></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function renderVaultSection(dayKey) {
+  const el = document.getElementById('calendarVaultSection');
+  if (!el) return;
+  if (calendarMode !== 'tasks' || !dayKey) { el.innerHTML = ''; return; }
+  const vault = vaultDailyByDay[dayKey];
+  if (!vault || !vault.files.length) { el.innerHTML = ''; return; }
+  const vaultBase = `~/.openclaw/vaults/Claw/Daily/${dayKey}`;
+  const filesHtml = vault.files.map(f => {
+    const label = f.replace(/\.md$/, '').replace(/-/g, ' ');
+    return `<div class="vault-file-item" onclick="openFileViewer('${vaultBase}/${f}')">
+      <span class="vault-file-icon">&#9782;</span>
+      <span>${escapeHtml(label)}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="vault-section">
+      <div class="vault-section-title">Checkpoint Notes</div>
+      ${filesHtml}
+    </div>
+  `;
+}
+
+function renderCronDayPanel() {
+  const titleEl = document.getElementById('cronDayTitle');
+  const eventsEl = document.getElementById('cronDayEvents');
+  const detailEl = document.getElementById('cronJobDetail');
+  if (!titleEl || !eventsEl || !detailEl) return;
+
+  if (!cronSelectedDayKey) {
+    titleEl.textContent = 'Select a day';
+    document.getElementById('calendarVaultSection').innerHTML = '';
+    eventsEl.innerHTML = '<div class="calendar-empty">No day selected.</div>';
+    detailEl.innerHTML = '<div class="calendar-empty">Pick a cron event to see details.</div>';
+    return;
+  }
+
+  const dayDate = dateFromDayKey(cronSelectedDayKey);
+  titleEl.textContent = dayDate.toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+  });
+  renderVaultSection(cronSelectedDayKey);
+
+  const events = getEventsForSelectedDay();
+  if (!events.length) {
+    if (calendarMode === 'tasks') {
+      eventsEl.innerHTML = '<div class="calendar-empty">No completed tasks on this day.</div>';
+      detailEl.innerHTML = '<div class="calendar-empty">Pick another day to inspect completed task details.</div>';
+    } else {
+      eventsEl.innerHTML = '<div class="calendar-empty">No scheduled jobs on this day.</div>';
+      detailEl.innerHTML = '<div class="calendar-empty">Pick another day to inspect a cron job.</div>';
+    }
+    return;
+  }
+
+  if (calendarMode === 'tasks') {
+    if (!events.some(e => e.id === taskSelectedCompletionId)) {
+      taskSelectedCompletionId = events[0].id;
+    }
+  } else if (!events.some(e => e.id === cronSelectedOccurrenceId)) {
+    cronSelectedOccurrenceId = events[0].id;
+  }
+
+  if (calendarMode === 'tasks') {
+    eventsEl.innerHTML = events.map(ev => {
+      const badge = ev.source === 'card'
+        ? '<span style="font-size:0.62rem;color:#93c5fd;margin-left:0.3rem">MC</span>'
+        : '<span style="font-size:0.62rem;color:#86efac;margin-left:0.3rem">NF</span>';
+      return `
+      <button class="calendar-event-row ${ev.id === taskSelectedCompletionId ? 'active' : ''}" onclick="selectTaskCompletion('${ev.id}')">
+        <div class="calendar-event-time">${escapeHtml(ev.timeLabel)}${badge}</div>
+        <div class="calendar-event-name">${escapeHtml(ev.title)}</div>
+      </button>`;
+    }).join('');
+
+    const sel = events.find(e => e.id === taskSelectedCompletionId) || events[0];
+
+    if (sel.source === 'card') {
+      const card = sel.card || {};
+      const proj = sel.project;
+      const projLabel = proj ? `<span style="color:${escapeHtml(proj.color || '#6366f1')}">${escapeHtml(proj.name)}</span>` : '—';
+      const cardComments = Array.isArray(card.comments) ? card.comments : [];
+      const commentsHtml = cardComments.length
+        ? cardComments.map(c => `
+          <div class="comment">
+            <div class="comment-ts">${escapeHtml(formatDateTime(c.ts))}${c.author ? ` · ${escapeHtml(c.author)}` : ''}</div>
+            <div class="comment-text">${escapeHtml(c.text || '')}</div>
+          </div>
+        `).join('')
+        : '<div class="calendar-empty">No comments.</div>';
+      const planLink = card.plan_file
+        ? `<span class="vault-file-item" style="display:inline-flex;padding:0.15rem 0.3rem" onclick="openFileViewer('workspace/${escapeHtml(card.plan_file)}')"><span class="vault-file-icon">&#9782;</span> ${escapeHtml(card.plan_file.split('/').pop().replace(/\.md$/, ''))}</span>`
+        : '—';
+
+      detailEl.innerHTML = `
+        <div class="calendar-detail-grid">
+          <div class="calendar-detail-item"><span class="k">Card</span>${escapeHtml(card.title || '(untitled)')}</div>
+          <div class="calendar-detail-item"><span class="k">Slug</span><code>${escapeHtml(card.slug || '')}</code></div>
+          <div class="calendar-detail-item"><span class="k">Completed</span>${escapeHtml(formatMsDateTime(sel.ts))}</div>
+          <div class="calendar-detail-item"><span class="k">Project</span>${projLabel}</div>
+          <div class="calendar-detail-item"><span class="k">Plan</span>${planLink}</div>
+        </div>
+        ${card.description ? `<div class="section-label" style="margin-top:0.8rem">Description</div><div class="notes-body">${escapeHtml(card.description)}</div>` : ''}
+        <div class="section-label" style="margin-top:0.8rem">Comments</div>
+        ${commentsHtml}
+      `;
+    } else {
+      const item = sel.task || {};
+      const comments = Array.isArray(item.subnotes) ? item.subnotes : [];
+      const tags = Array.isArray(item.tags) ? item.tags : [];
+      const tagsHtml = tags.length ? tags.map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('') : '<span class="calendar-empty">none</span>';
+      const commentsHtml = comments.length
+        ? comments.map(c => `
+          <div class="comment">
+            <div class="comment-ts">${escapeHtml(formatDateTime(c.ts))}</div>
+            <div class="comment-text">${escapeHtml(c.text || '')}</div>
+          </div>
+        `).join('')
+        : '<div class="calendar-empty">No comments.</div>';
+
+      detailEl.innerHTML = `
+        <div class="calendar-detail-grid">
+          <div class="calendar-detail-item"><span class="k">Task</span>${escapeHtml(item.title || '(untitled)')}</div>
+          <div class="calendar-detail-item"><span class="k">ID</span><code>${escapeHtml(item.id || '')}</code></div>
+          <div class="calendar-detail-item"><span class="k">Completed</span>${escapeHtml(formatMsDateTime(sel.ts))}</div>
+          <div class="calendar-detail-item"><span class="k">Type</span>${escapeHtml(item.type || 'task')}</div>
+          <div class="calendar-detail-item"><span class="k">Due</span>${escapeHtml(formatDateTime(item.due)) || '—'}</div>
+          <div class="calendar-detail-item"><span class="k">Reminder</span>${escapeHtml(formatDateTime(item.remind)) || '—'}</div>
+        </div>
+        <div class="section-label" style="margin-top:0.8rem">Tags</div>
+        <div>${tagsHtml}</div>
+        <div class="section-label" style="margin-top:0.8rem">Notes</div>
+        ${item.body ? `<div class="notes-body">${escapeHtml(item.body)}</div>` : '<div class="calendar-empty">No notes.</div>'}
+        <div class="section-label" style="margin-top:0.8rem">Comments</div>
+        ${commentsHtml}
+      `;
+    }
+    return;
+  }
+
+  eventsEl.innerHTML = events.map(ev => `
+    <button class="calendar-event-row ${ev.id === cronSelectedOccurrenceId ? 'active' : ''}" onclick="selectCronOccurrence('${ev.id}')">
+      <div class="calendar-event-time">${escapeHtml(ev.timeLabel)}</div>
+      <div class="calendar-event-name">${escapeHtml(ev.name)}</div>
+    </button>
+  `).join('');
+
+  const selected = events.find(e => e.id === cronSelectedOccurrenceId) || events[0];
+  const job = cronJobs.find(j => j.id === selected.jobId);
+  if (!job) {
+    detailEl.innerHTML = '<div class="calendar-empty">Job details not found.</div>';
+    return;
+  }
+
+  const schedule = job.schedule || {};
+  const state = job.state || {};
+  const delivery = job.delivery || {};
+  const payload = job.payload || {};
+  const runs = job.runs || [];
+
+  const runsHtml = runs.length
+    ? `<div class="calendar-runs">
+        ${runs.slice().reverse().map(run => `
+          <div class="calendar-run">
+            <div class="calendar-run-top">
+              <span>${formatMsDateTime(run.runAtMs || run.ts)}</span>
+              ${formatRunStatus(run.status || run.deliveryStatus)}
+            </div>
+            <div class="calendar-run-summary" title="${escapeHtml(run.summary || '')}">${escapeHtml(run.summary || '(no summary)')}</div>
+          </div>
+        `).join('')}
+      </div>`
+    : '<div class="calendar-empty" style="margin-top:0.45rem">No recent run logs for this job.</div>';
+
+  detailEl.innerHTML = `
+    <div class="calendar-detail-grid">
+      <div class="calendar-detail-item"><span class="k">Job</span>${escapeHtml(job.name || '(unnamed)')}</div>
+      <div class="calendar-detail-item"><span class="k">ID</span><code>${escapeHtml(job.id || '')}</code></div>
+      <div class="calendar-detail-item"><span class="k">Schedule</span><code>${escapeHtml(schedule.expr || schedule.kind || '—')}</code></div>
+      <div class="calendar-detail-item"><span class="k">Timezone</span>${escapeHtml(schedule.tz || 'local')}</div>
+      <div class="calendar-detail-item"><span class="k">Next Run</span>${escapeHtml(formatMsDateTime(state.nextRunAtMs))}</div>
+      <div class="calendar-detail-item"><span class="k">Last Run</span>${escapeHtml(formatMsDateTime(state.lastRunAtMs))}</div>
+      <div class="calendar-detail-item"><span class="k">Delivery</span>${escapeHtml(delivery.mode || '—')} ${delivery.channel ? `→ ${escapeHtml(delivery.channel)}` : ''}</div>
+      <div class="calendar-detail-item"><span class="k">Message</span>${escapeHtml(payload.message || '(none)')}</div>
+    </div>
+    <div class="section-label" style="margin-top:0.8rem">Recent Runs</div>
+    ${runsHtml}
+  `;
+}
+
+async function loadCronCalendar() {
+  const [jobsRes, itemsRes, archiveRes, vaultRes, boardRes] = await Promise.all([
+    api('GET', '/api/cron/jobs'),
+    api('GET', '/api/items'),
+    api('GET', '/api/archive'),
+    api('GET', '/api/vault/daily'),
+    api('GET', '/api/board'),
+  ]);
+  if (!jobsRes.error) cronJobs = jobsRes.jobs || [];
+  const board = boardRes && !boardRes.error ? boardRes : null;
+  buildTaskCalendarData(
+    itemsRes && !itemsRes.error ? itemsRes.items : [],
+    archiveRes && !archiveRes.error ? archiveRes.items : [],
+    board
+  );
+  buildCronCalendarData();
+  // Index vault daily folders by date
+  vaultDailyByDay = {};
+  if (vaultRes && !vaultRes.error && Array.isArray(vaultRes.folders)) {
+    for (const f of vaultRes.folders) {
+      vaultDailyByDay[f.date] = { files: f.files || [], count: f.count || 0 };
+    }
+  }
+
+  if (!cronSelectedDayKey) {
+    const today = new Date();
+    if (today.getFullYear() === cronCursor.getFullYear() && today.getMonth() === cronCursor.getMonth()) {
+      cronSelectedDayKey = dayKeyFromDate(today);
+    } else {
+      cronSelectedDayKey = dayKeyFromDate(new Date(cronCursor.getFullYear(), cronCursor.getMonth(), 1));
+    }
+  }
+
+  if (!cronOccurrencesByDay[cronSelectedDayKey]) {
+    cronSelectedOccurrenceId = null;
+  }
+  if (!taskCompletionsByDay[cronSelectedDayKey]) {
+    taskSelectedCompletionId = null;
+  }
+
+  renderCronCalendar();
+  renderCronDayPanel();
+}
+
+function cronPrevMonth() {
+  cronCursor = new Date(cronCursor.getFullYear(), cronCursor.getMonth() - 1, 1);
+  cronSelectedDayKey = dayKeyFromDate(new Date(cronCursor.getFullYear(), cronCursor.getMonth(), 1));
+  cronSelectedOccurrenceId = null;
+  loadCronCalendar();
+}
+
+function cronNextMonth() {
+  cronCursor = new Date(cronCursor.getFullYear(), cronCursor.getMonth() + 1, 1);
+  cronSelectedDayKey = dayKeyFromDate(new Date(cronCursor.getFullYear(), cronCursor.getMonth(), 1));
+  cronSelectedOccurrenceId = null;
+  loadCronCalendar();
+}
+
+function cronToday() {
+  const now = new Date();
+  cronCursor = new Date(now.getFullYear(), now.getMonth(), 1);
+  cronSelectedDayKey = dayKeyFromDate(now);
+  cronSelectedOccurrenceId = null;
+  loadCronCalendar();
+}
+
+// ══════════════════════════════════════════════
+//  STACK TAB — Mission Control Session Stack
+// ══════════════════════════════════════════════
+function makeId(prefix) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeStackItem(item) {
+  return {
+    id: item.id || makeId('stk'),
+    title: item.title || 'Untitled',
+    source: item.source === 'board' ? 'board' : 'custom',
+    boardSlug: item.boardSlug || null,
+    notes: Array.isArray(item.notes) ? item.notes.filter(n => typeof n === 'string') : [],
+    createdAt: item.createdAt || new Date().toISOString(),
+  };
+}
+
+function saveStackState() {
+  // Persist to server (fire-and-forget for responsiveness)
+  api('PUT', '/api/stack', { items: stackItems });
+}
+
+async function loadStackState() {
+  try {
+    const res = await api('GET', '/api/stack');
+    if (res && Array.isArray(res.items) && res.items.length) {
+      stackItems = res.items.map(normalizeStackItem);
+    } else {
+      // Migrate from localStorage if server is empty
+      const local = JSON.parse(localStorage.getItem(STACK_STORAGE_KEY) || '[]');
+      if (Array.isArray(local) && local.length) {
+        stackItems = local.map(normalizeStackItem);
+        saveStackState(); // push to server
+        localStorage.removeItem(STACK_STORAGE_KEY);
+      } else {
+        stackItems = [];
+      }
+    }
+  } catch (_) {
+    stackItems = [];
+  }
+}
+
+let stackSelectedId = null;
+let stackDragId = null;
+let stackOpenMenuId = null;
+
+function getDoneStatusId() {
+  const statuses = board.statuses || [];
+  const done = statuses.find(s => (s.id || s) === 'done');
+  if (done) return 'done';
+  const doneByLabel = statuses.find(s => String(s.label || '').trim().toLowerCase() === 'done');
+  if (doneByLabel) return doneByLabel.id || doneByLabel;
+  return statuses.length ? (statuses[statuses.length - 1].id || statuses[statuses.length - 1]) : 'done';
+}
+
+// ── Unified input with suggestions ──
+let stackSugIndex = -1; // -1 = "create custom" row, 0+ = board matches
+
+function stackInputChanged() {
+  stackSugIndex = -1;
+  renderStackSuggestions();
+}
+
+function stackInputFocus() {
+  renderStackSuggestions();
+}
+
+function getStackMatches() {
+  const input = document.getElementById('stackInput');
+  const q = (input ? input.value : '').trim().toLowerCase();
+  if (!q) return [];
+  return (board.cards || []).filter(c =>
+    c.title.toLowerCase().includes(q) || String(c.slug).toLowerCase().includes(q)
+  ).slice(0, 8);
+}
+
+function renderStackSuggestions() {
+  const input = document.getElementById('stackInput');
+  const dd = document.getElementById('stackSuggest');
+  if (!input || !dd) return;
+  const q = (input.value || '').trim();
+  if (!q) { dd.classList.remove('open'); return; }
+
+  const matches = getStackMatches();
+  let html = '';
+  matches.forEach((c, i) => {
+    const statusColor = (board.statuses || []).find(s => s.id === c.status);
+    const sColor = statusColor ? statusColor.color : '#94a3b8';
+    html += `<div class="stack-sug-item${stackSugIndex === i ? ' active' : ''}" onmousedown="stackPickBoard('${escapeHtml(c.slug)}')">`;
+    html += `<span>${escapeHtml(c.title)}</span>`;
+    html += `<span class="sug-slug">${escapeHtml(c.slug)}</span>`;
+    html += `<span class="sug-status" style="color:${sColor};border-color:${sColor}44">${escapeHtml(c.status)}</span>`;
+    html += `</div>`;
+  });
+  // Always show "create as custom" at the bottom
+  html += `<div class="stack-sug-create${stackSugIndex === -1 ? ' active' : ''}" onmousedown="stackAddCustom()">`;
+  html += `<span class="sug-plus">+</span> Create <strong>&quot;${escapeHtml(q)}&quot;</strong> as custom task`;
+  html += `</div>`;
+
+  dd.innerHTML = html;
+  dd.classList.add('open');
+}
+
+function stackInputKey(e) {
+  const matches = getStackMatches();
+  const maxIdx = matches.length - 1;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    stackSugIndex = stackSugIndex < maxIdx ? stackSugIndex + 1 : -1;
+    renderStackSuggestions();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    stackSugIndex = stackSugIndex <= -1 ? maxIdx : stackSugIndex - 1;
+    renderStackSuggestions();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (stackSugIndex >= 0 && stackSugIndex <= maxIdx) {
+      stackPickBoard(matches[stackSugIndex].slug);
+    } else {
+      stackAddCustom();
+    }
+  } else if (e.key === 'Escape') {
+    const dd = document.getElementById('stackSuggest');
+    if (dd) dd.classList.remove('open');
+  }
+}
+
+function stackPickBoard(slug) {
+  const card = (board.cards || []).find(c => c.slug === slug);
+  if (!card) return;
+  const item = normalizeStackItem({
+    id: makeId('stk'), title: card.title,
+    source: 'board', boardSlug: card.slug,
+    notes: [], createdAt: new Date().toISOString(),
+  });
+  stackItems.unshift(item);
+  const input = document.getElementById('stackInput');
+  if (input) input.value = '';
+  const dd = document.getElementById('stackSuggest');
+  if (dd) dd.classList.remove('open');
+  saveStackState();
+  renderStackList();
+  renderTaskPool();
+}
+
+function getStackIndex(id) {
+  return stackItems.findIndex(i => i.id === id);
+}
+
+// ── Kebab menu toggle ──
+function stackToggleMenu(id) {
+  if (stackOpenMenuId && stackOpenMenuId !== id) {
+    const prev = document.getElementById(`stack-menu-${stackOpenMenuId}`);
+    if (prev) prev.style.display = 'none';
+  }
+  if (stackOpenMenuId === id) {
+    const m = document.getElementById(`stack-menu-${id}`);
+    if (m) m.style.display = 'none';
+    stackOpenMenuId = null;
+    return;
+  }
+  stackOpenMenuId = id;
+  const menu = document.getElementById(`stack-menu-${id}`);
+  if (menu) menu.style.display = 'block';
+  setTimeout(() => {
+    document.addEventListener('click', function _close() {
+      if (stackOpenMenuId) {
+        const m = document.getElementById(`stack-menu-${stackOpenMenuId}`);
+        if (m) m.style.display = 'none';
+        stackOpenMenuId = null;
+      }
+      document.removeEventListener('click', _close);
+    }, { once: true });
+  }, 0);
+}
+
+// ── Completion modal (replaces confirm()) ──
+function showCompletionModal(title) {
+  return new Promise((resolve) => {
+    const container = document.getElementById('stackCompletionModal');
+    container.innerHTML = `
+      <div class="stack-modal-overlay" onclick="if(event.target===this)stackResolveModal('cancel')">
+        <div class="stack-modal">
+          <h4>Remove from Stack</h4>
+          <p>What should happen with <span class="stack-modal-task">${escapeHtml(title)}</span>?</p>
+          <div class="stack-modal-actions">
+            <button class="stack-modal-btn cancel-btn" onclick="stackResolveModal('cancel')">Cancel</button>
+            <button class="stack-modal-btn remove-btn" onclick="stackResolveModal('remove')">Just Remove</button>
+            <button class="stack-modal-btn done-btn" onclick="stackResolveModal('done')">Mark Done</button>
+          </div>
+        </div>
+      </div>`;
+    window._stackModalResolve = resolve;
+  });
+}
+
+function stackResolveModal(action) {
+  const container = document.getElementById('stackCompletionModal');
+  if (container) container.innerHTML = '';
+  if (window._stackModalResolve) {
+    window._stackModalResolve(action);
+    window._stackModalResolve = null;
+  }
+}
+
+// ── Select / expand ──
+function stackSelect(id) {
+  stackSelectedId = stackSelectedId === id ? null : id;
+  renderStackList();
+}
+
+// ── Render ──
+function renderStackList() {
+  const list = document.getElementById('stackList');
+  if (!list) return;
+  if (!stackItems.length) {
+    list.innerHTML = `<div class="stack-empty">
+      <div class="stack-empty-icon">&#x1F6F0;</div>
+      <div class="stack-empty-text">No active missions.<br>Add tasks or link board cards to build your stack.</div>
+    </div>`;
+    return;
+  }
+  let html = '';
+  stackItems.forEach((item, idx) => {
+    const isTop = idx === 0;
+    const isSelected = item.id === stackSelectedId;
+    const cls = ['stack-card'];
+    if (isTop) cls.push('top');
+    if (isSelected) cls.push('selected');
+
+    html += `<div class="${cls.join(' ')}" data-stack-id="${item.id}" data-stack-idx="${idx}" draggable="true"
+      onclick="stackSelect('${item.id}')"
+      ondragstart="stackDragStart(event,'${item.id}')" ondragend="stackDragEnd(event)"
+      ondragover="stackCardDragOver(event,'${item.id}')" ondragleave="stackCardDragLeave(event,'${item.id}')"
+      ondrop="stackCardDrop(event,'${item.id}')">`;
+
+    // ── Header row (compact) ──
+    html += `<div class="stack-card-header">`;
+    html += `<span class="stack-drag" title="Drag to reorder">&#x2630;</span>`;
+    html += `<span class="stack-pos ${isTop ? 'is-top' : 'is-num'}">${isTop ? 'TOP' : idx + 1}</span>`;
+    html += `<span class="stack-badge ${item.source === 'board' ? 'brd' : 'cst'}">${item.source === 'board' ? 'Board' : 'Custom'}</span>`;
+    html += `<span class="stack-card-title">${escapeHtml(item.title)}</span>`;
+    if (item.boardSlug) {
+      html += `<span class="stack-badge slug">${escapeHtml(item.boardSlug)}</span>`;
+    }
+    const boardCard = item.boardSlug ? (board.cards || []).find(c => c.slug === item.boardSlug) : null;
+    const comments = boardCard ? (boardCard.comments || []) : [];
+    const noteCount = boardCard ? comments.length : item.notes.length;
+    if (noteCount) {
+      html += `<span class="stack-note-hint">&#x1F4DD; ${noteCount}</span>`;
+    }
+    // ── Move arrows ──
+    html += `<div class="stack-arrows">`;
+    html += `<button class="stack-arrow-btn" onclick="event.stopPropagation();stackMoveUp('${item.id}')" title="Move up" ${idx === 0 ? 'disabled' : ''}>&#x25B2;</button>`;
+    html += `<button class="stack-arrow-btn" onclick="event.stopPropagation();stackMoveDown('${item.id}')" title="Move down" ${idx === stackItems.length - 1 ? 'disabled' : ''}>&#x25BC;</button>`;
+    html += `</div>`;
+
+    html += `<div class="stack-kebab-wrap">`;
+    html += `<button class="stack-kebab" onclick="event.stopPropagation();stackToggleMenu('${item.id}')" title="Actions">&#x22EE;</button>`;
+    html += `<div class="stack-menu" id="stack-menu-${item.id}" style="display:none">`;
+    if (!item.boardSlug) {
+      html += `<button class="stack-menu-item" onclick="event.stopPropagation();stackPushToBoard('${item.id}')">Push to Board</button>`;
+    } else {
+      html += `<button class="stack-menu-item" onclick="event.stopPropagation();openCardDetail('${item.boardSlug}')">Open Card</button>`;
+    }
+    html += `<button class="stack-menu-item danger" onclick="event.stopPropagation();stackDeleteItem('${item.id}')">Remove</button>`;
+    html += `</div></div>`;
+    html += `</div>`;
+
+    // ── Expanded body ──
+    if (isSelected) {
+      html += `<div class="stack-card-body" onclick="event.stopPropagation()">`;
+      html += `<input class="stack-edit-title" value="${escapeHtml(item.title)}"
+        onchange="stackRename('${item.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
+      html += `<div class="stack-card-meta">${item.boardSlug ? 'Linked: ' + escapeHtml(item.boardSlug) : 'Stack-only'} &middot; ${noteCount} comment${noteCount !== 1 ? 's' : ''}</div>`;
+      html += `<div class="stack-notes-list">`;
+      if (boardCard) {
+        // Board-linked: render from board card comments
+        if (!comments.length) {
+          html += `<div style="color:#475569;font-size:0.63rem;font-style:italic;padding:0.15rem 0">No comments yet</div>`;
+        } else {
+          comments.forEach((c, ci) => {
+            html += `<div class="stack-note-row">`;
+            html += `<span class="stack-note-text"><span style="color:#64748b;font-size:0.58rem">[${escapeHtml(c.author)}] ${formatDateTime(c.ts)}</span><br>${escapeHtml(c.text)}</span>`;
+            html += `<span class="stack-note-x" onclick="event.stopPropagation();stackDeleteComment('${item.boardSlug}',${ci})" title="Remove">&#x2715;</span>`;
+            html += `</div>`;
+          });
+        }
+      } else {
+        // Custom stack-only: keep local notes
+        if (!item.notes.length) {
+          html += `<div style="color:#475569;font-size:0.63rem;font-style:italic;padding:0.15rem 0">No comments yet</div>`;
+        } else {
+          item.notes.forEach((note, ni) => {
+            html += `<div class="stack-note-row">`;
+            html += `<span class="stack-note-text">${escapeHtml(note)}</span>`;
+            html += `<span class="stack-note-x" onclick="event.stopPropagation();stackDeleteNote('${item.id}',${ni})" title="Remove">&#x2715;</span>`;
+            html += `</div>`;
+          });
+        }
+      }
+      html += `</div>`;
+      html += `<div class="stack-add-note">`;
+      html += `<input id="stack-note-input-${item.id}" type="text" placeholder="+ Add comment..." onclick="event.stopPropagation()"
+        onkeydown="event.stopPropagation();if(event.key==='Enter')stackAddComment('${item.id}')">`;
+      html += `<button onclick="event.stopPropagation();stackAddComment('${item.id}')">Post</button>`;
+      html += `</div>`;
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+  });
+  list.innerHTML = html;
+}
+
+async function loadStackTab() {
+  const [boardRes, stackRes, nfRes, colsRes] = await Promise.all([
+    api('GET', '/api/board'),
+    api('GET', '/api/stack'),
+    api('GET', '/api/items'),
+    api('GET', '/api/columns'),
+  ]);
+  if (!boardRes.error) board = boardRes;
+  if (stackRes && Array.isArray(stackRes.items)) {
+    stackItems = stackRes.items.map(normalizeStackItem);
+  }
+  poolNfItems = nfRes.items || [];
+  poolNfColumns = colsRes.columns || [];
+  // Restore pool toggle state
+  const saved = localStorage.getItem('mc-pool-source');
+  if (saved && saved !== poolSource) switchPoolSource(saved);
+  renderStackList();
+  renderTaskPool();
+}
+
+// Close suggestion dropdown on outside click
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.stack-input-wrap');
+  const dd = document.getElementById('stackSuggest');
+  if (dd && wrap && !wrap.contains(e.target)) dd.classList.remove('open');
+});
+
+function stackAddCustom() {
+  const input = document.getElementById('stackInput');
+  if (!input) return;
+  const title = input.value.trim();
+  if (!title) return;
+  const item = normalizeStackItem({
+    id: makeId('stk'), title,
+    source: 'custom', boardSlug: null,
+    notes: [], createdAt: new Date().toISOString(),
+  });
+  stackItems.unshift(item);
+  input.value = '';
+  const dd = document.getElementById('stackSuggest');
+  if (dd) dd.classList.remove('open');
+  saveStackState();
+  renderStackList();
+  renderTaskPool();
+}
+
+function stackRename(id, value) {
+  const idx = getStackIndex(id);
+  if (idx < 0) return;
+  const title = (value || '').trim();
+  if (!title) return;
+  stackItems[idx].title = title;
+  saveStackState();
+}
+
+async function stackAddComment(id) {
+  const idx = getStackIndex(id);
+  if (idx < 0) return;
+  const input = document.getElementById(`stack-note-input-${id}`);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const slug = stackItems[idx].boardSlug;
+  if (slug) {
+    // Board-linked: post to board card comments (single source of truth)
+    await api('POST', `/api/board/cards/${slug}/comments`, { text, author: 'user' });
+    await loadBoard();
+  } else {
+    // Stack-only: keep local notes
+    stackItems[idx].notes.push(text);
+    saveStackState();
+  }
+  renderStackList();
+  const newInput = document.getElementById(`stack-note-input-${id}`);
+  if (newInput) newInput.focus();
+}
+
+async function stackDeleteComment(slug, commentIdx) {
+  await api('DELETE', `/api/board/cards/${slug}/comments/${commentIdx}`);
+  await loadBoard();
+  renderStackList();
+}
+
+function stackDeleteNote(id, noteIdx) {
+  const idx = getStackIndex(id);
+  if (idx < 0) return;
+  stackItems[idx].notes.splice(noteIdx, 1);
+  saveStackState();
+  renderStackList();
+}
+
+function showPushToBoardModal(title) {
+  return new Promise((resolve) => {
+    const projects = board.projects || [];
+    let options = '<option value="">— No project —</option>';
+    projects.forEach(p => {
+      options += `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`;
+    });
+    const container = document.getElementById('stackCompletionModal');
+    container.innerHTML = `
+      <div class="stack-modal-overlay" onclick="if(event.target===this)stackResolvePush(null)">
+        <div class="stack-modal">
+          <h4>Push to Task Board</h4>
+          <p><span class="stack-modal-task">${escapeHtml(title)}</span> will be added as <strong style="color:#3b82f6">Active</strong>.</p>
+          <label>Assign to project</label>
+          <select id="stackPushProject">${options}</select>
+          <div class="stack-modal-actions">
+            <button class="stack-modal-btn cancel-btn" onclick="stackResolvePush(null)">Cancel</button>
+            <button class="stack-modal-btn push-btn" onclick="stackResolvePush(document.getElementById('stackPushProject').value)">Push</button>
+          </div>
+        </div>
+      </div>`;
+    window._stackPushResolve = resolve;
+  });
+}
+
+function stackResolvePush(projectId) {
+  const container = document.getElementById('stackCompletionModal');
+  if (container) container.innerHTML = '';
+  if (window._stackPushResolve) {
+    window._stackPushResolve(projectId);
+    window._stackPushResolve = null;
+  }
+}
+
+async function stackPushToBoard(id) {
+  const idx = getStackIndex(id);
+  if (idx < 0) return;
+  const item = stackItems[idx];
+  if (item.boardSlug) return;
+  const projectId = await showPushToBoardModal(item.title);
+  if (projectId === null) return; // cancelled
+  const payload = {
+    title: item.title,
+    description: item.notes && item.notes.length ? item.notes.join('\n') : 'Created from Stack tab',
+    status: 'active',
+    project: projectId || null,
+  };
+  const res = await api('POST', '/api/board/cards', payload);
+  if (res && res.card && res.card.slug) {
+    item.boardSlug = res.card.slug;
+    item.source = 'board';
+  }
+  saveStackState();
+  await loadStackTab();
+}
+
+async function stackFinalizeBoardCompletion(item) {
+  const doneStatus = getDoneStatusId();
+  if (item.boardSlug) {
+    await api('POST', `/api/board/cards/${item.boardSlug}/move`, { status: doneStatus });
+  } else {
+    await api('POST', '/api/board/cards', {
+      title: item.title,
+      description: item.notes && item.notes.length ? item.notes.join('\n') : 'Completed from Stack tab',
+      status: doneStatus,
+    });
+  }
+}
+
+async function stackDeleteItem(id) {
+  const idx = getStackIndex(id);
+  if (idx < 0) return;
+  const item = stackItems[idx];
+  const action = await showCompletionModal(item.title);
+  if (action === 'cancel') return;
+  if (action === 'done') await stackFinalizeBoardCompletion(item);
+  stackItems.splice(idx, 1);
+  if (stackSelectedId === id) {
+    stackSelectedId = stackItems.length ? stackItems[Math.max(0, idx - 1)].id : null;
+  }
+  saveStackState();
+  await loadStackTab();
+}
+
+async function stackPopTop() {
+  if (!stackItems.length) return;
+  const top = stackItems[0];
+  const action = await showCompletionModal(top.title);
+  if (action === 'cancel') return;
+  if (action === 'done') await stackFinalizeBoardCompletion(top);
+  stackItems.shift();
+  if (stackSelectedId === top.id) {
+    stackSelectedId = stackItems.length ? stackItems[0].id : null;
+  }
+  saveStackState();
+  await loadStackTab();
+}
+
+function stackMove(fromIdx, toIdx) {
+  if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= stackItems.length || toIdx >= stackItems.length) return;
+  const [item] = stackItems.splice(fromIdx, 1);
+  stackItems.splice(toIdx, 0, item);
+  saveStackState();
+  renderStackList();
+  renderTaskPool();
+}
+function stackMoveUp(id) {
+  const idx = getStackIndex(id);
+  if (idx > 0) stackMove(idx, idx - 1);
+}
+function stackMoveDown(id) {
+  const idx = getStackIndex(id);
+  if (idx < stackItems.length - 1) stackMove(idx, idx + 1);
+}
+
+function stackDragStart(e, id) {
+  stackDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  setTimeout(() => {
+    const card = e.currentTarget.closest('.stack-card');
+    if (card) card.classList.add('dragging');
+  }, 0);
+}
+
+function stackDragEnd(e) {
+  stackDragId = null;
+  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+}
+
+function stackCardDragOver(e, id) {
+  e.preventDefault();
+  // Allow pool drops too
+  if (!stackDragId && !e.dataTransfer.types.includes('application/pool-item')) return;
+  if (stackDragId === id) return;
+  const card = e.currentTarget.closest('.stack-card');
+  if (card) card.classList.add('drag-over');
+}
+
+function stackCardDragLeave(e, id) {
+  const card = e.currentTarget.closest('.stack-card');
+  if (card) card.classList.remove('drag-over');
+}
+
+function stackCardDrop(e, id) {
+  e.preventDefault();
+  // Handle pool drops onto a specific card position
+  const poolData = e.dataTransfer.getData('application/pool-item');
+  if (poolData) {
+    try {
+      const { source, id: poolId } = JSON.parse(poolData);
+      const toIdx = getStackIndex(id);
+      poolInsertAtIndex(source, poolId, toIdx);
+    } catch(err) {}
+    return;
+  }
+  const fromIdx = getStackIndex(stackDragId);
+  const toIdx = getStackIndex(id);
+  stackMove(fromIdx, toIdx);
+  stackDragId = null;
+}
+
+function stackListDragOver(e) {
+  e.preventDefault();
+  // Visual cue for pool drops
+  if (e.dataTransfer.types.includes('application/pool-item')) {
+    e.currentTarget.classList.add('drag-pool-over');
+  }
+}
+
+function stackListDragLeave(e) {
+  e.currentTarget.classList.remove('drag-pool-over');
+}
+
+function stackListDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-pool-over');
+  // Handle pool drops to end of list
+  const poolData = e.dataTransfer.getData('application/pool-item');
+  if (poolData) {
+    try {
+      const { source, id } = JSON.parse(poolData);
+      poolInsertAtIndex(source, id, 0); // insert at top
+    } catch(err) {}
+    return;
+  }
+  if (!stackDragId || !stackItems.length) return;
+  const fromIdx = getStackIndex(stackDragId);
+  const toIdx = stackItems.length - 1;
+  stackMove(fromIdx, toIdx);
+  stackDragId = null;
+}
+
+function poolInsertAtIndex(source, poolId, idx) {
+  let item;
+  if (source === 'board') {
+    const card = (board.cards || []).find(c => c.slug === poolId);
+    if (!card) return;
+    // Check if already in stack
+    if (stackItems.some(i => i.boardSlug === poolId)) return;
+    item = normalizeStackItem({
+      id: makeId('stk'), title: card.title,
+      source: 'board', boardSlug: card.slug,
+      notes: [], createdAt: new Date().toISOString(),
+    });
+  } else {
+    const nfItem = (poolNfItems || []).find(i => i.id === poolId);
+    if (!nfItem) return;
+    item = normalizeStackItem({
+      id: makeId('stk'), title: nfItem.title,
+      source: 'custom', boardSlug: null,
+      notes: [], createdAt: new Date().toISOString(),
+    });
+  }
+  if (idx >= 0 && idx < stackItems.length) {
+    stackItems.splice(idx, 0, item);
+  } else {
+    stackItems.unshift(item);
+  }
+  saveStackState();
+  renderStackList();
+  renderTaskPool();
+}
+
+// ══════════════════════════════════════════════
+//  TASK POOL SIDEBAR
+// ══════════════════════════════════════════════
+
+function switchPoolSource(source) {
+  poolSource = source;
+  localStorage.setItem('mc-pool-source', source);
+  document.getElementById('poolToggleBoard').classList.toggle('active', source === 'board');
+  document.getElementById('poolToggleNF').classList.toggle('active', source === 'noteflow');
+  renderTaskPool();
+}
+
+function renderTaskPool() {
+  const list = document.getElementById('taskPoolList');
+  if (!list) return;
+  const stackSlugs = new Set(stackItems.filter(i => i.boardSlug).map(i => i.boardSlug));
+  const stackTitles = new Set(stackItems.map(i => i.title.toLowerCase()));
+
+  if (poolSource === 'board') {
+    const doneId = getDoneStatusId();
+    const cards = (board.cards || []).filter(c => {
+      if (stackSlugs.has(c.slug)) return false;
+      if (c.status === doneId) return false;
+      return true;
+    });
+    if (!cards.length) {
+      list.innerHTML = '<div class="task-pool-empty">No available board cards</div>';
+      return;
+    }
+    const statuses = board.statuses || [];
+    list.innerHTML = cards.map(c => {
+      const st = statuses.find(s => (s.id || s) === c.status);
+      const stLabel = st ? (st.label || st.id || c.status) : c.status;
+      const stColor = st && st.color ? st.color : '#64748b';
+      return `<div class="task-pool-card" draggable="true"
+        ondragstart="poolDragStart(event,'board','${c.slug}')"
+        ondragend="poolDragEnd(event)"
+        ondblclick="poolAddToStack('board','${c.slug}')"
+        title="${escapeHtml(c.title)}">
+        <span class="task-pool-card-title">${escapeHtml(c.title)}</span>
+        <span class="task-pool-badge" style="color:${stColor};border-color:${stColor}44">${escapeHtml(stLabel)}</span>
+      </div>`;
+    }).join('');
+  } else {
+    const items = (poolNfItems || []).filter(i => {
+      if (i.status === 'done') return false;
+      if (stackTitles.has(i.title.toLowerCase())) return false;
+      return true;
+    });
+    if (!items.length) {
+      list.innerHTML = '<div class="task-pool-empty">No open NoteFlow items</div>';
+      return;
+    }
+    list.innerHTML = items.map(i => {
+      const col = (poolNfColumns || []).find(c => c.id === (i.type || i.column));
+      const colLabel = col ? (col.label || col.name) : '';
+      const colColor = col && col.color ? col.color : '#64748b';
+      return `<div class="task-pool-card" draggable="true"
+        ondragstart="poolDragStart(event,'noteflow','${i.id}')"
+        ondragend="poolDragEnd(event)"
+        ondblclick="poolAddToStack('noteflow','${i.id}')"
+        title="${escapeHtml(i.title)}">
+        <span class="task-pool-card-title">${escapeHtml(i.title)}</span>
+        ${colLabel ? `<span class="task-pool-badge" style="color:${colColor};border-color:${colColor}44">${escapeHtml(colLabel)}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+}
+
+function poolDragStart(e, source, id) {
+  e.dataTransfer.effectAllowed = 'copy';
+  e.dataTransfer.setData('application/pool-item', JSON.stringify({ source, id }));
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+
+function poolDragEnd(e) {
+  e.target.classList.remove('dragging');
+}
+
+function poolAddToStack(source, id) {
+  if (source === 'board') {
+    stackPickBoard(id);
+  } else {
+    const nfItem = (poolNfItems || []).find(i => i.id === id);
+    if (!nfItem) return;
+    const item = normalizeStackItem({
+      id: makeId('stk'), title: nfItem.title,
+      source: 'custom', boardSlug: null,
+      notes: [], createdAt: new Date().toISOString(),
+    });
+    stackItems.unshift(item);
+    saveStackState();
+    renderStackList();
+  }
+  renderTaskPool();
 }
 
 // ══════════════════════════════════════════════
@@ -933,29 +2977,37 @@ async function loadNoteFlow() {
   renderNoteFlow();
 }
 
-function renderLinkedCardBadge(linkedSlug) {
-  if (!linkedSlug) return '';
-  const card = (board.cards || []).find(c => c.slug === linkedSlug);
-  if (!card) return `<div class="linked-card-badge" title="Linked card: ${escapeHtml(linkedSlug)}">&#x1F517; ${escapeHtml(linkedSlug)}</div>`;
-  const color = getStatusColor(card.status);
-  return `<div class="linked-card-badge" title="Linked: ${escapeHtml(card.title)}"><span class="linked-card-status" style="background:${color}"></span>&#x1F517; ${escapeHtml(card.title)}</div>`;
+function renderLinkedCardBadges(linkedSlugs) {
+  if (!linkedSlugs || !linkedSlugs.length) return '';
+  return linkedSlugs.map(slug => {
+    const card = (board.cards || []).find(c => c.slug === slug);
+    if (!card) return `<div class="linked-card-badge" title="Linked card: ${escapeHtml(slug)}">&#x1F517; ${escapeHtml(slug)}</div>`;
+    const color = getStatusColor(card.status);
+    return `<div class="linked-card-badge" title="Linked: ${escapeHtml(card.title)}"><span class="linked-card-status" style="background:${color}"></span>&#x1F517; ${escapeHtml(card.title)}</div>`;
+  }).join('');
 }
 
-function renderLinkedCardSection(linkedSlug) {
-  if (!linkedSlug) return '';
-  const card = (board.cards || []).find(c => c.slug === linkedSlug);
-  if (!card) return `<div class="section-label">Linked Card</div><div style="color:#64748b;font-size:0.8rem;font-style:italic">Card "${escapeHtml(linkedSlug)}" not found</div>`;
-  const color = getStatusColor(card.status);
-  const proj = board.projects.find(p => p.id === card.project);
-  const projName = proj ? proj.name : card.project || 'None';
-  let html = `<div class="section-label">Linked Card</div>`;
-  html += `<div style="background:#1e293b;border-radius:6px;padding:0.5rem;font-size:0.82rem">`;
-  html += `<div style="display:flex;align-items:center;gap:0.4rem">`;
-  html += `<span class="linked-card-status" style="background:${color};width:8px;height:8px"></span>`;
-  html += `<span style="font-weight:500;color:#e2e8f0">${escapeHtml(card.title)}</span>`;
-  html += `</div>`;
-  html += `<div style="font-size:0.72rem;color:#64748b;margin-top:0.2rem">Status: <span style="color:${color}">${escapeHtml(card.status)}</span> &middot; Project: ${escapeHtml(projName)}</div>`;
-  html += `</div>`;
+function renderLinkedCardsSection(linkedSlugs) {
+  if (!linkedSlugs || !linkedSlugs.length) return '';
+  const label = linkedSlugs.length === 1 ? 'Linked Card' : `Linked Cards (${linkedSlugs.length})`;
+  let html = `<div class="section-label">${label}</div>`;
+  for (const slug of linkedSlugs) {
+    const card = (board.cards || []).find(c => c.slug === slug);
+    if (!card) {
+      html += `<div style="color:#64748b;font-size:0.8rem;font-style:italic;margin-bottom:0.3rem">Card "${escapeHtml(slug)}" not found</div>`;
+      continue;
+    }
+    const color = getStatusColor(card.status);
+    const proj = board.projects.find(p => p.id === card.project);
+    const projName = proj ? proj.name : card.project || 'None';
+    html += `<div style="background:#1e293b;border-radius:6px;padding:0.5rem;font-size:0.82rem;margin-bottom:0.3rem">`;
+    html += `<div style="display:flex;align-items:center;gap:0.4rem">`;
+    html += `<span class="linked-card-status" style="background:${color};width:8px;height:8px"></span>`;
+    html += `<span style="font-weight:500;color:#e2e8f0">${escapeHtml(card.title)}</span>`;
+    html += `</div>`;
+    html += `<div style="font-size:0.72rem;color:#64748b;margin-top:0.2rem">Status: <span style="color:${color}">${escapeHtml(card.status)}</span> &middot; Project: ${escapeHtml(projName)}</div>`;
+    html += `</div>`;
+  }
   return html;
 }
 
@@ -973,6 +3025,7 @@ function renderNfCard(item, colColor) {
   const tags = (item.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('');
   const commentCount = (item.subnotes || []).length;
   const commentHint = commentCount > 0 ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem">\uD83D\uDCAC ${commentCount}</span>` : '';
+  const bellHint = item.cron_installed ? `<span style="color:#f59e0b;font-size:0.72rem;margin-left:0.3rem" title="Cron reminder active">\uD83D\uDD14</span>` : '';
 
   let html = `<div class="nf-card ${doneClass} ${expandClass}"
     draggable="${isExpanded ? 'false' : 'true'}"
@@ -980,16 +3033,17 @@ function renderNfCard(item, colColor) {
     onclick="nfToggleExpand('${item.id}')"
     ondragstart="nfDragStart(event, '${item.id}')"
     ondragend="nfDragEnd(event)">`;
-  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}</div>`;
+  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}${bellHint}</div>`;
   if (meta.length) html += `<div class="nf-meta">${meta.join(' &middot; ')}</div>`;
-  if (item.linked_card) html += renderLinkedCardBadge(item.linked_card);
+  const lc = item.linked_cards || [];
+  if (lc.length) html += renderLinkedCardBadges(lc);
 
   if (isExpanded) {
     html += `<div class="card-detail" onclick="event.stopPropagation()">`;
 
-    if (item.linked_card) html += renderLinkedCardSection(item.linked_card);
+    if (lc.length) html += renderLinkedCardsSection(lc);
 
-    html += `<div class="section-label"${item.linked_card ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
+    html += `<div class="section-label"${lc.length ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
     html += item.body
       ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
       : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes yet</div>`;
@@ -1016,6 +3070,9 @@ function renderNfCard(item, colColor) {
       ? `<button class="btn btn-outline-success" onclick="nfReopenItem('${item.id}')">Reopen</button>`
       : `<button class="btn btn-outline-success" onclick="nfMarkDone('${item.id}')">Done</button>`;
     html += `<button class="btn btn-outline-info" onclick="nfOpenEdit('${item.id}')">Edit</button>`;
+    if (item.cron_installed) {
+      html += `<button class="btn btn-outline-warning" onclick="nfCancelReminder('${item.id}')">Cancel Reminder</button>`;
+    }
     html += `<button class="btn btn-outline-danger" onclick="nfDeleteItem('${item.id}')">Delete</button>`;
     html += `</div></div>`;
   }
@@ -1025,6 +3082,11 @@ function renderNfCard(item, colColor) {
 
 function renderNoteFlow() {
   const boardEl = document.getElementById('nf-board');
+  // Preserve column scroll positions across re-render
+  const scrollPositions = {};
+  boardEl.querySelectorAll('.column-body[data-col]').forEach(el => {
+    scrollPositions[el.dataset.col] = el.scrollTop;
+  });
   const active = nfItems.filter(i => i.status !== 'done');
   const done = nfItems.filter(i => i.status === 'done');
   const grouped = {};
@@ -1040,14 +3102,11 @@ function renderNoteFlow() {
       ondragstart="colDragStart(event,'nf','${col.id}')" ondragend="colDragEnd(event)"
       ondragover="colDragOver(event)" ondragleave="colDragLeave(event)"
       ondrop="colDrop(event,'nf','${col.id}')">`;
-    html += `<div class="column-header" style="cursor:grab"><div class="column-title">`;
+    html += `<div class="column-header" style="cursor:grab" ondblclick="nfRenameColumn('${col.id}')"><div class="column-title">`;
     html += `<span class="column-dot" style="background:${col.color}"></span>`;
     html += `<span>${col.icon} ${escapeHtml(col.label)}</span>`;
     html += `<span class="column-count">${group.length}</span></div>`;
-    const builtins = new Set(['task', 'reminder', 'idea', 'note']);
-    if (!builtins.has(col.id)) {
-      html += `<span style="cursor:pointer;color:#64748b;font-size:0.75rem" onclick="event.stopPropagation();nfDeleteColumn('${col.id}')" title="Delete column">\u2715</span>`;
-    }
+    html += `<span style="cursor:pointer;color:#64748b;font-size:0.75rem" onclick="event.stopPropagation();nfDeleteColumn('${col.id}')" title="Delete column">\u2715</span>`;
     html += `</div>`;
     html += `<div class="column-body" data-col="${col.id}" ondragover="nfDragOver(event)" ondragleave="nfDragLeave(event)" ondrop="nfDrop(event, '${col.id}')">`;
     for (const item of group) html += renderNfCard(item, col.color);
@@ -1060,6 +3119,10 @@ function renderNoteFlow() {
   }
   html += `<div class="add-column-card" onclick="openAddColumnModal()">+ Add Column</div>`;
   boardEl.innerHTML = html;
+  // Restore column scroll positions
+  boardEl.querySelectorAll('.column-body[data-col]').forEach(el => {
+    if (scrollPositions[el.dataset.col]) el.scrollTop = scrollPositions[el.dataset.col];
+  });
 
   // Done strip
   const doneStrip = document.getElementById('doneStrip');
@@ -1167,6 +3230,10 @@ async function nfDeleteItem(id) {
   nfExpandedId = null;
   await loadNoteFlow();
 }
+async function nfCancelReminder(id) {
+  await api('DELETE', `/api/items/${id}/cron`);
+  await loadNoteFlow();
+}
 
 // NoteFlow drag & drop
 function nfDragStart(e, id) {
@@ -1184,9 +3251,10 @@ function nfDragEnd(e) {
   document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
   nfDragItemId = null;
 }
-function nfDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
+function nfDragOver(e) { if (colDragId) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
 function nfDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 async function nfDrop(e, colId) {
+  if (colDragId) return; // column drag in progress, let it bubble
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   const id = e.dataTransfer.getData('text/plain') || nfDragItemId;
@@ -1197,6 +3265,39 @@ async function nfDrop(e, colId) {
   if (item.status === 'done') await api('POST', `/api/items/${id}/reopen`);
   nfExpandedId = null;
   await loadNoteFlow();
+}
+
+// Kanban card drag & drop
+let kbDragSlug = null;
+function kbCardDragStart(e, slug) {
+  e.stopPropagation(); // prevent column drag
+  kbDragSlug = slug;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', slug);
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`.kb-card[data-card-slug="${slug}"]`);
+    if (el) el.classList.add('dragging');
+  });
+}
+function kbCardDragEnd(e) {
+  document.querySelectorAll('.kb-card.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.kb-column-body.drag-over').forEach(el => el.classList.remove('drag-over'));
+  kbDragSlug = null;
+}
+function kbColDragOver(e) { if (colDragId) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
+function kbColDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+async function kbColDrop(e, field, value) {
+  if (colDragId) return; // column drag in progress, let it bubble
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const slug = e.dataTransfer.getData('text/plain') || kbDragSlug;
+  if (!slug) return;
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card) return;
+  if (card[field] === value) return; // no change
+  await api('PUT', `/api/board/cards/${slug}`, { [field]: value });
+  await loadBoard();
+  if (field === 'status' && value === getDoneStatusId()) await loadStackState();
 }
 
 // NoteFlow columns + Emoji Picker
@@ -1369,6 +3470,26 @@ async function colDrop(e, type, targetId) {
 }
 
 // ══════════════════════════════════════════════
+//  Column / Status Rename (double-click header)
+// ══════════════════════════════════════════════
+
+function nfRenameColumn(colId) {
+  const col = nfColumns.find(c => c.id === colId);
+  if (!col) return;
+  const newLabel = prompt('Rename column:', col.label);
+  if (!newLabel || newLabel.trim() === '' || newLabel.trim() === col.label) return;
+  api('PUT', `/api/columns/${colId}`, { label: newLabel.trim() }).then(() => loadNoteFlow());
+}
+
+function kbRenameStatus(statusId) {
+  const s = (board.statuses || []).find(s => (s.id || s) === statusId);
+  if (!s) return;
+  const newLabel = prompt('Rename status:', s.label || statusId);
+  if (!newLabel || newLabel.trim() === '' || newLabel.trim() === (s.label || statusId)) return;
+  api('PUT', `/api/board/statuses/${statusId}`, { label: newLabel.trim() }).then(() => loadBoard());
+}
+
+// ══════════════════════════════════════════════
 //  Project card drag-and-drop (Projects tab)
 // ══════════════════════════════════════════════
 
@@ -1473,7 +3594,9 @@ function renderKbCard(card) {
     badgeLabel = getStatusLabel(card.status);
   }
 
-  let html = `<div class="kb-card" data-card-slug="${card.slug}" onclick="openCardDetail('${card.slug}')">`;
+  let html = `<div class="kb-card" data-card-slug="${card.slug}" draggable="true"
+    ondragstart="kbCardDragStart(event,'${card.slug}')" ondragend="kbCardDragEnd(event)"
+    onclick="openCardDetail('${card.slug}')">`;
   html += `<div class="kb-title">${escapeHtml(card.title)}${commentHint}</div>`;
   if (card.description) {
     const shortDesc = card.description.length > 80 ? card.description.slice(0, 80) + '...' : card.description;
@@ -1486,6 +3609,11 @@ function renderKbCard(card) {
 
 function renderBoard() {
   const boardEl = document.getElementById('kb-board');
+  // Preserve column scroll positions across re-render
+  const scrollPositions = {};
+  boardEl.querySelectorAll('.kb-column-body').forEach((el, i) => {
+    scrollPositions[i] = el.scrollTop;
+  });
   let html = '';
 
   if (kbView === 'status') {
@@ -1501,16 +3629,16 @@ function renderBoard() {
         ondragstart="colDragStart(event,'kb','${sid}')" ondragend="colDragEnd(event)"
         ondragover="colDragOver(event)" ondragleave="colDragLeave(event)"
         ondrop="colDrop(event,'kb','${sid}')">`;
-      html += `<div class="column-header" style="cursor:grab"><div class="column-title">`;
+      html += `<div class="column-header" style="cursor:grab" ondblclick="kbRenameStatus('${sid}')"><div class="column-title">`;
       html += `<span class="column-dot" style="background:${color}"></span>`;
       html += `<span>${escapeHtml(label)}</span>`;
       html += `<span class="column-count">${cards.length}</span>`;
       html += `</div>`;
-      if (!isBuiltin) {
-        html += `<span class="status-delete-btn" onclick="event.stopPropagation();kbDeleteStatus('${sid}')" title="Delete status">\u2715</span>`;
-      }
+      html += `<span class="status-delete-btn" onclick="event.stopPropagation();kbDeleteStatus('${sid}')" title="Delete status">\u2715</span>`;
       html += `</div>`;
-      html += `<div class="column-body">`;
+      html += `<div class="column-body kb-column-body"
+        ondragover="kbColDragOver(event)" ondragleave="kbColDragLeave(event)"
+        ondrop="kbColDrop(event,'status','${sid}')">`;
       for (const card of cards) html += renderKbCard(card);
       html += `</div></div>`;
     }
@@ -1526,7 +3654,9 @@ function renderBoard() {
       html += `<span>${escapeHtml(proj.name)}</span>`;
       html += `<span class="column-count">${cards.length}</span>`;
       html += `</div></div>`;
-      html += `<div class="column-body">`;
+      html += `<div class="column-body kb-column-body"
+        ondragover="kbColDragOver(event)" ondragleave="kbColDragLeave(event)"
+        ondrop="kbColDrop(event,'project','${proj.id}')">`;
       for (const card of cards) html += renderKbCard(card);
       html += `</div></div>`;
     }
@@ -1536,13 +3666,19 @@ function renderBoard() {
       html += `<div class="column"><div class="column-header"><div class="column-title">`;
       html += `<span class="column-dot" style="background:#64748b"></span><span>Unassigned</span>`;
       html += `<span class="column-count">${unassigned.length}</span></div></div>`;
-      html += `<div class="column-body">`;
+      html += `<div class="column-body kb-column-body"
+        ondragover="kbColDragOver(event)" ondragleave="kbColDragLeave(event)"
+        ondrop="kbColDrop(event,'project','')">`;
       for (const card of unassigned) html += renderKbCard(card);
       html += `</div></div>`;
     }
   }
 
   boardEl.innerHTML = html;
+  // Restore column scroll positions
+  boardEl.querySelectorAll('.kb-column-body').forEach((el, i) => {
+    if (scrollPositions[i]) el.scrollTop = scrollPositions[i];
+  });
 }
 
 function setKbView(view) {
@@ -1661,7 +3797,7 @@ async function ensureProject(projectId, projectName) {
 }
 
 // Card detail modal
-function openCardDetail(slug) {
+function openCardDetail(slug, inPlace) {
   const card = board.cards.find(c => c.slug === slug);
   if (!card) return;
 
@@ -1741,12 +3877,13 @@ function openCardDetail(slug) {
       const realId = await ensureProject(projectId, projectName);
       await api('PUT', `/api/board/cards/${slug}`, { project: realId });
       await loadBoard();
-      bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
-      setTimeout(() => openCardDetail(slug), 200);
+      openCardDetail(slug, true);
     });
   }
 
-  new bootstrap.Modal(document.getElementById('cardDetailModal')).show();
+  if (!inPlace) {
+    new bootstrap.Modal(document.getElementById('cardDetailModal')).show();
+  }
 }
 
 async function kbAddComment(slug) {
@@ -1755,16 +3892,15 @@ async function kbAddComment(slug) {
   if (!text) return;
   await api('POST', `/api/board/cards/${slug}/comments`, { text, author: 'user' });
   await loadBoard();
-  // Re-open the detail modal with updated data
-  bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
-  setTimeout(() => openCardDetail(slug), 200);
+  // Update modal content in-place (preserve modal state and focus)
+  openCardDetail(slug, true);
 }
 
 async function kbMoveCard(slug, status) {
   await api('POST', `/api/board/cards/${slug}/move`, { status });
   await loadBoard();
-  bootstrap.Modal.getInstance(document.getElementById('cardDetailModal')).hide();
-  setTimeout(() => openCardDetail(slug), 200);
+  if (status === getDoneStatusId()) await loadStackState();
+  openCardDetail(slug, true);
 }
 
 async function kbDeleteCard(slug) {
@@ -2169,17 +4305,46 @@ function renderProjectDetail() {
     const hasCode = links.some(l => l.label === 'Code');
     if (!hasCode) links.push({ label: 'Code', path: proj.code });
   }
-  if (links.length) {
-    const linkItems = links.map(lnk => `
-      <div class="file-link-item" onclick="openFileViewer('${escapeHtml(lnk.path)}')" style="cursor:pointer;border-radius:6px;padding:0.5rem 0.6rem;transition:background 0.1s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background=''">
-        <span class="file-link-icon">${lnk.label === 'Code' ? '&#x1F4C2;' : '&#x1F4C4;'}</span>
-        <span class="file-link-label">${escapeHtml(lnk.label)}</span>
-        <span class="file-link-path">${escapeHtml(lnk.path)}</span>
+  // Collect plan files from related task cards
+  const taskPlans = tasks.filter(c => c.plan_file).map(c => ({
+    label: c.title,
+    path: c.plan_file,
+    status: c.status
+  }));
+  if (links.length || taskPlans.length) {
+    const fileLinkHtml = (icon, label, path) => `
+      <div class="file-link-item" onclick="openFileViewer('${escapeHtml(path)}')" style="cursor:pointer;border-radius:6px;padding:0.5rem 0.6rem;transition:background 0.1s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background=''">
+        <span class="file-link-icon">${icon}</span>
+        <span class="file-link-label">${escapeHtml(label)}</span>
+        <span class="file-link-path">${escapeHtml(path)}</span>
       </div>
-    `).join('');
+    `;
+    let projectLinks = '';
+    if (links.length) {
+      projectLinks = `<div class="file-group-label">Project Docs</div>` +
+        links.map(lnk => fileLinkHtml(
+          lnk.label === 'Code' ? '&#x1F4C2;' : '&#x1F4C4;',
+          lnk.label, lnk.path
+        )).join('');
+    }
+    let planLinks = '';
+    if (taskPlans.length) {
+      const planItems = taskPlans.map(tp => {
+        const color = statusColors[tp.status] || '#64748b';
+        return `
+          <div class="file-link-item" onclick="openFileViewer('${escapeHtml(tp.path)}')" style="cursor:pointer;border-radius:6px;padding:0.5rem 0.6rem;transition:background 0.1s;display:flex;align-items:center;gap:0.5rem" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background=''">
+            <span class="file-link-icon">&#x1F4CB;</span>
+            <span class="file-link-label" style="flex:1">${escapeHtml(tp.label)}</span>
+            <span class="related-task-status" style="background:${color}20;color:${color};font-size:0.6rem;padding:0.05rem 0.35rem">${escapeHtml(tp.status)}</span>
+          </div>
+        `;
+      }).join('');
+      planLinks = `<div class="file-group-label">Task Plans</div>` + planItems;
+    }
     linksHtml = `
       <div class="project-section-title">Files</div>
-      ${linkItems}
+      ${projectLinks}
+      ${planLinks}
     `;
   }
 
@@ -2336,14 +4501,15 @@ function renderArchiveCard(item) {
 
   let html = `<div class="archive-card ${expandClass}" onclick="archiveToggleExpand('${item.id}')">`;
   html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title" style="text-decoration:line-through;color:#6b7280">${escapeHtml(item.title)}</span></div>`;
-  if (item.linked_card) html += renderLinkedCardBadge(item.linked_card);
+  const alc = item.linked_cards || [];
+  if (alc.length) html += renderLinkedCardBadges(alc);
 
   if (isExpanded) {
     html += `<div class="card-detail" onclick="event.stopPropagation()">`;
 
-    if (item.linked_card) html += renderLinkedCardSection(item.linked_card);
+    if (alc.length) html += renderLinkedCardsSection(alc);
 
-    html += `<div class="section-label"${item.linked_card ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
+    html += `<div class="section-label"${alc.length ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
     html += item.body
       ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
       : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes</div>`;
@@ -2426,11 +4592,23 @@ document.addEventListener('keydown', e => {
 // ══════════════════════════════════════════════
 //  Init + Polling
 // ══════════════════════════════════════════════
-loadNoteFlow();
+const savedTab = localStorage.getItem('mc-active-tab') || 'noteflow';
+(async () => {
+  await loadStackState();
+  switchTab(savedTab);
+})();
 setInterval(() => {
-  if (currentTab === 'noteflow') loadNoteFlow();
+  if (currentTab === 'noteflow') {
+    // Skip refresh if user is interacting (expanded card, typing in add form)
+    if (!document.querySelector('.inline-add.active') && !nfExpandedId) loadNoteFlow();
+  }
   else if (currentTab === 'tasks') loadBoard();
   else if (currentTab === 'projects') loadProjects();
+  else if (currentTab === 'calendar') loadCronCalendar();
+  else if (currentTab === 'stack') {
+    // Skip refresh if user has a card expanded (may be typing in note input)
+    if (!stackSelectedId) loadStackTab();
+  }
 }, 3000);
 </script>
 </body>
