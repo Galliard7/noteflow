@@ -8,6 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nf_lib import load_store, save_store, now_iso, format_id, SCRIPTS_DIR
+from mc_lib import load_board, add_card
 
 
 def main():
@@ -59,6 +60,18 @@ def main():
         "history": [{"ts": now, "action": "created"}],
     }
 
+    # Auto-create MC card for tasks without a linked card
+    mc_slug = None
+    if args.item_type == "task" and not args.linked_card:
+        try:
+            board = load_board()
+            card = add_card(board, title=args.title, description=args.body or "", status="pending")
+            mc_slug = card["slug"]
+            item["linked_cards"] = [mc_slug]
+            item["history"].append({"ts": now_iso(), "action": f"linked to MC card {mc_slug}"})
+        except Exception:
+            pass  # non-fatal — card can be linked later via msync
+
     store["items"].append(item)
     store["next_id"] += 1
     save_store(store)
@@ -79,9 +92,9 @@ def main():
         parts.append(f"Reminder: {args.remind}")
     if args.recurrence:
         parts.append(f"Recurs: {args.recurrence}")
-    if args.linked_card:
-        parts.append(f"Linked: {args.linked_card}")
-        # Support multiple --linked-card flags in the future
+    linked = args.linked_card or mc_slug
+    if linked:
+        parts.append(f"Linked: {linked}")
 
     print(f"Captured → [{item_id}] {args.title}")
     print(f"  {' | '.join(parts)}")
