@@ -75,6 +75,8 @@ python3 ~/skill-backends/noteflow/nf-add.py \
 
 Omit `--due`, `--remind`, and `--project` if not applicable. Project IDs come from `board.json` projects (e.g. `noteflow`, `dataflow`). Each item can belong to one project.
 
+**URL extraction at capture time**: If the user's message contains any URLs, always extract them and pass them via a follow-up `nf-update.py --add-refs` call immediately after adding the item. URLs belong in the `references` array — not only in the body text. This ensures they appear as clickable links in the References section of the dashboard.
+
 When `--remind` is provided, a system cron job is automatically installed to deliver the reminder via Telegram at the exact time. When `--recurrence` is also set, the cron job repeats on that schedule.
 
 | Recurrence | Meaning |
