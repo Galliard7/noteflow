@@ -1415,6 +1415,8 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         <div class="mb-3"><label class="form-label">Notes</label><textarea class="form-control" id="editBody" rows="4"></textarea></div>
         <div class="mb-3"><label class="form-label">Due</label><input type="datetime-local" class="form-control" id="editDue"></div>
         <div class="mb-3"><label class="form-label">Tags (comma-separated)</label><input type="text" class="form-control" id="editTags"></div>
+        <div class="mb-3"><label class="form-label">Project</label><select class="form-select" id="editProject"><option value="">None</option></select></div>
+        <div class="mb-3"><label class="form-label">References (one URL per line)</label><textarea class="form-control" id="editRefs" rows="2" placeholder="https://..."></textarea></div>
       </div>
       <div class="modal-footer border-secondary">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -3052,6 +3054,8 @@ function renderNfCard(item, colColor) {
   const refCount = (item.references || []).length;
   const refHint = refCount > 0 ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem" title="${refCount} reference${refCount !== 1 ? 's' : ''}">&#x1F310; ${refCount}</span>` : '';
   const bellHint = item.cron_installed ? `<span style="color:#f59e0b;font-size:0.72rem;margin-left:0.3rem" title="Cron reminder active">\uD83D\uDD14</span>` : '';
+  const projObj = item.project ? board.projects.find(p => p.id === item.project) : null;
+  const projHint = projObj ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem" title="${escapeHtml(projObj.name)}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${projObj.color};margin-right:2px;vertical-align:middle"></span>${escapeHtml(projObj.name)}</span>` : '';
 
   let html = `<div class="nf-card ${doneClass} ${expandClass}"
     draggable="${isExpanded ? 'false' : 'true'}"
@@ -3059,7 +3063,7 @@ function renderNfCard(item, colColor) {
     onclick="nfToggleExpand('${item.id}')"
     ondragstart="nfDragStart(event, '${item.id}')"
     ondragend="nfDragEnd(event)">`;
-  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}${refHint}${bellHint}</div>`;
+  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}${refHint}${bellHint}${projHint}</div>`;
   if (meta.length) html += `<div class="nf-meta">${meta.join(' &middot; ')}</div>`;
   const lc = item.linked_cards || [];
   if (lc.length) html += renderLinkedCardBadges(lc);
@@ -3069,7 +3073,16 @@ function renderNfCard(item, colColor) {
 
     if (lc.length) html += renderLinkedCardsSection(lc);
 
-    html += `<div class="section-label"${lc.length ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
+    // Project association
+    const itemProj = item.project ? board.projects.find(p => p.id === item.project) : null;
+    if (itemProj) {
+      html += `<div class="section-label"${lc.length ? ' style="margin-top:0.6rem"' : ''}>Project</div>`;
+      html += `<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;margin-bottom:0.3rem">`;
+      html += `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${itemProj.color}"></span>`;
+      html += `<span style="color:#e2e8f0">${escapeHtml(itemProj.name)}</span></div>`;
+    }
+
+    html += `<div class="section-label" style="margin-top:0.6rem">Notes</div>`;
     html += item.body
       ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
       : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes yet</div>`;
@@ -3249,6 +3262,13 @@ function nfOpenEdit(id) {
     const d = new Date(item.due);
     document.getElementById('editDue').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   } else { document.getElementById('editDue').value = ''; }
+  // Populate project dropdown
+  const projSel = document.getElementById('editProject');
+  projSel.innerHTML = '<option value="">None</option>' + (board.projects || []).map(p =>
+    `<option value="${escapeHtml(p.id)}"${item.project === p.id ? ' selected' : ''}>${escapeHtml(p.name)}</option>`
+  ).join('');
+  // Populate references
+  document.getElementById('editRefs').value = (item.references || []).join('\n');
   new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 async function saveEdit() {
@@ -3258,8 +3278,11 @@ async function saveEdit() {
   const due = document.getElementById('editDue').value || null;
   const tagsRaw = document.getElementById('editTags').value;
   const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const project = document.getElementById('editProject').value || null;
+  const refsRaw = document.getElementById('editRefs').value;
+  const references = refsRaw ? refsRaw.split('\n').map(r => r.trim()).filter(Boolean) : [];
   if (!title) return;
-  await api('PUT', `/api/items/${id}`, { title, body, due, tags });
+  await api('PUT', `/api/items/${id}`, { title, body, due, tags, project, references });
   bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
   await loadNoteFlow();
 }
@@ -4813,7 +4836,16 @@ function renderArchiveCard(item) {
 
     if (alc.length) html += renderLinkedCardsSection(alc);
 
-    html += `<div class="section-label"${alc.length ? ' style="margin-top:0.6rem"' : ''}>Notes</div>`;
+    // Project (archive)
+    const archProj = item.project ? board.projects.find(p => p.id === item.project) : null;
+    if (archProj) {
+      html += `<div class="section-label"${alc.length ? ' style="margin-top:0.6rem"' : ''}>Project</div>`;
+      html += `<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;margin-bottom:0.3rem">`;
+      html += `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${archProj.color}"></span>`;
+      html += `<span style="color:#e2e8f0">${escapeHtml(archProj.name)}</span></div>`;
+    }
+
+    html += `<div class="section-label" style="margin-top:0.6rem">Notes</div>`;
     html += item.body
       ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
       : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes</div>`;

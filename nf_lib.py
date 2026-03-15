@@ -105,7 +105,7 @@ def update_item(store, item_id, updates):
     if not item:
         return None, f"Item {item_id} not found"
 
-    allowed = {"title", "body", "tags", "due", "remind", "recurrence", "type", "linked_cards", "references"}
+    allowed = {"title", "body", "tags", "due", "remind", "recurrence", "type", "linked_cards", "references", "project"}
     changes = []
     for key, val in updates.items():
         if key in allowed:

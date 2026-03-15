@@ -19,13 +19,14 @@ def main():
     parser.add_argument("--remove-tags", nargs="+", metavar="TAG", help="Tags to remove")
     parser.add_argument("--add-refs", nargs="+", metavar="REF", help="References to add (URLs, file paths, etc.)")
     parser.add_argument("--remove-refs", nargs="+", metavar="REF", help="References to remove")
+    parser.add_argument("--project", help="Project ID to associate, or 'clear' to remove")
     args = parser.parse_args()
 
     # Must have at least one update
     has_update = any([
         args.title, args.body, args.type, args.due, args.remind,
         args.recurrence, args.add_tags, args.remove_tags,
-        args.add_refs, args.remove_refs,
+        args.add_refs, args.remove_refs, args.project,
     ])
     if not has_update:
         parser.error("at least one update flag is required")
@@ -63,6 +64,10 @@ def main():
         if args.remove_tags:
             current_tags = [t for t in current_tags if t not in args.remove_tags]
         updates["tags"] = current_tags
+
+    # Project
+    if args.project:
+        updates["project"] = None if args.project == "clear" else args.project
 
     # Merge references
     if args.add_refs or args.remove_refs:

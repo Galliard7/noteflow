@@ -35,6 +35,11 @@ def main():
         default=None,
         help="Mission Control card slug to link this item to",
     )
+    parser.add_argument(
+        "--project",
+        default=None,
+        help="Project ID from board.json to associate this item with",
+    )
     args = parser.parse_args()
 
     store = load_store()
@@ -55,6 +60,7 @@ def main():
         "remind": args.remind,
         "recurrence": args.recurrence,
         "linked_cards": [args.linked_card] if args.linked_card else [],
+        "project": args.project,
         "cron_installed": False,
         "snoozed_until": None,
         "history": [{"ts": now, "action": "created"}],
@@ -95,6 +101,8 @@ def main():
     linked = args.linked_card or mc_slug
     if linked:
         parts.append(f"Linked: {linked}")
+    if args.project:
+        parts.append(f"Project: {args.project}")
 
     print(f"Captured → [{item_id}] {args.title}")
     print(f"  {' | '.join(parts)}")

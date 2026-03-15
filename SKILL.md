@@ -69,10 +69,11 @@ python3 ~/skill-backends/noteflow/nf-add.py \
   --body "<original user input verbatim>" \
   --due "<ISO 8601 datetime or omit>" \
   --remind "<ISO 8601 datetime or omit>" \
-  --recurrence "<daily|weekdays|weekly|monthly or omit>"
+  --recurrence "<daily|weekdays|weekly|monthly or omit>" \
+  --project "<project-id or omit>"
 ```
 
-Omit `--due` and `--remind` if not applicable.
+Omit `--due`, `--remind`, and `--project` if not applicable. Project IDs come from `board.json` projects (e.g. `noteflow`, `dataflow`). Each item can belong to one project.
 
 When `--remind` is provided, a system cron job is automatically installed to deliver the reminder via Telegram at the exact time. When `--recurrence` is also set, the cron job repeats on that schedule.
 
@@ -117,10 +118,11 @@ python3 ~/skill-backends/noteflow/nf-update.py --id <nf-XXX> \
   --add-tags tag1 tag2 \
   --remove-tags tag3 \
   --add-refs "https://example.com" "/path/to/file" \
-  --remove-refs "https://old-url.com"
+  --remove-refs "https://old-url.com" \
+  --project "<project-id or 'clear'>"
 ```
 
-Use when the user wants to change an entry's title, body, type, dates, tags, or references. Only include the flags that need changing — omitted flags are left unchanged. Use `'clear'` as the value for `--due`, `--remind`, or `--recurrence` to remove them.
+Use when the user wants to change an entry's title, body, type, dates, tags, references, or project. Only include the flags that need changing — omitted flags are left unchanged. Use `'clear'` as the value for `--due`, `--remind`, or `--recurrence` to remove them.
 
 **References** are URLs, file paths, or any external pointers the user wants to attach to an entry ("link this to...", "add reference...", "attach this URL to nf-005"). These are displayed separately from linked MC cards in the dashboard — references show with a 🌐 icon, linked cards show with a 🔗 icon and status dot.
 

@@ -36,6 +36,8 @@ def main():
             print(f"    → {ref}")
     if item.get("linked_cards"):
         print(f"  Linked cards: {', '.join(item['linked_cards'])}")
+    if item.get("project"):
+        print(f"  Project: {item['project']}")
 
     # Body
     if item.get("body"):
