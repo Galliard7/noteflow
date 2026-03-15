@@ -21,7 +21,7 @@ from nf_lib import (
 from mc_lib import (
     load_board, save_board, find_card,
     add_card, update_card, delete_card, move_card,
-    add_comment as mc_add_comment, delete_comment as mc_delete_comment,
+    add_comment as mc_add_comment, update_comment as mc_update_comment, delete_comment as mc_delete_comment,
     find_project, add_project, update_project, update_phase, reorder_projects,
     add_decision, add_log_entry,
     add_status, delete_status, reorder_statuses,
@@ -120,6 +120,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_board_get()
         elif parts == ["api", "board", "activity"]:
             self._api_board_list_activity()
+        elif (len(parts) == 5 and parts[:3] == ["api", "board", "projects"]
+              and parts[4] == "graph"):
+            self._api_board_project_graph(parts[3])
         elif parts == ["api", "files"]:
             self._api_read_file()
         elif parts == ["api", "stack"]:
@@ -181,6 +184,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_board_update_status(parts[3])
         elif parts == ["api", "board", "projects", "reorder"]:
             self._api_board_reorder_projects()
+        elif len(parts) == 6 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
+            self._api_board_update_comment(parts[3], parts[5])
         elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
             self._api_board_update_card(parts[3])
         elif len(parts) == 4 and parts[:3] == ["api", "board", "projects"]:
@@ -602,6 +607,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             project=data.get("project"),
             plan_file=data.get("plan_file"),
         )
+        if data.get("phase"):
+            card["phase"] = data["phase"]
+            save_board(board)
         self._send_json({"card": card}, 201)
 
     def _api_board_update_card(self, slug):
@@ -643,6 +651,28 @@ class DashboardHandler(BaseHTTPRequestHandler):
         card, err = mc_add_comment(board, slug, text, author)
         if err:
             self._send_error(404, err)
+        else:
+            self._send_json({"card": card})
+
+    def _api_board_update_comment(self, slug, index_str):
+        try:
+            index = int(index_str)
+        except ValueError:
+            self._send_error(400, "Invalid comment index")
+            return
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        text = data.get("text", "").strip()
+        if not text:
+            self._send_error(400, "Comment text is required")
+            return
+        board = load_board()
+        card, err = mc_update_comment(board, slug, index, text)
+        if err:
+            self._send_error(400, err)
         else:
             self._send_json({"card": card})
 
@@ -904,6 +934,62 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_error(400, err)
         else:
             self._send_json({"project": proj})
+
+    # --- API Handlers: Project Graph ---
+
+    def _api_board_project_graph(self, project_id):
+        """Return graph data (nodes, edges, phases) for a project's roadmap view."""
+        board = load_board()
+        proj = find_project(board, project_id)
+        if not proj:
+            self._send_error(404, f"Project '{project_id}' not found")
+            return
+
+        # Build status color map
+        status_colors = {}
+        for s in board.get("statuses", []):
+            status_colors[s["id"]] = s.get("color", "#64748b")
+        fallback_colors = {"pending": "#f59e0b", "active": "#3b82f6", "done": "#10b981"}
+
+        # Get project cards
+        cards = [c for c in board.get("cards", []) if c.get("project") == project_id]
+
+        # Build phase list from project
+        phases = []
+        for i, ph in enumerate(proj.get("phases", [])):
+            phases.append({
+                "name": ph["name"],
+                "status": ph.get("status", "pending"),
+                "index": i,
+            })
+
+        # Build nodes
+        nodes = []
+        for card in cards:
+            sc = card.get("status", "pending")
+            color = status_colors.get(sc) or fallback_colors.get(sc, "#64748b")
+            nodes.append({
+                "id": card["id"],
+                "slug": card["slug"],
+                "title": card["title"],
+                "status": sc,
+                "phase": card.get("phase", ""),
+                "statusColor": color,
+            })
+
+        # Build edges from depends_on
+        slug_to_id = {c["slug"]: c["id"] for c in cards}
+        edges = []
+        for card in cards:
+            for dep_slug in card.get("depends_on", []):
+                source_id = slug_to_id.get(dep_slug)
+                if source_id:
+                    edges.append({
+                        "source": source_id,
+                        "target": card["id"],
+                    })
+
+        self._send_json({"nodes": nodes, "edges": edges, "phases": phases})
 
     # --- API Handlers: File browsing ---
 

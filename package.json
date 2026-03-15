@@ -1,0 +1,27 @@
+{
+  "name": "noteflow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "playwright.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Galliard7/noteflow.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Galliard7/noteflow/issues"
+  },
+  "homepage": "https://github.com/Galliard7/noteflow#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

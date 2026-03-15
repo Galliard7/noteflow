@@ -122,13 +122,77 @@ def add_card(board, title, description="", status="pending", project=None, plan_
     return card
 
 
+def _detect_cycle(board, slug, new_deps):
+    """Check if adding new_deps to slug would create a cycle. Returns cycle path or None."""
+    # Build adjacency map including the proposed change
+    adj = {}
+    for c in board["cards"]:
+        s = c["slug"]
+        adj[s] = list(c.get("depends_on", [])) if s != slug else list(new_deps)
+
+    # DFS from slug following depends_on edges (reverse: who does slug depend on, transitively)
+    visited = set()
+    path = []
+
+    def dfs(node):
+        if node in visited:
+            return None
+        if node == slug and path:
+            return path + [node]
+        visited.add(node)
+        path.append(node)
+        for dep in adj.get(node, []):
+            result = dfs(dep)
+            if result:
+                return result
+        path.pop()
+        visited.discard(node)
+        return None
+
+    # Check if any dependency of slug transitively leads back to slug
+    for dep in new_deps:
+        visited.clear()
+        path.clear()
+        path.append(slug)
+        result = dfs(dep)
+        if result:
+            return [slug] + result
+    return None
+
+
 def update_card(board, slug, updates):
     """Update fields on a card. Returns (card, error_msg)."""
     card = find_card(board, slug)
     if not card:
         return None, f"Card '{slug}' not found"
 
-    allowed = {"title", "description", "status", "project", "plan_file"}
+    allowed = {"title", "description", "status", "project", "plan_file", "depends_on", "phase"}
+
+    # Validate depends_on before applying
+    if "depends_on" in updates:
+        deps = updates["depends_on"] or []
+        if deps:
+            card_project = updates.get("project", card.get("project"))
+            for dep_slug in deps:
+                dep_card = find_card(board, dep_slug)
+                if not dep_card:
+                    return None, f"Dependency '{dep_slug}' not found"
+                if dep_card.get("project") != card_project:
+                    return None, f"Dependency '{dep_slug}' belongs to a different project"
+            cycle = _detect_cycle(board, card["slug"], deps)
+            if cycle:
+                return None, f"Dependency cycle detected: {' → '.join(cycle)}"
+
+    # Validate phase before applying
+    if "phase" in updates and updates["phase"]:
+        card_project = updates.get("project", card.get("project"))
+        if card_project:
+            proj = find_project(board, card_project)
+            if proj:
+                phase_names = [p["name"] for p in proj.get("phases", [])]
+                if phase_names and updates["phase"] not in phase_names:
+                    return None, f"Phase '{updates['phase']}' not found in project '{card_project}'"
+
     for key, val in updates.items():
         if key in allowed:
             card[key] = val
@@ -210,6 +274,20 @@ def add_comment(board, slug, text, author="cc"):
         "author": author,
         "text": text,
     })
+    card["updated"] = _now_iso()
+    save_board(board)
+    return card, None
+
+
+def update_comment(board, slug, index, text):
+    """Update a comment's text by index. Returns (card, error_msg)."""
+    card = find_card(board, slug)
+    if not card:
+        return None, f"Card '{slug}' not found"
+    comments = card.get("comments", [])
+    if index < 0 or index >= len(comments):
+        return None, f"Comment index {index} out of range"
+    comments[index]["text"] = text
     card["updated"] = _now_iso()
     save_board(board)
     return card, None

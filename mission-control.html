@@ -164,7 +164,14 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   margin-bottom: 0.3rem; font-size: 0.8rem;
 }
 .comment-ts { color: #64748b; font-size: 0.7rem; }
-.comment-text { color: #cbd5e1; margin-top: 0.1rem; }
+.comment-text { color: #cbd5e1; margin-top: 0.1rem; cursor: text; border-radius: 3px; padding: 1px 3px; margin: 0.1rem -3px 0; transition: background 0.12s; }
+.comment-text:hover { background: #334155; }
+.comment-text-input {
+  background: #0f172a; border: 1px solid #3b82f6; color: #e2e8f0;
+  font-size: 0.8rem; font-family: inherit; border-radius: 4px;
+  padding: 3px 5px; margin: 0.1rem -4px 0; width: calc(100% + 8px);
+  outline: none; resize: vertical; min-height: 1.6em;
+}
 .comment-delete { cursor: pointer; color: #64748b; font-size: 0.7rem; float: right; }
 .comment-delete:hover { color: #ef4444; }
 .card-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -360,6 +367,44 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   padding: 0.5rem 1.2rem; display: flex; align-items: center; gap: 0.6rem;
   border-bottom: 1px solid #1e293b;
 }
+.kb-search-wrap {
+  position: relative; margin-left: auto; margin-right: 0.4rem;
+}
+.kb-search-wrap input {
+  background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+  border-radius: 6px; padding: 0.25rem 0.5rem 0.25rem 1.6rem;
+  font-size: 0.78rem; width: 220px; outline: none; transition: border-color 0.15s;
+}
+.kb-search-wrap input:focus { border-color: #3b82f6; }
+.kb-search-wrap input::placeholder { color: #475569; }
+.kb-search-wrap .search-icon {
+  position: absolute; left: 0.45rem; top: 50%; transform: translateY(-50%);
+  color: #475569; font-size: 0.78rem; pointer-events: none;
+}
+.kb-search-suggestions {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px;
+  background: #1e293b; border: 1px solid #334155; border-radius: 6px;
+  max-height: 280px; overflow-y: auto; z-index: 1000; display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.kb-search-suggestions.open { display: block; }
+.kb-suggestion {
+  padding: 0.45rem 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+  border-bottom: 1px solid #1e293b; transition: background 0.1s;
+}
+.kb-suggestion:last-child { border-bottom: none; }
+.kb-suggestion:hover, .kb-suggestion.highlighted { background: #334155; }
+.kb-suggestion .sg-id { color: #64748b; font-size: 0.7rem; flex-shrink: 0; }
+.kb-suggestion .sg-title { color: #e2e8f0; font-size: 0.78rem; flex: 1; min-width: 0; }
+.kb-suggestion .sg-title mark { background: transparent; color: #3b82f6; font-weight: 600; }
+.kb-suggestion .sg-badge {
+  font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 4px; flex-shrink: 0;
+}
+.kb-search-empty {
+  padding: 0.6rem; color: #64748b; font-size: 0.78rem; text-align: center;
+}
+.kb-card.search-dimmed { opacity: 0.15; }
+.kb-card.search-match { box-shadow: 0 0 0 1px #3b82f6; }
 .view-toggle { display: flex; gap: 0; }
 .view-btn {
   background: #1e293b; border: 1px solid #334155; color: #94a3b8;
@@ -370,6 +415,31 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .view-btn:last-child { border-radius: 0 5px 5px 0; border-left: none; }
 .view-btn.active { background: #334155; color: #e2e8f0; }
 .view-btn:hover:not(.active) { color: #e2e8f0; }
+
+/* ── Inline-editable card fields ── */
+.cd-title-text {
+  cursor: text; border-radius: 4px; padding: 2px 4px; margin: -2px -4px;
+  transition: background 0.12s;
+}
+.cd-title-text:hover { background: #334155; }
+.cd-title-input {
+  background: #0f172a; border: 1px solid #3b82f6; color: #e2e8f0;
+  font-size: inherit; font-weight: inherit; font-family: inherit;
+  border-radius: 4px; padding: 2px 4px; margin: -3px -5px;
+  width: 100%; outline: none;
+}
+.cd-desc-text {
+  cursor: text; border-radius: 4px; padding: 4px 6px; margin: -4px -6px;
+  transition: background 0.12s; min-height: 1.4em;
+}
+.cd-desc-text:hover { background: #334155; }
+.cd-desc-input {
+  background: #0f172a; border: 1px solid #3b82f6; color: #e2e8f0;
+  font-size: 0.82rem; font-family: inherit; border-radius: 4px;
+  padding: 4px 6px; margin: -5px -7px; width: calc(100% + 14px);
+  outline: none; resize: vertical; min-height: 60px;
+  white-space: pre-wrap;
+}
 
 /* ── Modals ── */
 .modal-content { background: #1e293b; border: 1px solid #334155; }
@@ -427,22 +497,40 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   border-bottom: 1px solid #334155; padding-bottom: 0.4rem; margin: 1.2rem 0 0.8rem;
 }
 .phase-item {
-  display: flex; gap: 0.6rem; padding: 0.6rem 0;
-  border-bottom: 1px solid rgba(51,65,85,0.4);
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.3rem;
+  border-bottom: 1px solid rgba(51,65,85,0.4); user-select: none;
 }
-.phase-item:last-child { border-bottom: none; }
+.phase-item.expandable { cursor: pointer; border-radius: 6px; margin: 0 -0.3rem; padding: 0.6rem; }
+.phase-item.expandable:hover { background: rgba(255,255,255,0.03); }
 .phase-icon { font-size: 1rem; flex-shrink: 0; width: 1.3rem; text-align: center; line-height: 1.5; }
+.phase-chevron {
+  font-size: 0.6rem; color: #475569; flex-shrink: 0; width: 0.8rem;
+  transition: transform 0.15s ease; display: inline-block;
+}
+.phase-chevron.expanded { transform: rotate(90deg); }
+.phase-chevron-spacer { width: 0.8rem; flex-shrink: 0; }
 .phase-content { flex: 1; }
-.phase-name { font-weight: 600; font-size: 0.9rem; color: #e2e8f0; }
+.phase-name { font-weight: 600; font-size: 0.9rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.5rem; }
 .phase-name.done { color: #10b981; }
 .phase-name.active { color: #3b82f6; }
-.phase-desc { font-size: 0.8rem; color: #94a3b8; margin-top: 0.15rem; }
-.related-task-item {
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.45rem 0.6rem; margin-bottom: 0.3rem;
-  background: #0f172a; border: 1px solid #334155; border-radius: 6px;
-  font-size: 0.85rem;
+.phase-task-count {
+  font-size: 0.7rem; font-weight: 500; color: #64748b;
+  background: rgba(100,116,139,0.15); padding: 0.05rem 0.4rem; border-radius: 10px;
 }
+.phase-desc { font-size: 0.8rem; color: #94a3b8; margin-top: 0.15rem; }
+.phase-children {
+  display: none; padding-left: 2.6rem; margin-bottom: 0.3rem;
+}
+.phase-children.open { display: block; }
+.phase-child-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.6rem; margin-bottom: 0.2rem;
+  background: #0f172a; border: 1px solid #1e293b; border-radius: 6px;
+  font-size: 0.82rem; cursor: pointer; transition: border-color 0.12s;
+}
+.phase-child-item:hover { border-color: #475569; }
+.phase-child-id { color: #475569; font-size: 0.72rem; font-family: monospace; }
+.phase-child-title { color: #e2e8f0; flex: 1; }
 .related-task-status {
   font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.4rem;
   border-radius: 4px; white-space: nowrap;
@@ -471,8 +559,14 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 }
 .roadmap-toggle-btn.active { background: #334155; color: #e2e8f0; }
 .roadmap-toggle-btn:hover:not(.active) { color: #94a3b8; }
+.roadmap-reset-btn {
+  background: none; border: 1px solid #334155; border-radius: 5px;
+  color: #64748b; font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.6rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.roadmap-reset-btn:hover { color: #e2e8f0; border-color: #475569; background: #1e293b; }
 #roadmap-container {
-  width: 100%; height: calc(100vh - 140px); min-height: 400px;
+  width: 100%; height: calc(100vh - 170px); min-height: 400px;
   background: #0b1120; border: 1px solid #1e293b; border-radius: 8px;
   position: relative;
 }
@@ -1284,6 +1378,12 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
           <button class="view-btn active" onclick="setKbView('status')">By Status</button>
           <button class="view-btn" onclick="setKbView('project')">By Project</button>
         </div>
+        <div class="kb-search-wrap">
+          <span class="search-icon">&#128269;</span>
+          <input type="text" id="kb-search" placeholder="Search cards..." autocomplete="off"
+            oninput="kbSearchInput()" onkeydown="kbSearchKeydown(event)" onfocus="kbSearchInput()" onblur="setTimeout(()=>kbSearchClose(),150)">
+          <div class="kb-search-suggestions" id="kb-search-suggestions"></div>
+        </div>
         <button class="btn btn-outline-secondary btn-sm" onclick="openAddCardModal()" style="font-size:0.75rem">+ Card</button>
       </div>
       <div class="board" id="kb-board"></div>
@@ -1468,6 +1568,12 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="newCardTitle"></div>
         <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="newCardDesc" rows="3"></textarea></div>
         <div class="mb-3"><label class="form-label">Project</label><div id="newCardProjectCombo"></div></div>
+        <div class="mb-3" id="newCardPhaseGroup" style="display:none">
+          <label class="form-label">Phase</label>
+          <select class="form-select form-select-sm" id="newCardPhase">
+            <option value="">— No phase —</option>
+          </select>
+        </div>
         <div class="mb-3"><label class="form-label">Status</label>
           <select class="form-select" id="newCardStatus"></select>
         </div>
@@ -1500,6 +1606,12 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="editCardTitle"></div>
         <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="editCardDescription" rows="3"></textarea></div>
         <div class="mb-3"><label class="form-label">Project</label><div id="editCardProjectCombo"></div></div>
+        <div class="mb-3" id="editCardPhaseGroup" style="display:none">
+          <label class="form-label">Phase</label>
+          <select class="form-select form-select-sm" id="editCardPhase">
+            <option value="">— No phase —</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer border-secondary">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -1612,9 +1724,57 @@ function toggleSidebar() {
   btn.innerHTML = sb.classList.contains('expanded') ? '&#x276E;' : '&#x276F;';
 }
 
+// ── Hash-based routing ──
+let _suppressHashUpdate = false;
+
+function updateHash() {
+  if (_suppressHashUpdate) return;
+  let hash = '#' + currentTab;
+  if (currentTab === 'projects' && selectedProjectId) {
+    hash += '/' + selectedProjectId;
+    if (projectDetailView === 'roadmap') hash += '/roadmap';
+  }
+  if (window.location.hash !== hash) {
+    history.replaceState(null, '', hash);
+  }
+}
+
+function navigateFromHash() {
+  const hash = (window.location.hash || '').replace(/^#/, '');
+  if (!hash) return false;
+  const parts = hash.split('/');
+  const tab = parts[0];
+  const validTabs = ['noteflow', 'tasks', 'projects', 'calendar', 'stack'];
+  if (!validTabs.includes(tab)) return false;
+
+  _suppressHashUpdate = true;
+  switchTab(tab);
+  if (tab === 'projects' && parts[1]) {
+    // Defer project detail open until projects data is loaded
+    const waitForProjects = () => {
+      if (projectsData && projectsData.length > 0) {
+        const projId = parts[1];
+        if (parts[2] === 'roadmap') projectDetailView = 'roadmap';
+        openProjectDetail(projId);
+        _suppressHashUpdate = false;
+        updateHash();
+      } else {
+        setTimeout(waitForProjects, 100);
+      }
+    };
+    waitForProjects();
+  } else {
+    _suppressHashUpdate = false;
+  }
+  return true;
+}
+
+window.addEventListener('hashchange', () => navigateFromHash());
+
 function switchTab(tab) {
   currentTab = tab;
   localStorage.setItem('mc-active-tab', tab);
+  updateHash();
   document.querySelectorAll('.mc-sidebar .tab-btn').forEach(b => {
     b.classList.toggle('active', b.getAttribute('title').toLowerCase() === tab);
   });
@@ -3029,7 +3189,7 @@ function renderLinkedCardsSection(linkedSlugs) {
     html += `<div style="background:#1e293b;border-radius:6px;padding:0.5rem;font-size:0.82rem;margin-bottom:0.3rem">`;
     html += `<div style="display:flex;align-items:center;gap:0.4rem">`;
     html += `<span class="linked-card-status" style="background:${color};width:8px;height:8px"></span>`;
-    html += `<span style="font-weight:500;color:#e2e8f0">${escapeHtml(card.title)}</span>`;
+    html += `<span style="color:#64748b;font-size:0.72rem;margin-right:4px">${card.id}</span><span style="font-weight:500;color:#e2e8f0">${escapeHtml(card.title)}</span>`;
     html += `</div>`;
     html += `<div style="font-size:0.72rem;color:#64748b;margin-top:0.2rem">Status: <span style="color:${color}">${escapeHtml(card.status)}</span> &middot; Project: ${escapeHtml(projName)}</div>`;
     html += `</div>`;
@@ -3660,7 +3820,7 @@ function renderKbCard(card) {
   let html = `<div class="kb-card" data-card-slug="${card.slug}" draggable="true"
     ondragstart="kbCardDragStart(event,'${card.slug}')" ondragend="kbCardDragEnd(event)"
     onclick="openCardDetail('${card.slug}')">`;
-  html += `<div class="kb-title">${escapeHtml(card.title)}${commentHint}</div>`;
+  html += `<div class="kb-title"><span style="color:#64748b;font-size:0.7rem;margin-right:4px">${card.id}</span>${escapeHtml(card.title)}${commentHint}</div>`;
   if (card.description) {
     const shortDesc = card.description.length > 80 ? card.description.slice(0, 80) + '...' : card.description;
     html += `<div class="kb-desc">${escapeHtml(shortDesc)}</div>`;
@@ -3748,6 +3908,121 @@ function setKbView(view) {
   kbView = view;
   document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(view)));
   renderBoard();
+}
+
+// ── Search ──
+
+let kbSearchHighlight = -1;
+
+function kbSearchInput() {
+  const q = document.getElementById('kb-search').value.trim().toLowerCase();
+  const sugEl = document.getElementById('kb-search-suggestions');
+  kbSearchHighlight = -1;
+
+  if (!q) {
+    sugEl.classList.remove('open');
+    kbSearchClearHighlight();
+    return;
+  }
+
+  const matches = (board.cards || []).filter(c => {
+    const projName = getProjectName(c.project).toLowerCase();
+    return c.title.toLowerCase().includes(q)
+      || (c.description || '').toLowerCase().includes(q)
+      || (c.id || '').toLowerCase().includes(q)
+      || (c.slug || '').toLowerCase().includes(q)
+      || projName.includes(q);
+  });
+
+  if (!matches.length) {
+    sugEl.innerHTML = '<div class="kb-search-empty">No matching cards</div>';
+    sugEl.classList.add('open');
+    kbSearchApplyFilter([]);
+    return;
+  }
+
+  sugEl.innerHTML = matches.slice(0, 12).map((c, i) => {
+    const badgeColor = getProjectColor(c.project);
+    const projLabel = getProjectName(c.project);
+    const title = highlightMatch(escapeHtml(c.title), q);
+    return `<div class="kb-suggestion" data-idx="${i}" data-slug="${c.slug}"
+      onmousedown="kbSearchSelect('${c.slug}')">
+      <span class="sg-id">${c.id}</span>
+      <span class="sg-title">${title}</span>
+      <span class="sg-badge" style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}44">${escapeHtml(projLabel)}</span>
+    </div>`;
+  }).join('');
+  sugEl.classList.add('open');
+
+  kbSearchApplyFilter(matches.map(c => c.slug));
+}
+
+function highlightMatch(text, q) {
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) return text;
+  return text.slice(0, idx) + '<mark>' + text.slice(idx, idx + q.length) + '</mark>' + text.slice(idx + q.length);
+}
+
+function kbSearchApplyFilter(matchSlugs) {
+  document.querySelectorAll('#kb-board .kb-card').forEach(el => {
+    const slug = el.dataset.cardSlug;
+    if (!matchSlugs.length && !document.getElementById('kb-search').value.trim()) {
+      el.classList.remove('search-dimmed', 'search-match');
+    } else if (matchSlugs.includes(slug)) {
+      el.classList.remove('search-dimmed');
+      el.classList.add('search-match');
+    } else {
+      el.classList.add('search-dimmed');
+      el.classList.remove('search-match');
+    }
+  });
+}
+
+function kbSearchClearHighlight() {
+  document.querySelectorAll('#kb-board .kb-card').forEach(el => {
+    el.classList.remove('search-dimmed', 'search-match');
+  });
+}
+
+function kbSearchSelect(slug) {
+  document.getElementById('kb-search').value = '';
+  document.getElementById('kb-search-suggestions').classList.remove('open');
+  kbSearchClearHighlight();
+  openCardDetail(slug);
+}
+
+function kbSearchClose() {
+  document.getElementById('kb-search-suggestions').classList.remove('open');
+  if (!document.getElementById('kb-search').value.trim()) kbSearchClearHighlight();
+}
+
+function kbSearchKeydown(e) {
+  const sugEl = document.getElementById('kb-search-suggestions');
+  const items = sugEl.querySelectorAll('.kb-suggestion');
+  if (!items.length) {
+    if (e.key === 'Escape') { document.getElementById('kb-search').blur(); kbSearchClose(); }
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    kbSearchHighlight = Math.min(kbSearchHighlight + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === kbSearchHighlight));
+    items[kbSearchHighlight].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    kbSearchHighlight = Math.max(kbSearchHighlight - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === kbSearchHighlight));
+    items[kbSearchHighlight].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && kbSearchHighlight >= 0) {
+    e.preventDefault();
+    kbSearchSelect(items[kbSearchHighlight].dataset.slug);
+  } else if (e.key === 'Escape') {
+    document.getElementById('kb-search').value = '';
+    kbSearchClose();
+    kbSearchClearHighlight();
+    document.getElementById('kb-search').blur();
+  }
 }
 
 // ── Project combobox helpers ──
@@ -3870,7 +4145,8 @@ function openCardDetail(slug, inPlace) {
   const statusColor = getStatusColor(card.status);
 
   let html = `<div class="modal-header border-secondary">`;
-  html += `<h5 class="modal-title">${escapeHtml(card.title)}</h5>`;
+  html += `<h5 class="modal-title" style="flex:1;min-width:0"><span style="color:#64748b;font-size:0.8rem;margin-right:6px">${card.id}</span>`;
+  html += `<span class="cd-title-text" id="cdTitle-${slug}" onclick="event.stopPropagation();cdEditTitle('${slug}')">${escapeHtml(card.title)}</span></h5>`;
   html += `<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>`;
   html += `<div class="modal-body">`;
 
@@ -3880,11 +4156,11 @@ function openCardDetail(slug, inPlace) {
   html += `<span class="kb-badge" style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${card.status}</span>`;
   html += `</div>`;
 
-  // Description
+  // Description (inline-editable)
   html += `<div class="section-label">Description</div>`;
   html += card.description
-    ? `<div class="notes-body">${escapeHtml(card.description)}</div>`
-    : `<div class="notes-body" style="color:#64748b;font-style:italic">No description</div>`;
+    ? `<div class="notes-body cd-desc-text" id="cdDesc-${slug}" onclick="event.stopPropagation();cdEditDesc('${slug}')">${escapeHtml(card.description)}</div>`
+    : `<div class="notes-body cd-desc-text" id="cdDesc-${slug}" onclick="event.stopPropagation();cdEditDesc('${slug}')" style="color:#64748b;font-style:italic">Click to add description</div>`;
 
   // Comments
   html += `<div class="section-label" style="margin-top:0.8rem">Comments</div>`;
@@ -3892,10 +4168,11 @@ function openCardDetail(slug, inPlace) {
   if (!comments.length) {
     html += `<div style="color:#64748b;font-size:0.8rem;font-style:italic">No comments</div>`;
   } else {
-    for (const c of comments) {
+    for (let ci = 0; ci < comments.length; ci++) {
+      const c = comments[ci];
       html += `<div class="comment">`;
       html += `<div class="comment-ts">[${escapeHtml(c.author)}] ${formatDateTime(c.ts)}</div>`;
-      html += `<div class="comment-text">${escapeHtml(c.text)}</div></div>`;
+      html += `<div class="comment-text" id="cdComment-${slug}-${ci}" onclick="event.stopPropagation();cdEditComment('${slug}',${ci})">${escapeHtml(c.text)}</div></div>`;
     }
   }
 
@@ -3949,6 +4226,110 @@ function openCardDetail(slug, inPlace) {
   }
 }
 
+// ── Inline edit title/description in card detail modal ──
+
+function cdEditTitle(slug) {
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card) return;
+  const el = document.getElementById(`cdTitle-${slug}`);
+  if (!el || el.tagName === 'INPUT') return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'cd-title-input';
+  input.value = card.title;
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let saving = false;
+  const save = async () => {
+    if (saving) return;
+    saving = true;
+    const newTitle = input.value.trim();
+    if (newTitle && newTitle !== card.title) {
+      await api('PUT', `/api/board/cards/${slug}`, { title: newTitle });
+      await loadBoard();
+    }
+    openCardDetail(slug, true);
+  };
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { saving = true; openCardDetail(slug, true); }
+  });
+}
+
+function cdEditDesc(slug) {
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card) return;
+  const el = document.getElementById(`cdDesc-${slug}`);
+  if (!el || el.tagName === 'TEXTAREA') return;
+
+  const ta = document.createElement('textarea');
+  ta.className = 'cd-desc-input';
+  ta.value = card.description || '';
+  ta.placeholder = 'Add a description...';
+  el.replaceWith(ta);
+  ta.focus();
+  // Auto-size
+  ta.style.height = Math.max(60, ta.scrollHeight) + 'px';
+  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.max(60, ta.scrollHeight) + 'px'; });
+
+  let saving = false;
+  const save = async () => {
+    if (saving) return;
+    saving = true;
+    const newDesc = ta.value;
+    if (newDesc !== (card.description || '')) {
+      await api('PUT', `/api/board/cards/${slug}`, { description: newDesc });
+      await loadBoard();
+    }
+    openCardDetail(slug, true);
+  };
+
+  ta.addEventListener('blur', save);
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { saving = true; openCardDetail(slug, true); }
+  });
+}
+
+function cdEditComment(slug, index) {
+  const card = board.cards.find(c => c.slug === slug);
+  if (!card) return;
+  const comment = (card.comments || [])[index];
+  if (!comment) return;
+  const el = document.getElementById(`cdComment-${slug}-${index}`);
+  if (!el || el.tagName === 'TEXTAREA') return;
+
+  const ta = document.createElement('textarea');
+  ta.className = 'comment-text-input';
+  ta.value = comment.text;
+  el.replaceWith(ta);
+  ta.focus();
+  ta.style.height = Math.max(28, ta.scrollHeight) + 'px';
+  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.max(28, ta.scrollHeight) + 'px'; });
+
+  let saving = false;
+  const save = async () => {
+    if (saving) return;
+    saving = true;
+    const newText = ta.value.trim();
+    if (newText && newText !== comment.text) {
+      await api('PUT', `/api/board/cards/${slug}/comments/${index}`, { text: newText });
+      await loadBoard();
+    }
+    openCardDetail(slug, true);
+  };
+
+  ta.addEventListener('blur', save);
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+    if (e.key === 'Escape') { saving = true; openCardDetail(slug, true); }
+  });
+}
+
 async function kbAddComment(slug) {
   const input = document.getElementById(`kb-comment-${slug}`);
   const text = input.value.trim();
@@ -3977,6 +4358,24 @@ async function kbDeleteCard(slug) {
 // Add card modal
 let _newCardProjectSelection = { projectId: '', projectName: '' };
 
+function _updateNewCardPhaseDropdown(projectId) {
+  const group = document.getElementById('newCardPhaseGroup');
+  const sel = document.getElementById('newCardPhase');
+  const proj = board.projects.find(p => p.id === projectId);
+  if (proj && proj.phases && proj.phases.length > 0) {
+    // Pre-select the first active phase, or first pending phase
+    const active = proj.phases.find(ph => ph.status === 'active');
+    const pending = proj.phases.find(ph => ph.status === 'pending');
+    const defaultPhase = active ? active.name : (pending ? pending.name : '');
+    sel.innerHTML = '<option value="">— No phase —</option>' +
+      proj.phases.map(ph => `<option value="${ph.name}"${ph.name === defaultPhase ? ' selected' : ''}>${ph.name}${ph.status === 'done' ? ' ✓' : ''}</option>`).join('');
+    group.style.display = '';
+  } else {
+    sel.innerHTML = '<option value="">— No phase —</option>';
+    group.style.display = 'none';
+  }
+}
+
 function openAddCardModal() {
   document.getElementById('newCardTitle').value = '';
   document.getElementById('newCardDesc').value = '';
@@ -3986,7 +4385,10 @@ function openAddCardModal() {
   const comboInput = document.getElementById('newCardProject');
   comboInput.addEventListener('projectSelected', (e) => {
     _newCardProjectSelection = e.detail;
+    _updateNewCardPhaseDropdown(e.detail.projectId);
   });
+  // Reset phase dropdown
+  _updateNewCardPhaseDropdown('');
   // Populate status dropdown dynamically
   const statusSel = document.getElementById('newCardStatus');
   statusSel.innerHTML = '';
@@ -4004,13 +4406,30 @@ async function addCardSubmit() {
   const desc = document.getElementById('newCardDesc').value;
   const status = document.getElementById('newCardStatus').value;
   const project = await ensureProject(_newCardProjectSelection.projectId, _newCardProjectSelection.projectName);
-  await api('POST', '/api/board/cards', { title, description: desc, project, status });
+  const phase = document.getElementById('newCardPhase').value || null;
+  const payload = { title, description: desc, project, status };
+  if (phase) payload.phase = phase;
+  await api('POST', '/api/board/cards', payload);
   bootstrap.Modal.getInstance(document.getElementById('addCardModal')).hide();
   await loadBoard();
 }
 
 // Edit card modal
 let _editCardProjectSelection = { projectId: '', projectName: '' };
+
+function _updateEditPhaseDropdown(projectId, currentPhase) {
+  const group = document.getElementById('editCardPhaseGroup');
+  const sel = document.getElementById('editCardPhase');
+  const proj = board.projects.find(p => p.id === projectId);
+  if (proj && proj.phases && proj.phases.length > 0) {
+    sel.innerHTML = '<option value="">— No phase —</option>' +
+      proj.phases.map(ph => `<option value="${ph.name}"${ph.name === currentPhase ? ' selected' : ''}>${ph.name}${ph.status === 'done' ? ' ✓' : ''}</option>`).join('');
+    group.style.display = '';
+  } else {
+    sel.innerHTML = '<option value="">— No phase —</option>';
+    group.style.display = 'none';
+  }
+}
 
 function openEditCard(slug) {
   const card = board.cards.find(c => c.slug === slug);
@@ -4029,7 +4448,10 @@ function openEditCard(slug) {
   const comboInput = document.getElementById('editCardProject');
   comboInput.addEventListener('projectSelected', (e) => {
     _editCardProjectSelection = e.detail;
+    _updateEditPhaseDropdown(e.detail.projectId, '');
   });
+  // Populate phase dropdown
+  _updateEditPhaseDropdown(card.project || '', card.phase || '');
   setTimeout(() => new bootstrap.Modal(document.getElementById('editCardModal')).show(), 250);
 }
 
@@ -4039,7 +4461,8 @@ async function saveCardEdit() {
   const description = document.getElementById('editCardDescription').value;
   if (!title) return;
   const project = await ensureProject(_editCardProjectSelection.projectId, _editCardProjectSelection.projectName);
-  await api('PUT', `/api/board/cards/${slug}`, { title, description, project });
+  const phase = document.getElementById('editCardPhase').value || null;
+  await api('PUT', `/api/board/cards/${slug}`, { title, description, project, phase });
   bootstrap.Modal.getInstance(document.getElementById('editCardModal')).hide();
   await loadBoard();
 }
@@ -4289,14 +4712,25 @@ function renderProjectsGrid() {
 
 function openProjectDetail(projectId) {
   selectedProjectId = projectId;
+  updateHash();
   document.getElementById('projects-portfolio').style.display = 'none';
   document.getElementById('project-detail').style.display = 'block';
   renderProjectDetail();
 }
 
+function togglePhaseChildren(idx) {
+  const children = document.getElementById(`phase-children-${idx}`);
+  if (!children) return;
+  const isOpen = children.classList.toggle('open');
+  // Find the chevron in the parent phase-item
+  const chevron = children.previousElementSibling.querySelector('.phase-chevron');
+  if (chevron) chevron.classList.toggle('expanded', isOpen);
+}
+
 function closeProjectDetail() {
   selectedProjectId = null;
   projectDetailView = 'list';
+  updateHash();
   if (cyInstance) { cyInstance.destroy(); cyInstance = null; }
   document.getElementById('project-detail').style.display = 'none';
   document.getElementById('projects-portfolio').style.display = 'block';
@@ -4307,6 +4741,7 @@ let projectDetailView = 'list'; // 'list' or 'roadmap'
 
 function setProjectView(view) {
   projectDetailView = view;
+  updateHash();
   renderProjectDetail();
 }
 
@@ -4325,21 +4760,81 @@ function renderProjectDetail() {
 
   let phasesHtml = '';
   if (hasPhases) {
-    const phaseItems = proj.phases.map(ph => {
+    // Group tasks by phase name
+    const tasksByPhase = {};
+    tasks.forEach(card => {
+      const phaseName = card.phase || '__unassigned__';
+      if (!tasksByPhase[phaseName]) tasksByPhase[phaseName] = [];
+      tasksByPhase[phaseName].push(card);
+    });
+
+    const phaseItems = proj.phases.map((ph, idx) => {
       let icon, nameClass;
       if (ph.status === 'done') { icon = '&#x2705;'; nameClass = 'done'; }
       else if (ph.status === 'active') { icon = '&#x1F535;'; nameClass = 'active'; }
       else { icon = '&#x26AA;'; nameClass = ''; }
+
+      const phaseTasks = tasksByPhase[ph.name] || [];
+      const taskCount = phaseTasks.length;
+      const doneCount = phaseTasks.filter(c => c.status === 'done').length;
+      const countLabel = taskCount ? `<span class="phase-task-count">${doneCount}/${taskCount}</span>` : '';
+
+      let childrenHtml = '';
+      if (phaseTasks.length) {
+        const items = phaseTasks.map(card => {
+          const color = statusColors[card.status] || '#64748b';
+          return `
+            <div class="phase-child-item" onclick="openCardDetail('${escapeHtml(card.slug)}')">
+              <span class="related-task-status" style="background:${color}20;color:${color}">${escapeHtml(card.status)}</span>
+              <span class="phase-child-id">${card.id}</span>
+              <span class="phase-child-title">${escapeHtml(card.title)}</span>
+            </div>
+          `;
+        }).join('');
+        childrenHtml = `<div class="phase-children" id="phase-children-${idx}">${items}</div>`;
+      }
+
+      const expandable = taskCount > 0;
+      const chevron = expandable ? '<span class="phase-chevron">&#x25B6;</span>' : '<span class="phase-chevron-spacer"></span>';
+
       return `
-        <div class="phase-item">
+        <div class="phase-item ${expandable ? 'expandable' : ''}" ${expandable ? `onclick="togglePhaseChildren(${idx})"` : ''}>
           <span class="phase-icon">${icon}</span>
+          ${chevron}
           <div class="phase-content">
-            <div class="phase-name ${nameClass}">${escapeHtml(ph.name)}</div>
+            <div class="phase-name ${nameClass}">${escapeHtml(ph.name)} ${countLabel}</div>
             ${ph.description ? `<div class="phase-desc">${escapeHtml(ph.description)}</div>` : ''}
           </div>
         </div>
+        ${childrenHtml}
       `;
     }).join('');
+
+    // Unassigned tasks
+    const unassigned = tasksByPhase['__unassigned__'] || [];
+    let unassignedHtml = '';
+    if (unassigned.length) {
+      const items = unassigned.map(card => {
+        const color = statusColors[card.status] || '#64748b';
+        return `
+          <div class="phase-child-item" onclick="openCardDetail('${escapeHtml(card.slug)}')">
+            <span class="related-task-status" style="background:${color}20;color:${color}">${escapeHtml(card.status)}</span>
+            <span class="phase-child-id">${card.id}</span>
+            <span class="phase-child-title">${escapeHtml(card.title)}</span>
+          </div>
+        `;
+      }).join('');
+      unassignedHtml = `
+        <div class="phase-item expandable" onclick="togglePhaseChildren('unassigned')">
+          <span class="phase-icon">&#x26AA;</span>
+          <span class="phase-chevron">&#x25B6;</span>
+          <div class="phase-content">
+            <div class="phase-name">Unassigned <span class="phase-task-count">${unassigned.length}</span></div>
+          </div>
+        </div>
+        <div class="phase-children" id="phase-children-unassigned">${items}</div>
+      `;
+    }
 
     phasesHtml = `
       <div class="project-section-title">Phases</div>
@@ -4350,22 +4845,25 @@ function renderProjectDetail() {
         <div class="project-progress-fill" style="width:${pct}%;background:${proj.color || '#6366f1'}"></div>
       </div>
       ${phaseItems}
+      ${unassignedHtml}
     `;
   }
 
+  // If no phases, show flat task list
   let tasksHtml = '';
-  if (tasks.length) {
+  if (!hasPhases && tasks.length) {
     const taskItems = tasks.map(card => {
       const color = statusColors[card.status] || '#64748b';
       return `
-        <div class="related-task-item">
+        <div class="phase-child-item" onclick="openCardDetail('${escapeHtml(card.slug)}')">
           <span class="related-task-status" style="background:${color}20;color:${color}">${escapeHtml(card.status)}</span>
-          <span style="color:#e2e8f0">${escapeHtml(card.title)}</span>
+          <span class="phase-child-id">${card.id}</span>
+          <span class="phase-child-title">${escapeHtml(card.title)}</span>
         </div>
       `;
     }).join('');
     tasksHtml = `
-      <div class="project-section-title">Related Tasks</div>
+      <div class="project-section-title">Tasks</div>
       ${taskItems}
     `;
   }
@@ -4442,6 +4940,9 @@ function renderProjectDetail() {
       ${linksHtml}
     </div>
     <div id="project-roadmap-view" style="display:${projectDetailView === 'roadmap' ? 'block' : 'none'}">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:0.4rem">
+        <button class="roadmap-reset-btn" onclick="resetRoadmapLayout()" title="Reset to default layout">Reset Layout</button>
+      </div>
       <div id="roadmap-container"></div>
     </div>
   `;
@@ -4456,13 +4957,18 @@ function renderProjectDetail() {
 // ══════════════════════════════════════════════
 
 let cyInstance = null;
+let cyState = {};  // { [projectId]: { positions: { nodeId: {x,y} }, zoom, pan } }
 
 async function renderRoadmapView(projectId) {
   const container = document.getElementById('roadmap-container');
   if (!container) return;
 
-  // Destroy previous instance
-  if (cyInstance) { cyInstance.destroy(); cyInstance = null; }
+  // Save state from previous instance before destroying
+  if (cyInstance) {
+    saveCyState();
+    cyInstance.destroy();
+    cyInstance = null;
+  }
 
   const res = await api('GET', `/api/board/projects/${projectId}/graph`);
   if (res.error) {
@@ -4523,7 +5029,7 @@ async function renderRoadmapView(projectId) {
   nodes.forEach(node => {
     const data = {
       id: node.id,
-      label: node.title.length > 35 ? node.title.slice(0, 33) + '…' : node.title,
+      label: node.id + ' ' + (node.title.length > 30 ? node.title.slice(0, 28) + '…' : node.title),
       fullTitle: node.title,
       slug: node.slug,
       status: node.status,
@@ -4614,14 +5120,26 @@ async function renderRoadmapView(projectId) {
           'opacity': 0.6,
         }
       },
-      // Highlighted elements
+      // Highlighted chain nodes
       {
-        selector: '.highlighted',
+        selector: 'node[type="card"].highlighted',
         style: {
           'opacity': 1,
           'border-width': 3,
+          'border-color': '#60a5fa',
+          'background-opacity': 0.3,
+          'z-index': 10,
         }
       },
+      // Hovered node — same as normal, just not dimmed
+      {
+        selector: 'node[type="card"].hovered',
+        style: {
+          'opacity': 1,
+          'z-index': 20,
+        }
+      },
+      // Highlighted edges
       {
         selector: 'edge.highlighted',
         style: {
@@ -4629,12 +5147,21 @@ async function renderRoadmapView(projectId) {
           'target-arrow-color': '#60a5fa',
           'width': 2.5,
           'opacity': 1,
+          'z-index': 10,
         }
       },
+      // Dimmed (everything not in chain)
       {
         selector: '.dimmed',
         style: {
-          'opacity': 0.15,
+          'opacity': 0.12,
+        }
+      },
+      // Phase containers stay slightly visible when dimmed
+      {
+        selector: 'node[type="phase"].dimmed',
+        style: {
+          'opacity': 0.25,
         }
       },
     ],
@@ -4651,40 +5178,113 @@ async function renderRoadmapView(projectId) {
     wheelSensitivity: 0.3,
   });
 
-  // Click node → open card detail
+  // Re-order phase compound nodes left-to-right by phase index.
+  // Dagre TB layout stacks cards compactly within each phase, but places
+  // phases by topology not index. Fix: reposition phases L→R by index.
+  reorderPhases(cyInstance);
+
+  // Restore saved positions, zoom, and pan if we have them for this project
+  const saved = cyState[projectId];
+  if (saved) {
+    // Apply saved node positions
+    if (saved.positions) {
+      cyInstance.nodes().forEach(n => {
+        if (saved.positions[n.id()]) {
+          n.position(saved.positions[n.id()]);
+        }
+      });
+    }
+    // Apply saved viewport
+    if (saved.zoom != null && saved.pan) {
+      cyInstance.viewport({ zoom: saved.zoom, pan: saved.pan });
+    }
+  } else {
+    // First render — fit to view
+    cyInstance.fit(undefined, 40);
+  }
+
+  // Save positions after dragging a node
+  cyInstance.on('free', 'node', function() {
+    saveCyState();
+  });
+
+  // Click node → open card detail modal (stay on roadmap)
   cyInstance.on('tap', 'node[type="card"]', function(evt) {
     const slug = evt.target.data('slug');
-    if (slug) {
-      // Switch to tasks tab and expand the card
-      projectDetailView = 'list';
-      closeProjectDetail();
-      if (currentTab !== 'tasks') switchTab('tasks');
-      kbExpandedSlug = slug;
-      renderBoard();
-      setTimeout(() => {
-        const el = document.querySelector(`[data-card-slug="${slug}"]`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
+    if (slug) openCardDetail(slug);
   });
 
-  // Hover → highlight dependency chain
+  // Hover → highlight just the hovered node
   cyInstance.on('mouseover', 'node[type="card"]', function(evt) {
     const node = evt.target;
-    // Get predecessors and successors
-    const predecessors = node.predecessors();
-    const successors = node.successors();
-    const connected = predecessors.union(successors).union(node);
-
-    cyInstance.elements().addClass('dimmed');
-    connected.removeClass('dimmed').addClass('highlighted');
+    // Dim only other card nodes and edges — leave phase containers untouched
+    cyInstance.nodes('[type="card"]').addClass('dimmed');
+    cyInstance.edges().addClass('dimmed');
+    node.removeClass('dimmed').addClass('hovered');
   });
 
-  cyInstance.on('mouseout', 'node[type="card"]', function() {
-    cyInstance.elements().removeClass('dimmed').removeClass('highlighted');
+  cyInstance.on('mouseout', 'node[type="card"]', function(evt) {
+    cyInstance.elements().removeClass('dimmed').removeClass('hovered');
   });
 
-  // Fit to view
+  // Save state on zoom/pan changes
+  cyInstance.on('viewport', function() {
+    saveCyState();
+  });
+}
+
+function saveCyState() {
+  if (!cyInstance || !selectedProjectId) return;
+  const positions = {};
+  cyInstance.nodes().forEach(n => {
+    positions[n.id()] = { ...n.position() };
+  });
+  cyState[selectedProjectId] = {
+    positions,
+    zoom: cyInstance.zoom(),
+    pan: { ...cyInstance.pan() },
+  };
+}
+
+function reorderPhases(cy) {
+  const phaseNodes = cy.nodes('[type="phase"]')
+    .sort((a, b) => a.data('phaseIndex') - b.data('phaseIndex'));
+  if (phaseNodes.length <= 1) return;
+  const boxes = phaseNodes.map(pn => ({
+    node: pn,
+    bb: pn.boundingBox({ includeNodes: true, includeEdges: false }),
+  }));
+  const avgCenterY = boxes.reduce((s, b) => s + (b.bb.y1 + b.bb.y2) / 2, 0) / boxes.length;
+  const gap = 60;
+  let nextX = Math.min(...boxes.map(b => b.bb.x1));
+  boxes.forEach(({ node: pn, bb }) => {
+    const w = bb.x2 - bb.x1;
+    const cx = (bb.x1 + bb.x2) / 2;
+    const cy2 = (bb.y1 + bb.y2) / 2;
+    const dx = (nextX + w / 2) - cx;
+    const dy = avgCenterY - cy2;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+      pn.children().forEach(child => {
+        const pos = child.position();
+        child.position({ x: pos.x + dx, y: pos.y + dy });
+      });
+    }
+    nextX += w + gap;
+  });
+}
+
+function resetRoadmapLayout() {
+  if (!cyInstance || !selectedProjectId) return;
+  delete cyState[selectedProjectId];
+  cyInstance.layout({
+    name: 'dagre',
+    rankDir: 'LR',
+    nodeSep: 30,
+    rankSep: 60,
+    edgeSep: 15,
+    padding: 30,
+  }).run();
+  reorderPhases(cyInstance);
   cyInstance.fit(undefined, 40);
 }
 
@@ -4945,7 +5545,10 @@ document.addEventListener('keydown', e => {
 const savedTab = localStorage.getItem('mc-active-tab') || 'noteflow';
 (async () => {
   await loadStackState();
-  switchTab(savedTab);
+  // Hash takes priority over localStorage for navigation
+  if (!navigateFromHash()) {
+    switchTab(savedTab);
+  }
 })();
 setInterval(() => {
   if (currentTab === 'noteflow') {
@@ -4953,7 +5556,11 @@ setInterval(() => {
     if (!document.querySelector('.inline-add.active') && !nfExpandedId) loadNoteFlow();
   }
   else if (currentTab === 'tasks') loadBoard();
-  else if (currentTab === 'projects') loadProjects();
+  else if (currentTab === 'projects') {
+    // Skip refresh while viewing roadmap — it destroys & recreates the Cytoscape graph,
+    // resetting user's zoom level and node positions
+    if (!(selectedProjectId && projectDetailView === 'roadmap')) loadProjects();
+  }
   else if (currentTab === 'calendar') loadCronCalendar();
   else if (currentTab === 'stack') {
     // Skip refresh if user has a card expanded (may be typing in note input)
