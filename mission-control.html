@@ -6,6 +6,9 @@
 <title>Mission Control</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-ui, sans-serif; margin: 0; overflow-x: auto; }
@@ -455,6 +458,27 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
   color: #64748b; letter-spacing: 0.04em; margin-top: 0.6rem; margin-bottom: 0.15rem;
   padding-left: 0.1rem;
+}
+
+/* ── Roadmap view ── */
+.roadmap-toggle {
+  display: inline-flex; border: 1px solid #334155; border-radius: 6px; overflow: hidden;
+  margin-left: auto;
+}
+.roadmap-toggle-btn {
+  background: none; border: none; color: #64748b; font-size: 0.78rem; font-weight: 600;
+  padding: 0.25rem 0.7rem; cursor: pointer; transition: all 0.15s;
+}
+.roadmap-toggle-btn.active { background: #334155; color: #e2e8f0; }
+.roadmap-toggle-btn:hover:not(.active) { color: #94a3b8; }
+#roadmap-container {
+  width: 100%; height: calc(100vh - 140px); min-height: 400px;
+  background: #0b1120; border: 1px solid #1e293b; border-radius: 8px;
+  position: relative;
+}
+.roadmap-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: #475569; font-size: 0.9rem; font-style: italic;
 }
 
 /* ── Calendar Tab ── */
@@ -3025,6 +3049,8 @@ function renderNfCard(item, colColor) {
   const tags = (item.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('');
   const commentCount = (item.subnotes || []).length;
   const commentHint = commentCount > 0 ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem">\uD83D\uDCAC ${commentCount}</span>` : '';
+  const refCount = (item.references || []).length;
+  const refHint = refCount > 0 ? `<span style="color:#64748b;font-size:0.72rem;margin-left:0.3rem" title="${refCount} reference${refCount !== 1 ? 's' : ''}">&#x1F310; ${refCount}</span>` : '';
   const bellHint = item.cron_installed ? `<span style="color:#f59e0b;font-size:0.72rem;margin-left:0.3rem" title="Cron reminder active">\uD83D\uDD14</span>` : '';
 
   let html = `<div class="nf-card ${doneClass} ${expandClass}"
@@ -3033,7 +3059,7 @@ function renderNfCard(item, colColor) {
     onclick="nfToggleExpand('${item.id}')"
     ondragstart="nfDragStart(event, '${item.id}')"
     ondragend="nfDragEnd(event)">`;
-  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}${bellHint}</div>`;
+  html += `<div><span class="nf-id">[${item.id}]</span><span class="nf-title">${escapeHtml(item.title)}</span>${tags}${commentHint}${refHint}${bellHint}</div>`;
   if (meta.length) html += `<div class="nf-meta">${meta.join(' &middot; ')}</div>`;
   const lc = item.linked_cards || [];
   if (lc.length) html += renderLinkedCardBadges(lc);
@@ -3047,6 +3073,20 @@ function renderNfCard(item, colColor) {
     html += item.body
       ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
       : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes yet</div>`;
+
+    // References section
+    const refs = item.references || [];
+    if (refs.length) {
+      html += `<div class="section-label" style="margin-top:0.6rem">References</div>`;
+      for (const ref of refs) {
+        const isUrl = ref.startsWith('http://') || ref.startsWith('https://');
+        if (isUrl) {
+          html += `<div style="font-size:0.8rem;margin-bottom:0.2rem"><a href="${escapeHtml(ref)}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none;word-break:break-all">&#x1F310; ${escapeHtml(ref)}</a></div>`;
+        } else {
+          html += `<div style="font-size:0.8rem;color:#94a3b8;margin-bottom:0.2rem">&#x1F4CE; ${escapeHtml(ref)}</div>`;
+        }
+      }
+    }
 
     html += `<div class="section-label" style="margin-top:0.6rem">Comments</div>`;
     const comments = item.subnotes || [];
@@ -4233,9 +4273,18 @@ function openProjectDetail(projectId) {
 
 function closeProjectDetail() {
   selectedProjectId = null;
+  projectDetailView = 'list';
+  if (cyInstance) { cyInstance.destroy(); cyInstance = null; }
   document.getElementById('project-detail').style.display = 'none';
   document.getElementById('projects-portfolio').style.display = 'block';
   renderProjectsGrid();
+}
+
+let projectDetailView = 'list'; // 'list' or 'roadmap'
+
+function setProjectView(view) {
+  projectDetailView = view;
+  renderProjectDetail();
 }
 
 function renderProjectDetail() {
@@ -4348,17 +4397,272 @@ function renderProjectDetail() {
     `;
   }
 
+  const listActive = projectDetailView === 'list' ? 'active' : '';
+  const roadmapActive = projectDetailView === 'roadmap' ? 'active' : '';
+
   container.innerHTML = `
-    <button class="project-detail-back" onclick="closeProjectDetail()">&larr; Back to Projects</button>
-    <div class="project-detail-header">
-      <span class="project-card-dot" style="background:${proj.color || '#6366f1'}"></span>
-      <span class="project-detail-name">${escapeHtml(proj.name)}</span>
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">
+      <button class="project-detail-back" onclick="closeProjectDetail()" style="margin-bottom:0">&larr; Back</button>
+      <div class="project-detail-header" style="margin-bottom:0;flex:1">
+        <span class="project-card-dot" style="background:${proj.color || '#6366f1'}"></span>
+        <span class="project-detail-name">${escapeHtml(proj.name)}</span>
+      </div>
+      <div class="roadmap-toggle">
+        <button class="roadmap-toggle-btn ${listActive}" onclick="setProjectView('list')">List</button>
+        <button class="roadmap-toggle-btn ${roadmapActive}" onclick="setProjectView('roadmap')">Roadmap</button>
+      </div>
     </div>
     ${proj.summary ? `<div class="project-detail-summary">${escapeHtml(proj.summary)}</div>` : ''}
-    ${phasesHtml}
-    ${tasksHtml}
-    ${linksHtml}
+    <div id="project-list-view" style="display:${projectDetailView === 'list' ? 'block' : 'none'}">
+      ${phasesHtml}
+      ${tasksHtml}
+      ${linksHtml}
+    </div>
+    <div id="project-roadmap-view" style="display:${projectDetailView === 'roadmap' ? 'block' : 'none'}">
+      <div id="roadmap-container"></div>
+    </div>
   `;
+
+  if (projectDetailView === 'roadmap') {
+    renderRoadmapView(selectedProjectId);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ROADMAP (Cytoscape DAG)
+// ══════════════════════════════════════════════
+
+let cyInstance = null;
+
+async function renderRoadmapView(projectId) {
+  const container = document.getElementById('roadmap-container');
+  if (!container) return;
+
+  // Destroy previous instance
+  if (cyInstance) { cyInstance.destroy(); cyInstance = null; }
+
+  const res = await api('GET', `/api/board/projects/${projectId}/graph`);
+  if (res.error) {
+    container.innerHTML = `<div class="roadmap-empty">Error loading graph: ${escapeHtml(res.error)}</div>`;
+    return;
+  }
+
+  const { nodes, edges, phases } = res;
+
+  if (!nodes.length) {
+    container.innerHTML = '<div class="roadmap-empty">No tasks in this project yet</div>';
+    return;
+  }
+
+  const hasEdges = edges.length > 0;
+  const hasPhases = phases.length > 0;
+
+  if (!hasEdges) {
+    container.innerHTML = '<div class="roadmap-empty">No dependencies defined yet — tasks will appear as a graph once you add depends_on relationships</div>';
+    // Still render the flat nodes
+  }
+
+  // Build phase index for ordering
+  const phaseIndex = {};
+  phases.forEach(ph => { phaseIndex[ph.name] = ph.index; });
+
+  // Build Cytoscape elements
+  const elements = [];
+
+  // Compound nodes for phases
+  if (hasPhases) {
+    phases.forEach(ph => {
+      elements.push({
+        group: 'nodes',
+        data: {
+          id: `phase-${ph.index}`,
+          label: ph.name,
+          type: 'phase',
+          phaseStatus: ph.status,
+          phaseIndex: ph.index,
+        },
+      });
+    });
+    // Unassigned phase
+    elements.push({
+      group: 'nodes',
+      data: {
+        id: 'phase-unassigned',
+        label: 'Unassigned',
+        type: 'phase',
+        phaseStatus: 'pending',
+        phaseIndex: phases.length,
+      },
+    });
+  }
+
+  // Card nodes
+  nodes.forEach(node => {
+    const data = {
+      id: node.id,
+      label: node.title.length > 35 ? node.title.slice(0, 33) + '…' : node.title,
+      fullTitle: node.title,
+      slug: node.slug,
+      status: node.status,
+      statusColor: node.statusColor,
+      type: 'card',
+    };
+    // Parent = phase compound node
+    if (hasPhases && node.phase && phaseIndex[node.phase] !== undefined) {
+      data.parent = `phase-${phaseIndex[node.phase]}`;
+    } else if (hasPhases) {
+      data.parent = 'phase-unassigned';
+    }
+    elements.push({ group: 'nodes', data });
+  });
+
+  // Edges
+  edges.forEach(edge => {
+    elements.push({
+      group: 'edges',
+      data: { source: edge.source, target: edge.target },
+    });
+  });
+
+  // Remove empty phase compound nodes (no children)
+  const parentsUsed = new Set(elements.filter(e => e.data.parent).map(e => e.data.parent));
+  const filtered = elements.filter(e => {
+    if (e.data.type === 'phase' && !parentsUsed.has(e.data.id)) return false;
+    return true;
+  });
+
+  cyInstance = cytoscape({
+    container: container,
+    elements: filtered,
+    style: [
+      // Phase compound nodes
+      {
+        selector: 'node[type="phase"]',
+        style: {
+          'shape': 'roundrectangle',
+          'background-color': '#1a2332',
+          'background-opacity': 0.6,
+          'border-width': 1,
+          'border-style': 'dashed',
+          'border-color': '#334155',
+          'label': 'data(label)',
+          'text-valign': 'top',
+          'text-halign': 'center',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': '#64748b',
+          'padding': '20px',
+          'text-margin-y': '-5px',
+        }
+      },
+      // Card nodes
+      {
+        selector: 'node[type="card"]',
+        style: {
+          'shape': 'roundrectangle',
+          'width': 'label',
+          'height': 32,
+          'padding': '8px',
+          'background-color': 'data(statusColor)',
+          'background-opacity': 0.15,
+          'border-width': 2,
+          'border-color': 'data(statusColor)',
+          'label': 'data(label)',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'font-size': '11px',
+          'font-weight': '500',
+          'color': '#e2e8f0',
+          'text-max-width': '180px',
+          'text-wrap': 'ellipsis',
+          'cursor': 'pointer',
+        }
+      },
+      // Edges
+      {
+        selector: 'edge',
+        style: {
+          'width': 1.5,
+          'line-color': '#475569',
+          'target-arrow-color': '#475569',
+          'target-arrow-shape': 'triangle',
+          'curve-style': 'bezier',
+          'arrow-scale': 0.8,
+          'opacity': 0.6,
+        }
+      },
+      // Highlighted elements
+      {
+        selector: '.highlighted',
+        style: {
+          'opacity': 1,
+          'border-width': 3,
+        }
+      },
+      {
+        selector: 'edge.highlighted',
+        style: {
+          'line-color': '#60a5fa',
+          'target-arrow-color': '#60a5fa',
+          'width': 2.5,
+          'opacity': 1,
+        }
+      },
+      {
+        selector: '.dimmed',
+        style: {
+          'opacity': 0.15,
+        }
+      },
+    ],
+    layout: {
+      name: 'dagre',
+      rankDir: 'LR',
+      nodeSep: 30,
+      rankSep: 60,
+      edgeSep: 15,
+      padding: 30,
+    },
+    minZoom: 0.3,
+    maxZoom: 3,
+    wheelSensitivity: 0.3,
+  });
+
+  // Click node → open card detail
+  cyInstance.on('tap', 'node[type="card"]', function(evt) {
+    const slug = evt.target.data('slug');
+    if (slug) {
+      // Switch to tasks tab and expand the card
+      projectDetailView = 'list';
+      closeProjectDetail();
+      if (currentTab !== 'tasks') switchTab('tasks');
+      kbExpandedSlug = slug;
+      renderBoard();
+      setTimeout(() => {
+        const el = document.querySelector(`[data-card-slug="${slug}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  });
+
+  // Hover → highlight dependency chain
+  cyInstance.on('mouseover', 'node[type="card"]', function(evt) {
+    const node = evt.target;
+    // Get predecessors and successors
+    const predecessors = node.predecessors();
+    const successors = node.successors();
+    const connected = predecessors.union(successors).union(node);
+
+    cyInstance.elements().addClass('dimmed');
+    connected.removeClass('dimmed').addClass('highlighted');
+  });
+
+  cyInstance.on('mouseout', 'node[type="card"]', function() {
+    cyInstance.elements().removeClass('dimmed').removeClass('highlighted');
+  });
+
+  // Fit to view
+  cyInstance.fit(undefined, 40);
 }
 
 // ══════════════════════════════════════════════
@@ -4513,6 +4817,20 @@ function renderArchiveCard(item) {
     html += item.body
       ? `<div class="notes-body">${escapeHtml(item.body)}</div>`
       : `<div class="notes-body" style="color:#64748b;font-style:italic">No notes</div>`;
+
+    // References (archive)
+    const archRefs = item.references || [];
+    if (archRefs.length) {
+      html += `<div class="section-label" style="margin-top:0.6rem">References</div>`;
+      for (const ref of archRefs) {
+        const isUrl = ref.startsWith('http://') || ref.startsWith('https://');
+        if (isUrl) {
+          html += `<div style="font-size:0.8rem;margin-bottom:0.2rem"><a href="${escapeHtml(ref)}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none;word-break:break-all">&#x1F310; ${escapeHtml(ref)}</a></div>`;
+        } else {
+          html += `<div style="font-size:0.8rem;color:#94a3b8;margin-bottom:0.2rem">&#x1F4CE; ${escapeHtml(ref)}</div>`;
+        }
+      }
+    }
 
     html += `<div class="section-label" style="margin-top:0.6rem">Comments</div>`;
     const comments = item.subnotes || [];
