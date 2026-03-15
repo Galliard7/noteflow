@@ -1,6 +1,6 @@
 ---
 name: noteflow
-description: "Frictionless capture system for tasks, ideas, notes, and reminders from natural conversation. Evaluate user messages for capture-worthy content: things they need to do, want to remember, ideas they express, deadlines, or reminder requests. Also use when user asks to see their tasks, notes, dashboard, what's on their plate, wants to mark items done or complete, undo a capture, or adjust a captured item. NOT for: questions directed at the agent, conversational replies, greetings, or meta-discussion about NoteFlow."
+description: "Frictionless capture system for tasks, ideas, notes, and reminders from natural conversation. Evaluate user messages for capture-worthy content: things they need to do, want to remember, ideas they express, deadlines, or reminder requests. Also use when user asks to see their tasks, notes, dashboard, what's on their plate, wants to mark items done or complete, undo a capture, or adjust a captured item. Also handles the Mission Control stack — view stack, add to stack, pop, remove items. NOT for: questions directed at the agent, conversational replies, greetings, or meta-discussion about NoteFlow."
 ---
 
 # NoteFlow
@@ -92,17 +92,17 @@ python3 ~/skill-backends/noteflow/nf-view.py --id <nf-XXX>
 
 Shows full details: title, type, status, due/remind dates, body, all subnotes, and recent history. Use when the user asks about a specific entry ("what's nf-002?", "show me that memory task", "details on nf-011").
 
-### Add or delete a subnote
+### Add or delete a comment
 
 ```bash
-# Add a subnote
+# Add a comment
 python3 ~/skill-backends/noteflow/nf-subnote.py --id <nf-XXX> --add "<text>"
 
-# Delete a subnote by index
+# Delete a comment by index
 python3 ~/skill-backends/noteflow/nf-subnote.py --id <nf-XXX> --delete <index>
 ```
 
-Use when the user wants to add a comment, update, or note to an existing entry ("add a note to nf-002", "comment on that task", "update nf-011 with..."). Subnote indices are shown by the view script.
+Use when the user wants to add a comment, update, or note to an existing entry ("add a note to nf-002", "comment on that task", "update nf-011 with..."). Comment indices are shown by the view script.
 
 ### Update an entry's fields
 
@@ -122,7 +122,11 @@ python3 ~/skill-backends/noteflow/nf-update.py --id <nf-XXX> \
 
 Use when the user wants to change an entry's title, body, type, dates, tags, or references. Only include the flags that need changing — omitted flags are left unchanged. Use `'clear'` as the value for `--due`, `--remind`, or `--recurrence` to remove them.
 
-**References** are URLs, file paths, or any external pointers the user wants to attach to an entry ("link this to...", "add reference...", "attach this URL to nf-005").
+**References** are URLs, file paths, or any external pointers the user wants to attach to an entry ("link this to...", "add reference...", "attach this URL to nf-005"). These are displayed separately from linked MC cards in the dashboard — references show with a 🌐 icon, linked cards show with a 🔗 icon and status dot.
+
+**Important distinction — "add a note/comment to NF-X" vs "add a reference":**
+- "Add this as a note to NF-X" or "add a comment" → use `nf-subnote.py --add` (creates a timestamped comment with context)
+- If the user also provides a URL, add it as **both** a reference (`nf-update.py --add-refs`) AND a comment (`nf-subnote.py --add` with the user's context about why they saved it)
 
 ### List active items (dashboard)
 
@@ -190,6 +194,31 @@ Opens `http://127.0.0.1:8765` in the default browser. The dashboard is **Mission
 - **Projects tab:** Kanban board for project/plan tracking. View by status (Pending/Active/Done) or by project. Card detail with comments, move, edit, delete.
 
 Auto-refresh every 2 seconds. Options: `--port <N>`, `--no-open`.
+
+### Stack
+
+The stack is an ordered list of immediate priorities — a "what am I working on right now" queue. When the user asks to see their stack, add to it, or remove from it, use the stack script.
+
+**Activation:** "show my stack", "what's on my stack", "stack", "add X to my stack", "pop the stack", "remove X from stack"
+
+```bash
+# View stack
+python3 ~/skill-backends/noteflow/nf-stack.py list
+
+# Add item (custom title or board card slug)
+python3 ~/skill-backends/noteflow/nf-stack.py add "<title or board-slug>"
+
+# Add to top of stack
+python3 ~/skill-backends/noteflow/nf-stack.py add "<title or board-slug>" --top
+
+# Pop top item
+python3 ~/skill-backends/noteflow/nf-stack.py pop
+
+# Remove specific item (by ID, title, or board slug)
+python3 ~/skill-backends/noteflow/nf-stack.py remove "<id, title, or slug>"
+```
+
+Relay the script output verbatim. If the user says a board card name (not exact slug), look up the slug from board.json first, then pass the slug to the add command.
 
 ### Mission Control CLI
 
