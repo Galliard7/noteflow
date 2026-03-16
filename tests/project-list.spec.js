@@ -87,6 +87,31 @@ test.describe('Project List View — Phase Tree', () => {
     await expect(firstChild.locator('.phase-child-title')).toBeVisible();
   });
 
+  test('expanded phase stays open after polling interval', async ({ page }) => {
+    // Expand first phase
+    const expandable = page.locator('.phase-item.expandable').first();
+    await expandable.click();
+
+    const childrenId = await expandable.evaluate(el => el.nextElementSibling?.id);
+    const children = page.locator(`#${childrenId}`);
+    await expect(children).toBeVisible();
+
+    // Wait longer than the 3s polling interval to ensure auto-refresh doesn't collapse it
+    await page.waitForTimeout(5000);
+
+    // Phase children should still be visible
+    await expect(children).toBeVisible();
+
+    // Chevron should still be expanded
+    const chevron = expandable.locator('.phase-chevron');
+    await expect(chevron).toHaveClass(/expanded/);
+
+    // Child items should still be present
+    const childCount = await children.locator('.phase-child-item').count();
+    expect(childCount).toBeGreaterThan(0);
+    console.log(`Phase still expanded after poll interval with ${childCount} tasks`);
+  });
+
   test('no separate Related Tasks section exists', async ({ page }) => {
     // The old "Related Tasks" section title should not appear
     const sectionTitles = await page.locator('.project-section-title').allInnerTexts();

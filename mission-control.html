@@ -9,6 +9,9 @@
 <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@3.6.0/cytoscape-edgehandles.js"></script>
+<script>if (typeof cytoscapeEdgehandles !== 'undefined') cytoscape.use(cytoscapeEdgehandles);</script>
 <style>
 * { box-sizing: border-box; }
 body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-ui, sans-serif; margin: 0; overflow-x: auto; }
@@ -574,6 +577,19 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   display: flex; align-items: center; justify-content: center;
   height: 100%; color: #475569; font-size: 0.9rem; font-style: italic;
 }
+/* Roadmap toast notifications */
+.roadmap-toast {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: #1e293b; border: 1px solid #ef4444; color: #fca5a5; padding: 0.5rem 1rem;
+  border-radius: 6px; font-size: 0.8rem; z-index: 100; max-width: 400px;
+  animation: roadmap-toast-in 0.2s ease-out; pointer-events: none;
+}
+.roadmap-toast.success { border-color: #22c55e; color: #86efac; }
+@keyframes roadmap-toast-in { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+/* Edgehandles ghost styling */
+.eh-handle { background-color: #3b82f6; }
+.eh-ghost-edge .eh-ghost-edge-line { stroke: #3b82f680; }
+.eh-preview .eh-preview-line { stroke: #3b82f6; }
 
 /* ── Calendar Tab ── */
 .calendar-shell {
@@ -1636,6 +1652,33 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       <div class="modal-footer border-secondary">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="addStatusSubmit()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Roadmap Add Card Modal -->
+<div class="modal fade" id="roadmapAddCardModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">New Roadmap Task</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="roadmapNewCardTitle"></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="roadmapNewCardDesc" rows="3"></textarea></div>
+        <div class="mb-3">
+          <label class="form-label">Phase</label>
+          <select class="form-select form-select-sm" id="roadmapNewCardPhase"></select>
+        </div>
+        <div class="mb-3"><label class="form-label">Status</label>
+          <select class="form-select" id="roadmapNewCardStatus"></select>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="roadmapAddCardSubmit()">Create</button>
       </div>
     </div>
   </div>
@@ -4940,7 +4983,8 @@ function renderProjectDetail() {
       ${linksHtml}
     </div>
     <div id="project-roadmap-view" style="display:${projectDetailView === 'roadmap' ? 'block' : 'none'}">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:0.4rem">
+      <div style="display:flex;justify-content:flex-end;gap:0.4rem;margin-bottom:0.4rem">
+        <button class="roadmap-reset-btn" onclick="openRoadmapAddCardModal()" title="Add a new task to this project" style="color:#22c55e;border-color:#22c55e33">+ Task</button>
         <button class="roadmap-reset-btn" onclick="resetRoadmapLayout()" title="Reset to default layout">Reset Layout</button>
       </div>
       <div id="roadmap-container"></div>
@@ -4958,6 +5002,7 @@ function renderProjectDetail() {
 
 let cyInstance = null;
 let cyState = {};  // { [projectId]: { positions: { nodeId: {x,y} }, zoom, pan } }
+
 
 async function renderRoadmapView(projectId) {
   const container = document.getElementById('roadmap-container');
@@ -5029,7 +5074,7 @@ async function renderRoadmapView(projectId) {
   nodes.forEach(node => {
     const data = {
       id: node.id,
-      label: node.id + ' ' + (node.title.length > 30 ? node.title.slice(0, 28) + '…' : node.title),
+      label: node.id + ' ' + (node.title.length > 60 ? node.title.slice(0, 58) + '…' : node.title),
       fullTitle: node.title,
       slug: node.slug,
       status: node.status,
@@ -5090,7 +5135,7 @@ async function renderRoadmapView(projectId) {
         style: {
           'shape': 'roundrectangle',
           'width': 'label',
-          'height': 32,
+          'height': 'label',
           'padding': '8px',
           'background-color': 'data(statusColor)',
           'background-opacity': 0.15,
@@ -5102,8 +5147,9 @@ async function renderRoadmapView(projectId) {
           'font-size': '11px',
           'font-weight': '500',
           'color': '#e2e8f0',
-          'text-max-width': '180px',
-          'text-wrap': 'ellipsis',
+          'text-max-width': '200px',
+          'text-wrap': 'wrap',
+          'text-overflow-wrap': 'anywhere',
           'cursor': 'pointer',
         }
       },
@@ -5164,6 +5210,50 @@ async function renderRoadmapView(projectId) {
           'opacity': 0.25,
         }
       },
+      // Selected edge (red highlight for deletion)
+      {
+        selector: 'edge:selected',
+        style: {
+          'line-color': '#ef4444',
+          'target-arrow-color': '#ef4444',
+          'width': 3,
+          'opacity': 1,
+          'z-index': 20,
+        }
+      },
+      // Edgehandles handle dot
+      {
+        selector: '.eh-handle',
+        style: {
+          'background-color': '#3b82f6',
+          'width': 14,
+          'height': 14,
+          'shape': 'ellipse',
+          'overlay-opacity': 0,
+          'border-width': 3,
+          'border-color': '#60a5fa',
+          'opacity': 1,
+          'z-index': 100,
+        }
+      },
+      {
+        selector: '.eh-ghost-edge',
+        style: {
+          'line-color': '#3b82f6',
+          'target-arrow-color': '#3b82f6',
+          'target-arrow-shape': 'triangle',
+          'opacity': 0.5,
+        }
+      },
+      {
+        selector: '.eh-preview, .eh-preview-active',
+        style: {
+          'line-color': '#3b82f6',
+          'target-arrow-color': '#3b82f6',
+          'target-arrow-shape': 'triangle',
+          'opacity': 0.8,
+        }
+      },
     ],
     layout: {
       name: 'dagre',
@@ -5214,22 +5304,93 @@ async function renderRoadmapView(projectId) {
     if (slug) openCardDetail(slug);
   });
 
-  // Hover → highlight just the hovered node
+  // Hover → highlight just the hovered node (suppressed while edgehandles is drawing)
+  let ehDrawing = false;
   cyInstance.on('mouseover', 'node[type="card"]', function(evt) {
+    if (ehDrawing) return;
     const node = evt.target;
-    // Dim only other card nodes and edges — leave phase containers untouched
     cyInstance.nodes('[type="card"]').addClass('dimmed');
     cyInstance.edges().addClass('dimmed');
     node.removeClass('dimmed').addClass('hovered');
   });
 
   cyInstance.on('mouseout', 'node[type="card"]', function(evt) {
+    if (ehDrawing) return;
     cyInstance.elements().removeClass('dimmed').removeClass('hovered');
   });
 
   // Save state on zoom/pan changes
   cyInstance.on('viewport', function() {
     saveCyState();
+  });
+
+  // ── Edgehandles for adding dependencies via drag ──
+  const eh = cyInstance.edgehandles({
+    handleNodes: 'node[type="card"]',
+    handlePosition: function(node) { return 'right middle'; },
+    snap: true,
+    snapThreshold: 50,
+    snapFrequency: 15,
+    noEdgeEventsInDraw: true,
+    disableBrowserGestures: true,
+    loopAllowed: function() { return false; },
+    edgeType: function(sourceNode, targetNode) {
+      if (sourceNode.data('type') !== 'card' || targetNode.data('type') !== 'card') return null;
+      // Check for existing non-preview edges (preview edges have eh-preview class)
+      const existing = cyInstance.edges().filter(e =>
+        !e.hasClass('eh-preview') && !e.hasClass('eh-ghost') &&
+        e.data('source') === sourceNode.id() && e.data('target') === targetNode.id()
+      );
+      return existing.length === 0 ? 'flat' : null;
+    },
+    edgeParams: function(sourceNode, targetNode) {
+      return {};
+    },
+    show: function() {
+      ehDrawing = true;
+      cyInstance.elements().removeClass('dimmed').removeClass('hovered');
+    },
+    stop: function() { ehDrawing = false; },
+    complete: async function(sourceNode, targetNode, addedEles) {
+      // Remove the edge that edgehandles auto-added — we'll re-render from API
+      addedEles.remove();
+
+      const sourceSlug = sourceNode.data('slug');
+      const targetSlug = targetNode.data('slug');
+      if (!sourceSlug || !targetSlug) return;
+
+      // Target depends on source (arrow: source → target)
+      const targetCard = board.cards.find(c => c.slug === targetSlug);
+      if (!targetCard) return;
+
+      const currentDeps = targetCard.depends_on || [];
+      if (currentDeps.includes(sourceSlug)) return;
+
+      const newDeps = [...currentDeps, sourceSlug];
+      const res = await api('PUT', `/api/board/cards/${targetSlug}`, { depends_on: newDeps });
+
+      if (res.error) {
+        showRoadmapToast(res.error, 'error');
+        return;
+      }
+
+      showRoadmapToast('Dependency added', 'success');
+      await loadBoard();
+      await renderRoadmapView(selectedProjectId);
+    },
+  });
+
+  // ── Edge selection for deletion ──
+  cyInstance.on('tap', 'edge', function(evt) {
+    cyInstance.elements().unselect();
+    evt.target.select();
+  });
+
+  // Deselect edges when tapping background
+  cyInstance.on('tap', function(evt) {
+    if (evt.target === cyInstance) {
+      cyInstance.elements().unselect();
+    }
   });
 }
 
@@ -5286,6 +5447,76 @@ function resetRoadmapLayout() {
   }).run();
   reorderPhases(cyInstance);
   cyInstance.fit(undefined, 40);
+}
+
+// ── Roadmap: Add card from roadmap ──
+
+function openRoadmapAddCardModal() {
+  document.getElementById('roadmapNewCardTitle').value = '';
+  document.getElementById('roadmapNewCardDesc').value = '';
+
+  // Populate phase dropdown from current project
+  const proj = board.projects.find(p => p.id === selectedProjectId);
+  const phaseSel = document.getElementById('roadmapNewCardPhase');
+  if (proj && proj.phases && proj.phases.length > 0) {
+    const active = proj.phases.find(ph => ph.status === 'active');
+    const pending = proj.phases.find(ph => ph.status === 'pending');
+    const defaultPhase = active ? active.name : (pending ? pending.name : proj.phases[0].name);
+    phaseSel.innerHTML = proj.phases.map(ph =>
+      `<option value="${ph.name}"${ph.name === defaultPhase ? ' selected' : ''}>${ph.name}${ph.status === 'done' ? ' ✓' : ''}</option>`
+    ).join('');
+  } else {
+    phaseSel.innerHTML = '<option value="">— No phases —</option>';
+  }
+
+  // Populate status dropdown
+  const statusSel = document.getElementById('roadmapNewCardStatus');
+  statusSel.innerHTML = '';
+  for (const s of (board.statuses || [])) {
+    const sid = s.id || s;
+    const slabel = s.label || (sid.charAt(0).toUpperCase() + sid.slice(1));
+    statusSel.innerHTML += `<option value="${sid}" ${sid === 'pending' ? 'selected' : ''}>${escapeHtml(slabel)}</option>`;
+  }
+
+  new bootstrap.Modal(document.getElementById('roadmapAddCardModal')).show();
+}
+
+async function roadmapAddCardSubmit() {
+  const title = document.getElementById('roadmapNewCardTitle').value.trim();
+  if (!title) return;
+  const desc = document.getElementById('roadmapNewCardDesc').value;
+  const status = document.getElementById('roadmapNewCardStatus').value;
+  const phase = document.getElementById('roadmapNewCardPhase').value || null;
+
+  const payload = { title, description: desc, status, project: selectedProjectId };
+  if (phase) payload.phase = phase;
+
+  const res = await api('POST', '/api/board/cards', payload);
+  if (res.error) {
+    showRoadmapToast(res.error, 'error');
+    return;
+  }
+
+  bootstrap.Modal.getInstance(document.getElementById('roadmapAddCardModal')).hide();
+  showRoadmapToast('Task created', 'success');
+  await loadBoard();
+  await loadProjects();
+  await renderRoadmapView(selectedProjectId);
+}
+
+// ── Roadmap: Toast notifications ──
+
+function showRoadmapToast(message, type = 'error') {
+  const container = document.getElementById('roadmap-container');
+  if (!container) return;
+  const existing = container.querySelector('.roadmap-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = `roadmap-toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
 }
 
 // ══════════════════════════════════════════════
@@ -5539,6 +5770,45 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// Delete selected roadmap edge on Delete/Backspace
+document.addEventListener('keydown', async (e) => {
+  if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+  if (!cyInstance) return;
+
+  // Don't fire when typing in inputs
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+  if (active && active.isContentEditable) return;
+
+  const selectedEdges = cyInstance.edges(':selected');
+  if (selectedEdges.length === 0) return;
+
+  e.preventDefault();
+
+  for (const edge of selectedEdges) {
+    const sourceNode = cyInstance.getElementById(edge.data('source'));
+    const targetNode = cyInstance.getElementById(edge.data('target'));
+    const sourceSlug = sourceNode.data('slug');
+    const targetSlug = targetNode.data('slug');
+    if (!sourceSlug || !targetSlug) continue;
+
+    const targetCard = board.cards.find(c => c.slug === targetSlug);
+    if (!targetCard) continue;
+
+    const newDeps = (targetCard.depends_on || []).filter(d => d !== sourceSlug);
+    const res = await api('PUT', `/api/board/cards/${targetSlug}`, { depends_on: newDeps });
+
+    if (res.error) {
+      showRoadmapToast(res.error, 'error');
+      return;
+    }
+  }
+
+  showRoadmapToast('Dependency removed', 'success');
+  await loadBoard();
+  await renderRoadmapView(selectedProjectId);
+});
+
 // ══════════════════════════════════════════════
 //  Init + Polling
 // ══════════════════════════════════════════════
@@ -5557,9 +5827,9 @@ setInterval(() => {
   }
   else if (currentTab === 'tasks') loadBoard();
   else if (currentTab === 'projects') {
-    // Skip refresh while viewing roadmap — it destroys & recreates the Cytoscape graph,
-    // resetting user's zoom level and node positions
-    if (!(selectedProjectId && projectDetailView === 'roadmap')) loadProjects();
+    // Skip refresh while viewing project detail — roadmap destroys Cytoscape graph,
+    // list view loses expanded phase state
+    if (!selectedProjectId) loadProjects();
   }
   else if (currentTab === 'calendar') loadCronCalendar();
   else if (currentTab === 'stack') {

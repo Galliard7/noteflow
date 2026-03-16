@@ -160,8 +160,8 @@ test.describe('Roadmap Graph', () => {
     const movedPos = await page.evaluate((id) => ({ ...cyInstance.getElementById(id).position() }), nodeId);
     expect(movedPos.x).toBeCloseTo(defaultPositions[nodeId].x + 200, 0);
 
-    // Click reset
-    await page.click('.roadmap-reset-btn');
+    // Click reset (use text match to avoid hitting "+ Task" button)
+    await page.click('button:has-text("Reset Layout")');
     await page.waitForTimeout(500);
 
     // Positions should be back to dagre layout defaults
