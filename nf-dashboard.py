@@ -34,6 +34,101 @@ SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 MC_HTML = os.path.join(SCRIPTS_DIR, "mission-control.html")
 DASHBOARD_HTML = os.path.join(SCRIPTS_DIR, "dashboard.html")
 STACK_FILE = os.path.expanduser("~/.openclaw/workspace/data/noteflow/stack.json")
+LEARNING_PROFILE_FILE = os.path.expanduser("~/.openclaw/workspace/data/heartbeat/learning-profile.json")
+LEARNING_CONCEPTS_FILE = os.path.expanduser("~/.openclaw/workspace/data/heartbeat/concepts.json")
+
+LEARNING_CATEGORY_LABELS = {
+    "system-design": "System Design",
+    "ml-system-design": "ML System Design",
+    "ml-fundamentals": "ML Fundamentals",
+    "coding-patterns": "Coding Patterns",
+    "sql-data": "SQL & Data",
+}
+
+
+def _load_learning_data():
+    """Load learning profile + concepts and compute evaluation."""
+    try:
+        with open(LEARNING_CONCEPTS_FILE) as f:
+            concepts = json.load(f).get("concepts", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        concepts = []
+
+    try:
+        with open(LEARNING_PROFILE_FILE) as f:
+            profile = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        profile = {"ratings": {}, "category_weights": {}, "review_history": []}
+
+    ratings = profile.get("ratings", {})
+    weights = profile.get("category_weights", {})
+    review_history = profile.get("review_history", [])
+
+    # Group concepts by category
+    cat_map = {}
+    for c in concepts:
+        cat = c.get("category", "system-design")
+        cat_map.setdefault(cat, []).append(c)
+
+    categories = []
+    weighted_sum = 0.0
+    weight_total = 0.0
+
+    for cat_id in sorted(LEARNING_CATEGORY_LABELS.keys()):
+        cat_concepts = cat_map.get(cat_id, [])
+        total = len(cat_concepts)
+        rated = []
+        unrated = []
+
+        for c in cat_concepts:
+            r = ratings.get(c["id"])
+            base = {"id": c["id"], "name": c["name"], "body": c.get("body", ""),
+                    "tags": c.get("tags", [])}
+            if r:
+                base.update({"confidence": r["confidence"], "times_seen": r.get("times_seen", 1),
+                             "notes": r.get("notes"), "last_rated": r.get("last_rated")})
+                rated.append(base)
+            else:
+                unrated.append(base)
+
+        rated_count = len(rated)
+        coverage = round(rated_count / total * 100, 1) if total > 0 else 0
+        avg_conf = round(sum(r["confidence"] for r in rated) / rated_count, 2) if rated_count > 0 else 0
+
+        w = weights.get(cat_id, 1.0)
+        if rated_count > 0:
+            weighted_sum += avg_conf * w
+            weight_total += w
+
+        categories.append({
+            "id": cat_id,
+            "label": LEARNING_CATEGORY_LABELS.get(cat_id, cat_id),
+            "total": total, "rated": rated_count,
+            "coverage_pct": coverage, "avg_confidence": avg_conf,
+            "weight": w,
+            "rated_concepts": sorted(rated, key=lambda x: x["confidence"]),
+            "unrated_concepts": unrated,
+        })
+
+    readiness = round(weighted_sum / weight_total, 2) if weight_total > 0 else 0
+    total_concepts = sum(c["total"] for c in categories)
+    total_rated = sum(c["rated"] for c in categories)
+
+    # Confidence distribution
+    conf_dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for r in ratings.values():
+        c = r.get("confidence", 0)
+        if c in conf_dist:
+            conf_dist[c] += 1
+
+    return {
+        "readiness_score": readiness,
+        "total_concepts": total_concepts,
+        "total_rated": total_rated,
+        "categories": categories,
+        "review_history": review_history,
+        "confidence_distribution": conf_dist,
+    }
 
 
 def _load_stack():
@@ -129,6 +224,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_stack_list()
         elif parts == ["api", "vault", "daily"]:
             self._api_vault_daily()
+        elif parts == ["api", "learning"]:
+            self._api_learning()
         else:
             self._send_error(404, "Not found")
 
@@ -166,6 +263,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_board_add_log()
         elif parts == ["api", "stack"]:
             self._api_stack_add()
+        elif parts == ["api", "learning", "rate"]:
+            self._api_learning_rate()
         else:
             self._send_error(404, "Not found")
 
@@ -1087,6 +1186,63 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     files.append(fname)
             folders.append({"date": name, "files": files, "count": len(files)})
         self._send_json({"folders": folders})
+
+    # --- API Handlers: Learning ---
+
+    def _api_learning(self):
+        self._send_json(_load_learning_data())
+
+    def _api_learning_rate(self):
+        """POST /api/learning/rate — rate a concept."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        concept_id = data.get("concept_id", "").strip()
+        confidence = data.get("confidence")
+        notes = data.get("notes")
+
+        if not concept_id:
+            self._send_error(400, "concept_id is required")
+            return
+        if not isinstance(confidence, int) or confidence < 1 or confidence > 5:
+            self._send_error(400, "confidence must be 1-5")
+            return
+
+        # Load profile
+        try:
+            with open(LEARNING_PROFILE_FILE) as f:
+                profile = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            profile = {"ratings": {}, "category_weights": {}, "review_history": []}
+
+        now = datetime.utcnow().isoformat() + "Z"
+        ratings = profile.setdefault("ratings", {})
+        existing = ratings.get(concept_id, {})
+        ratings[concept_id] = {
+            "confidence": confidence,
+            "last_rated": now,
+            "times_seen": existing.get("times_seen", 0) + 1,
+        }
+        if notes is not None:
+            ratings[concept_id]["notes"] = notes
+        elif existing.get("notes"):
+            ratings[concept_id]["notes"] = existing["notes"]
+
+        profile.setdefault("review_history", []).append({
+            "concept_id": concept_id,
+            "rated_at": now,
+            "confidence": confidence,
+        })
+
+        # Atomic write
+        tmp = LEARNING_PROFILE_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(profile, f, indent=2, default=str)
+        os.replace(tmp, LEARNING_PROFILE_FILE)
+
+        self._send_json({"ok": True, "concept_id": concept_id, "confidence": confidence})
 
     # --- API Handlers: Stack ---
 

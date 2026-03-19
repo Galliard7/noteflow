@@ -453,6 +453,123 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* ═══════ Kid Learn Tab ═══════ */
+.kl-container { padding: 1.5rem; max-width: 700px; margin: 0 auto; position: relative; overflow: hidden; }
+.kl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.kl-title { font-size: 1.8rem; font-weight: 800; color: #f1f5f9; margin: 0; }
+
+/* Fun toggle */
+.kl-fun-toggle { position: relative; display: inline-block; width: 56px; height: 30px; cursor: pointer; }
+.kl-fun-toggle input { opacity: 0; width: 0; height: 0; }
+.kl-fun-slider {
+  position: absolute; inset: 0; background: #334155; border-radius: 30px;
+  display: flex; align-items: center; padding: 0 6px; font-size: 16px;
+  transition: background 0.3s;
+}
+.kl-fun-slider::before {
+  content: ''; width: 22px; height: 22px; border-radius: 50%; background: #64748b;
+  transition: transform 0.3s, background 0.3s; flex-shrink: 0;
+}
+.kl-fun-toggle input:checked + .kl-fun-slider { background: #7c3aed; }
+.kl-fun-toggle input:checked + .kl-fun-slider::before { transform: translateX(24px); background: #fbbf24; }
+
+/* Score bar */
+.kl-score-bar {
+  display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;
+  background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 0.8rem 1.2rem;
+}
+.kl-score-item { display: flex; flex-direction: column; align-items: center; min-width: 60px; }
+.kl-score-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+.kl-score-num { font-size: 1.6rem; font-weight: 800; }
+.kl-score-correct .kl-score-num { color: #22c55e; }
+.kl-score-streak .kl-score-num { color: #f59e0b; }
+.kl-score-total .kl-score-num { color: #3b82f6; }
+.kl-reset-btn {
+  margin-left: auto; background: #334155; color: #94a3b8; border: none; border-radius: 8px;
+  padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+}
+.kl-reset-btn:hover { background: #475569; color: #e2e8f0; }
+
+/* Topics */
+.kl-topics { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.8rem; }
+.kl-topic-btn {
+  background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 20px;
+  padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
+}
+.kl-topic-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+.kl-topic-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+/* Difficulty */
+.kl-difficulty { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
+.kl-diff-label { font-size: 0.8rem; color: #94a3b8; }
+.kl-diff-btn {
+  background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 12px;
+  padding: 0.3rem 0.8rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+}
+.kl-diff-btn:hover { border-color: #64748b; color: #e2e8f0; }
+.kl-diff-btn.active { background: #059669; border-color: #059669; color: #fff; }
+
+/* Flash card */
+.kl-card-area { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+.kl-card {
+  background: #1e293b; border: 2px solid #334155; border-radius: 20px;
+  padding: 2.5rem 3rem; min-width: 340px; text-align: center;
+  transition: all 0.3s; position: relative;
+}
+.kl-question { font-size: 2.8rem; font-weight: 800; color: #f1f5f9; margin-bottom: 1.5rem; letter-spacing: 2px; }
+.kl-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.kl-choice-btn {
+  background: #0f172a; border: 2px solid #475569; color: #e2e8f0; border-radius: 14px;
+  padding: 1rem; font-size: 1.5rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.kl-choice-btn:hover { border-color: #3b82f6; transform: scale(1.04); }
+.kl-choice-btn.correct { background: #166534; border-color: #22c55e; color: #fff; animation: kl-pop 0.3s ease; }
+.kl-choice-btn.wrong { background: #7f1d1d; border-color: #ef4444; color: #fff; animation: kl-shake 0.4s ease; }
+.kl-choice-btn.reveal { border-color: #22c55e; background: #14532d; }
+
+.kl-feedback {
+  margin-top: 1rem; font-size: 1.5rem; font-weight: 700; min-height: 2rem;
+  transition: all 0.3s;
+}
+
+/* Actions */
+.kl-actions { text-align: center; }
+.kl-next-btn {
+  background: #3b82f6; color: #fff; border: none; border-radius: 14px;
+  padding: 0.8rem 2rem; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.kl-next-btn:hover { background: #2563eb; transform: translateY(-1px); }
+
+/* Animations */
+@keyframes kl-pop { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes kl-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+@keyframes kl-float {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+}
+
+/* Emoji rain (fun mode) */
+.kl-emoji-rain { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.kl-emoji-float {
+  position: absolute; bottom: -40px; font-size: 1.8rem;
+  animation: kl-float linear forwards; opacity: 0.8;
+}
+
+/* ── Fun mode overrides ── */
+.kl-fun .kl-title { background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8, #34d399, #fbbf24);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: kl-rainbow 3s linear infinite; background-size: 200%; }
+@keyframes kl-rainbow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+.kl-fun .kl-card { border-color: #a78bfa; box-shadow: 0 0 30px rgba(167,139,250,0.3), 0 0 60px rgba(167,139,250,0.1); }
+.kl-fun .kl-choice-btn { border-color: #7c3aed; }
+.kl-fun .kl-choice-btn:hover { border-color: #fbbf24; box-shadow: 0 0 12px rgba(251,191,36,0.4); }
+.kl-fun .kl-score-bar { border-color: #a78bfa; background: linear-gradient(135deg, #1e1b4b, #1e293b); }
+.kl-fun .kl-topic-btn.active { background: linear-gradient(135deg, #7c3aed, #ec4899); border-color: transparent; }
+.kl-fun .kl-diff-btn.active { background: linear-gradient(135deg, #059669, #0ea5e9); border-color: transparent; }
+.kl-fun .kl-next-btn { background: linear-gradient(135deg, #7c3aed, #ec4899); }
+.kl-fun .kl-container { background: radial-gradient(ellipse at top, rgba(124,58,237,0.08), transparent 60%); }
+
 /* ── Projects Tab ── */
 .projects-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -1340,6 +1457,78 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   .stack-cmd { flex-wrap: wrap; }
   .stack-list { min-height: 320px; }
 }
+
+/* ── Learning Tab ── */
+.learn-shell { padding: 1.2rem; max-width: 960px; margin: 0 auto; }
+.learn-header { display: flex; align-items: center; gap: 2rem; margin-bottom: 1.5rem; padding: 1rem 1.2rem; background: #1e293b; border-radius: 10px; border: 1px solid #334155; }
+.learn-readiness { display: flex; align-items: center; gap: 0.8rem; }
+.learn-readiness-score { font-size: 2.4rem; font-weight: 700; color: #e2e8f0; line-height: 1; }
+.learn-readiness-label { font-size: 0.75rem; color: #94a3b8; line-height: 1.4; }
+.learn-conf-dist { display: flex; gap: 0.4rem; align-items: flex-end; flex: 1; justify-content: flex-end; }
+.learn-conf-bar { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.learn-conf-bar-fill { width: 28px; border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }
+.learn-conf-bar-label { font-size: 0.65rem; color: #64748b; }
+.learn-conf-bar-count { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+
+.learn-section-title { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.2rem 0 0.6rem; }
+.learn-categories { display: flex; flex-direction: column; gap: 0.6rem; }
+.learn-cat { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+.learn-cat-header { display: flex; align-items: center; padding: 0.7rem 1rem; cursor: pointer; gap: 0.8rem; }
+.learn-cat-header:hover { background: #253348; }
+.learn-cat-arrow { color: #64748b; font-size: 0.7rem; transition: transform 0.2s; width: 12px; }
+.learn-cat-arrow.open { transform: rotate(90deg); }
+.learn-cat-name { font-size: 0.85rem; font-weight: 600; color: #e2e8f0; flex: 1; }
+.learn-cat-stats { display: flex; gap: 1rem; align-items: center; font-size: 0.75rem; color: #94a3b8; }
+.learn-cat-bar-wrap { width: 120px; height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden; }
+.learn-cat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.learn-cat-conf { min-width: 36px; text-align: right; }
+.learn-cat-body { display: none; padding: 0 1rem 0.8rem; }
+.learn-cat-body.open { display: block; }
+.learn-concept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.4rem; }
+.learn-concept { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+.learn-concept-rated { background: #1a2636; }
+.learn-concept-unrated { background: #0f172a; color: #475569; }
+.learn-concept-badge { min-width: 22px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 0.65rem; font-weight: 700; color: #0f172a; }
+.learn-concept-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learn-concept-seen { font-size: 0.6rem; color: #475569; margin-left: auto; white-space: nowrap; }
+
+.learn-timeline-section { margin-top: 1.2rem; }
+.learn-timeline { display: flex; flex-direction: column; gap: 0.3rem; max-height: 300px; overflow-y: auto; }
+.learn-tl-entry { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.6rem; background: #1e293b; border-radius: 6px; font-size: 0.75rem; }
+.learn-tl-date { color: #64748b; min-width: 110px; font-size: 0.7rem; }
+.learn-tl-concept { color: #e2e8f0; flex: 1; }
+.learn-tl-badge { min-width: 22px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 0.65rem; font-weight: 700; color: #0f172a; }
+.learn-tl-cat { font-size: 0.65rem; color: #64748b; min-width: 80px; text-align: right; }
+.learn-empty { text-align: center; color: #475569; padding: 2rem; font-size: 0.85rem; }
+
+/* Learning concept detail modal */
+.learn-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1100; display: flex; align-items: center; justify-content: center; }
+.learn-modal { background: #1e293b; border: 1px solid #475569; border-radius: 12px; width: 560px; max-width: 92vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.learn-modal-header { display: flex; align-items: center; gap: 0.6rem; padding: 1rem 1.2rem; border-bottom: 1px solid #334155; }
+.learn-modal-cat { font-size: 0.65rem; color: #94a3b8; background: #334155; padding: 0.15rem 0.5rem; border-radius: 10px; }
+.learn-modal-title { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; flex: 1; }
+.learn-modal-close { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
+.learn-modal-close:hover { color: #e2e8f0; background: #334155; }
+.learn-modal-body { padding: 1.2rem; }
+.learn-modal-section { margin-bottom: 1rem; }
+.learn-modal-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+.learn-modal-text { font-size: 0.85rem; color: #cbd5e1; line-height: 1.6; }
+.learn-modal-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.learn-modal-tag { font-size: 0.65rem; color: #94a3b8; background: #0f172a; padding: 0.15rem 0.5rem; border-radius: 8px; }
+.learn-modal-rating { display: flex; flex-direction: column; gap: 0.6rem; padding: 1rem 1.2rem; border-top: 1px solid #334155; background: #162032; border-radius: 0 0 12px 12px; }
+.learn-modal-rating-row { display: flex; align-items: center; gap: 0.6rem; }
+.learn-modal-rating-label { font-size: 0.75rem; color: #94a3b8; min-width: 90px; }
+.learn-rate-btns { display: flex; gap: 0.3rem; }
+.learn-rate-btn { width: 36px; height: 30px; border: 2px solid #334155; border-radius: 6px; background: #0f172a; color: #94a3b8; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+.learn-rate-btn:hover { border-color: #64748b; color: #e2e8f0; }
+.learn-rate-btn.active { color: #0f172a; border-color: transparent; }
+.learn-notes-input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-family: inherit; outline: none; }
+.learn-notes-input:focus { border-color: #3b82f6; }
+.learn-rate-save { background: #3b82f6; color: #fff; border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.learn-rate-save:hover { background: #2563eb; }
+.learn-rate-save:disabled { background: #334155; color: #64748b; cursor: default; }
+.learn-modal-prev-rating { font-size: 0.7rem; color: #64748b; }
+.learn-modal-seen { font-size: 0.7rem; color: #64748b; }
 </style>
 </head>
 <body>
@@ -1364,6 +1553,12 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       </button>
       <button class="tab-btn" onclick="switchTab('stack')" title="Stack">
         &#x1F4DA;<span class="tab-label">Stack</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('learning')" title="Learning">
+        &#x1F9E0;<span class="tab-label">Learning</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('kidlearn')" title="Kidlearn">
+        &#x2B50;<span class="tab-label">Learn!</span>
       </button>
     </div>
     <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#x276F;</button>
@@ -1473,6 +1668,91 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         </div>
       </div>
       <div id="stackCompletionModal"></div>
+    </div>
+
+    <!-- ═══════ Learning Tab ═══════ -->
+    <div class="tab-content" id="tab-learning">
+      <div class="learn-shell">
+        <div class="learn-header">
+          <div class="learn-readiness">
+            <div class="learn-readiness-score" id="learnScore">—</div>
+            <div class="learn-readiness-label">Readiness<br><span id="learnRated">0</span>/<span id="learnTotal">0</span> rated</div>
+          </div>
+          <div class="learn-conf-dist" id="learnConfDist"></div>
+        </div>
+        <div class="learn-categories" id="learnCategories"></div>
+        <div class="learn-timeline-section">
+          <h3 class="learn-section-title">Review Timeline</h3>
+          <div class="learn-timeline" id="learnTimeline"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ Kid Learn Tab ═══════ -->
+    <div class="tab-content" id="tab-kidlearn">
+      <div class="kl-container" id="klContainer">
+        <!-- Header -->
+        <div class="kl-header">
+          <h2 class="kl-title" id="klTitle">Math Time!</h2>
+          <div class="kl-header-controls">
+            <label class="kl-fun-toggle" title="Fun mode!">
+              <input type="checkbox" id="klFunToggle" onchange="klToggleFun()">
+              <span class="kl-fun-slider">&#x1F389;</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Score bar -->
+        <div class="kl-score-bar">
+          <div class="kl-score-item kl-score-correct">
+            <span class="kl-score-label">Correct</span>
+            <span class="kl-score-num" id="klCorrect">0</span>
+          </div>
+          <div class="kl-score-item kl-score-streak">
+            <span class="kl-score-label">Streak</span>
+            <span class="kl-score-num" id="klStreak">0</span>
+          </div>
+          <div class="kl-score-item kl-score-total">
+            <span class="kl-score-label">Total</span>
+            <span class="kl-score-num" id="klTotal">0</span>
+          </div>
+          <button class="kl-reset-btn" onclick="klReset()" title="Reset scores">Reset</button>
+        </div>
+
+        <!-- Topic selector -->
+        <div class="kl-topics">
+          <button class="kl-topic-btn active" data-topic="addition" onclick="klSetTopic('addition')">Addition</button>
+          <button class="kl-topic-btn" data-topic="subtraction" onclick="klSetTopic('subtraction')">Subtraction</button>
+          <button class="kl-topic-btn" data-topic="mixed" onclick="klSetTopic('mixed')">Mix It Up!</button>
+          <button class="kl-topic-btn" data-topic="counting" onclick="klSetTopic('counting')">Counting</button>
+          <button class="kl-topic-btn" data-topic="compare" onclick="klSetTopic('compare')">Bigger / Smaller</button>
+        </div>
+
+        <!-- Difficulty -->
+        <div class="kl-difficulty">
+          <span class="kl-diff-label">Level:</span>
+          <button class="kl-diff-btn active" data-diff="easy" onclick="klSetDifficulty('easy')">Easy</button>
+          <button class="kl-diff-btn" data-diff="medium" onclick="klSetDifficulty('medium')">Medium</button>
+          <button class="kl-diff-btn" data-diff="hard" onclick="klSetDifficulty('hard')">Hard</button>
+        </div>
+
+        <!-- Flash card -->
+        <div class="kl-card-area">
+          <div class="kl-card" id="klCard">
+            <div class="kl-question" id="klQuestion">3 + 2 = ?</div>
+            <div class="kl-choices" id="klChoices"></div>
+            <div class="kl-feedback" id="klFeedback"></div>
+          </div>
+        </div>
+
+        <!-- Next button -->
+        <div class="kl-actions">
+          <button class="kl-next-btn" id="klNextBtn" onclick="klNextCard()" style="display:none">Next Card &#x27A1;</button>
+        </div>
+
+        <!-- Fun mode floating emojis container -->
+        <div class="kl-emoji-rain" id="klEmojiRain"></div>
+      </div>
     </div>
 
   </div><!-- /mc-main -->
@@ -1840,6 +2120,8 @@ function switchTab(tab) {
   else if (tab === 'projects') loadProjects();
   else if (tab === 'calendar') loadCronCalendar();
   else if (tab === 'stack') loadStackTab();
+  else if (tab === 'learning') loadLearning();
+  else if (tab === 'kidlearn') klInit();
 }
 
 // ══════════════════════════════════════════════
@@ -5810,6 +6092,456 @@ document.addEventListener('keydown', async (e) => {
 });
 
 // ══════════════════════════════════════════════
+//  LEARNING TAB
+// ══════════════════════════════════════════════
+let learningData = null;
+let learnExpandedCat = null;
+let learnModalConceptId = null;
+let learnModalRating = null;
+
+const CONF_COLORS = {
+  1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#22c55e', 5: '#3b82f6'
+};
+
+function confColor(c) { return CONF_COLORS[c] || '#475569'; }
+
+async function loadLearning() {
+  try {
+    const res = await api('GET', '/api/learning');
+    if (!res.error) {
+      learningData = res;
+      renderLearning();
+    }
+  } catch(e) {}
+}
+
+function renderLearning() {
+  const d = learningData;
+  if (!d) return;
+
+  // Readiness score
+  document.getElementById('learnScore').textContent = d.total_rated > 0 ? (d.readiness_score + '/5') : '—';
+  document.getElementById('learnRated').textContent = d.total_rated;
+  document.getElementById('learnTotal').textContent = d.total_concepts;
+
+  // Confidence distribution bars
+  const dist = d.confidence_distribution || {};
+  const maxCount = Math.max(1, ...Object.values(dist));
+  let distHtml = '';
+  for (let i = 1; i <= 5; i++) {
+    const count = dist[i] || 0;
+    const h = Math.max(2, (count / maxCount) * 60);
+    distHtml += `<div class="learn-conf-bar">
+      <div class="learn-conf-bar-count">${count}</div>
+      <div class="learn-conf-bar-fill" style="height:${h}px; background:${confColor(i)}"></div>
+      <div class="learn-conf-bar-label">${i}</div>
+    </div>`;
+  }
+  document.getElementById('learnConfDist').innerHTML = distHtml;
+
+  // Categories
+  let catHtml = '';
+  for (const cat of d.categories) {
+    if (cat.total === 0) continue;
+    const isOpen = learnExpandedCat === cat.id;
+    const barColor = cat.avg_confidence >= 4 ? '#22c55e' : cat.avg_confidence >= 3 ? '#eab308' : cat.avg_confidence >= 2 ? '#f97316' : cat.rated > 0 ? '#ef4444' : '#334155';
+    const coveragePct = cat.coverage_pct;
+
+    catHtml += `<div class="learn-cat">
+      <div class="learn-cat-header" onclick="toggleLearnCat('${cat.id}')">
+        <span class="learn-cat-arrow ${isOpen ? 'open' : ''}">&#9654;</span>
+        <span class="learn-cat-name">${escapeHtml(cat.label)}</span>
+        <div class="learn-cat-stats">
+          <span>${cat.rated}/${cat.total}</span>
+          <div class="learn-cat-bar-wrap">
+            <div class="learn-cat-bar-fill" style="width:${coveragePct}%; background:${barColor}"></div>
+          </div>
+          <span class="learn-cat-conf">${cat.rated > 0 ? cat.avg_confidence + '/5' : '—'}</span>
+        </div>
+      </div>
+      <div class="learn-cat-body ${isOpen ? 'open' : ''}" id="learn-cat-${cat.id}">
+        ${renderLearnConcepts(cat)}
+      </div>
+    </div>`;
+  }
+  document.getElementById('learnCategories').innerHTML = catHtml;
+
+  // Timeline (most recent first)
+  const history = (d.review_history || []).slice().reverse();
+  let tlHtml = '';
+  if (history.length === 0) {
+    tlHtml = '<div class="learn-empty">No ratings yet. Rate concepts from heartbeat nudges to start tracking progress.</div>';
+  } else {
+    // Build concept name lookup from categories
+    const nameMap = {};
+    for (const cat of d.categories) {
+      for (const c of cat.rated_concepts) nameMap[c.id] = { name: c.name, cat: cat.label };
+      for (const c of cat.unrated_concepts) nameMap[c.id] = { name: c.name, cat: cat.label };
+    }
+    for (const entry of history.slice(0, 50)) {
+      const info = nameMap[entry.concept_id] || { name: entry.concept_id, cat: '' };
+      const dt = new Date(entry.rated_at);
+      const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+                      dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      tlHtml += `<div class="learn-tl-entry">
+        <span class="learn-tl-date">${dateStr}</span>
+        <span class="learn-tl-concept">${escapeHtml(info.name)}</span>
+        <span class="learn-tl-badge" style="background:${confColor(entry.confidence)}">${entry.confidence}</span>
+        <span class="learn-tl-cat">${escapeHtml(info.cat)}</span>
+      </div>`;
+    }
+  }
+  document.getElementById('learnTimeline').innerHTML = tlHtml;
+}
+
+function renderLearnConcepts(cat) {
+  const all = [...cat.rated_concepts.map(c => ({...c, isRated: true})),
+               ...cat.unrated_concepts.map(c => ({...c, isRated: false}))];
+  if (all.length === 0) return '<div class="learn-empty">No concepts</div>';
+
+  let html = '<div class="learn-concept-grid">';
+  for (const c of all) {
+    if (c.isRated) {
+      const seenTxt = c.times_seen > 1 ? `${c.times_seen}x` : '';
+      html += `<div class="learn-concept learn-concept-rated" style="cursor:pointer"
+        onclick="openLearnConcept('${c.id}','${cat.id}')" title="${escapeHtml(c.notes || '')}">
+        <span class="learn-concept-badge" style="background:${confColor(c.confidence)}">${c.confidence}</span>
+        <span class="learn-concept-name">${escapeHtml(c.name)}</span>
+        ${seenTxt ? `<span class="learn-concept-seen">${seenTxt}</span>` : ''}
+      </div>`;
+    } else {
+      html += `<div class="learn-concept learn-concept-unrated" style="cursor:pointer"
+        onclick="openLearnConcept('${c.id}','${cat.id}')">
+        <span class="learn-concept-badge" style="background:#334155; color:#64748b">-</span>
+        <span class="learn-concept-name">${escapeHtml(c.name)}</span>
+      </div>`;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function toggleLearnCat(catId) {
+  learnExpandedCat = learnExpandedCat === catId ? null : catId;
+  renderLearning();
+}
+
+function findLearnConcept(conceptId, catId) {
+  if (!learningData) return null;
+  for (const cat of learningData.categories) {
+    if (catId && cat.id !== catId) continue;
+    for (const c of cat.rated_concepts) { if (c.id === conceptId) return {...c, catLabel: cat.label, catId: cat.id, isRated: true}; }
+    for (const c of cat.unrated_concepts) { if (c.id === conceptId) return {...c, catLabel: cat.label, catId: cat.id, isRated: false}; }
+  }
+  return null;
+}
+
+function openLearnConcept(conceptId, catId) {
+  const c = findLearnConcept(conceptId, catId);
+  if (!c) return;
+  learnModalConceptId = conceptId;
+  learnModalRating = c.isRated ? c.confidence : null;
+
+  let existing = document.getElementById('learnModalOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'learnModalOverlay';
+  overlay.className = 'learn-modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeLearnModal(); };
+
+  const prevInfo = c.isRated
+    ? `<span class="learn-modal-prev-rating">Current: <strong style="color:${confColor(c.confidence)}">${c.confidence}/5</strong></span>
+       <span class="learn-modal-seen">Seen ${c.times_seen || 1}x</span>`
+    : '<span class="learn-modal-prev-rating">Not yet rated</span>';
+
+  const notesVal = c.notes ? escapeHtml(c.notes) : '';
+
+  overlay.innerHTML = `<div class="learn-modal">
+    <div class="learn-modal-header">
+      <span class="learn-modal-cat">${escapeHtml(c.catLabel)}</span>
+      <span class="learn-modal-title">${escapeHtml(c.name)}</span>
+      <button class="learn-modal-close" onclick="closeLearnModal()">&times;</button>
+    </div>
+    <div class="learn-modal-body">
+      <div class="learn-modal-section">
+        <div class="learn-modal-label">Interview Context</div>
+        <div class="learn-modal-text">${escapeHtml(c.body || 'No content available.')}</div>
+      </div>
+      ${c.tags && c.tags.length ? `<div class="learn-modal-section">
+        <div class="learn-modal-tags">${c.tags.map(t => `<span class="learn-modal-tag">${escapeHtml(t)}</span>`).join('')}</div>
+      </div>` : ''}
+    </div>
+    <div class="learn-modal-rating">
+      <div class="learn-modal-rating-row">
+        ${prevInfo}
+      </div>
+      <div class="learn-modal-rating-row">
+        <span class="learn-modal-rating-label">Rate yourself:</span>
+        <div class="learn-rate-btns">
+          ${[1,2,3,4,5].map(n => `<button class="learn-rate-btn ${learnModalRating === n ? 'active' : ''}"
+            style="${learnModalRating === n ? 'background:'+confColor(n) : ''}"
+            onclick="selectLearnRating(${n})" title="${['','No clue','Shaky','Decent','Solid','Could nail it'][n]}">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="learn-modal-rating-row">
+        <span class="learn-modal-rating-label">Notes:</span>
+        <input class="learn-notes-input" id="learnNotesInput" placeholder="Optional — what tripped you up?" value="${notesVal}">
+      </div>
+      <div class="learn-modal-rating-row" style="justify-content:flex-end">
+        <button class="learn-rate-save" id="learnSaveBtn" onclick="saveLearnRating()" ${learnModalRating ? '' : 'disabled'}>Save Rating</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+function selectLearnRating(n) {
+  learnModalRating = n;
+  document.querySelectorAll('.learn-rate-btn').forEach((btn, i) => {
+    const val = i + 1;
+    btn.classList.toggle('active', val === n);
+    btn.style.background = val === n ? confColor(n) : '';
+  });
+  document.getElementById('learnSaveBtn').disabled = false;
+}
+
+async function saveLearnRating() {
+  if (!learnModalConceptId || !learnModalRating) return;
+  const btn = document.getElementById('learnSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const notes = document.getElementById('learnNotesInput').value.trim() || null;
+  try {
+    await api('POST', '/api/learning/rate', {
+      concept_id: learnModalConceptId,
+      confidence: learnModalRating,
+      notes: notes,
+    });
+    closeLearnModal();
+    await loadLearning();
+  } catch(e) {
+    btn.textContent = 'Error';
+    setTimeout(() => { btn.textContent = 'Save Rating'; btn.disabled = false; }, 1500);
+  }
+}
+
+function closeLearnModal() {
+  const overlay = document.getElementById('learnModalOverlay');
+  if (overlay) overlay.remove();
+  learnModalConceptId = null;
+  learnModalRating = null;
+}
+
+// ══════════════════════════════════════════════
+//  KID LEARN TAB
+// ══════════════════════════════════════════════
+let klTopic = 'addition';
+let klDiff = 'easy';
+let klScore = JSON.parse(localStorage.getItem('kl-score') || '{"correct":0,"total":0,"streak":0,"bestStreak":0}');
+let klAnswer = null;
+let klAnswered = false;
+let klFunMode = localStorage.getItem('kl-fun') === 'true';
+let klEmojiTimer = null;
+
+function klInit() {
+  document.getElementById('klFunToggle').checked = klFunMode;
+  klApplyFun();
+  klUpdateScoreUI();
+  klNextCard();
+}
+
+function klSaveScore() {
+  localStorage.setItem('kl-score', JSON.stringify(klScore));
+}
+
+function klUpdateScoreUI() {
+  document.getElementById('klCorrect').textContent = klScore.correct;
+  document.getElementById('klStreak').textContent = klScore.streak;
+  document.getElementById('klTotal').textContent = klScore.total;
+}
+
+function klReset() {
+  klScore = { correct: 0, total: 0, streak: 0, bestStreak: 0 };
+  klSaveScore();
+  klUpdateScoreUI();
+}
+
+function klSetTopic(t) {
+  klTopic = t;
+  document.querySelectorAll('.kl-topic-btn').forEach(b => b.classList.toggle('active', b.dataset.topic === t));
+  klNextCard();
+}
+
+function klSetDifficulty(d) {
+  klDiff = d;
+  document.querySelectorAll('.kl-diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
+  klNextCard();
+}
+
+function klRange() {
+  if (klDiff === 'easy') return { max: 10, min: 0 };
+  if (klDiff === 'medium') return { max: 20, min: 0 };
+  return { max: 50, min: 0 };
+}
+
+function klRand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function klGenerateQuestion() {
+  const r = klRange();
+  let topic = klTopic === 'mixed' ? (Math.random() < 0.5 ? 'addition' : 'subtraction') : klTopic;
+
+  if (topic === 'addition') {
+    const a = klRand(1, r.max);
+    const b = klRand(1, r.max);
+    return { question: `${a} + ${b} = ?`, answer: a + b, type: 'number' };
+  }
+  if (topic === 'subtraction') {
+    // Ensure non-negative result
+    let a = klRand(1, r.max);
+    let b = klRand(0, a);
+    return { question: `${a} - ${b} = ?`, answer: a - b, type: 'number' };
+  }
+  if (topic === 'counting') {
+    const emojis = ['🍎','🌟','🐱','🐶','🦋','🌈','🍕','🎈','🐟','🌻'];
+    const emoji = emojis[klRand(0, emojis.length - 1)];
+    const count = klRand(1, Math.min(r.max, 12));
+    const display = (emoji + ' ').repeat(count);
+    return { question: `How many? <div style="font-size:1.6rem;line-height:2;margin:0.5rem 0">${display}</div>`, answer: count, type: 'number' };
+  }
+  if (topic === 'compare') {
+    const a = klRand(1, r.max);
+    let b = klRand(1, r.max);
+    while (b === a) b = klRand(1, r.max);
+    return { question: `Which is bigger?<br><span style="font-size:2.2rem">${a}</span> or <span style="font-size:2.2rem">${b}</span>`, answer: Math.max(a, b), type: 'compare', choices: [a, b] };
+  }
+  // fallback
+  const a = klRand(1, 10); const b = klRand(1, 10);
+  return { question: `${a} + ${b} = ?`, answer: a + b, type: 'number' };
+}
+
+function klMakeChoices(answer, q) {
+  if (q.type === 'compare') return q.choices.sort(() => Math.random() - 0.5);
+  // Generate 3 wrong answers + the right one
+  const choices = new Set([answer]);
+  let attempts = 0;
+  while (choices.size < 4 && attempts < 50) {
+    const offset = klRand(-5, 5);
+    const wrong = answer + offset;
+    if (wrong >= 0 && wrong !== answer) choices.add(wrong);
+    attempts++;
+  }
+  // If we couldn't get 4 unique, fill with sequential
+  let fill = 0;
+  while (choices.size < 4) { if (!choices.has(fill)) choices.add(fill); fill++; }
+  return [...choices].sort(() => Math.random() - 0.5);
+}
+
+function klNextCard() {
+  klAnswered = false;
+  document.getElementById('klNextBtn').style.display = 'none';
+  document.getElementById('klFeedback').textContent = '';
+
+  const q = klGenerateQuestion();
+  klAnswer = q.answer;
+
+  document.getElementById('klQuestion').innerHTML = q.question;
+
+  const choices = klMakeChoices(q.answer, q);
+  const container = document.getElementById('klChoices');
+  container.innerHTML = choices.map(c =>
+    `<button class="kl-choice-btn" onclick="klChoose(this, ${c})">${c}</button>`
+  ).join('');
+}
+
+function klChoose(btn, value) {
+  if (klAnswered) return;
+  klAnswered = true;
+  klScore.total++;
+
+  const correct = value === klAnswer;
+  if (correct) {
+    klScore.correct++;
+    klScore.streak++;
+    if (klScore.streak > klScore.bestStreak) klScore.bestStreak = klScore.streak;
+    btn.classList.add('correct');
+    const cheers = ['Awesome!', 'Great job!', 'You got it!', 'Perfect!', 'Amazing!', 'Way to go!', 'Super!', 'Nailed it!'];
+    document.getElementById('klFeedback').textContent = cheers[klRand(0, cheers.length - 1)];
+    document.getElementById('klFeedback').style.color = '#22c55e';
+    if (klFunMode) klSpawnCelebration();
+  } else {
+    klScore.streak = 0;
+    btn.classList.add('wrong');
+    // Reveal correct answer
+    document.querySelectorAll('.kl-choice-btn').forEach(b => {
+      if (parseInt(b.textContent) === klAnswer) b.classList.add('reveal');
+    });
+    const encouragements = ['Almost!', 'So close!', 'Try the next one!', 'Keep going!', 'You\'ll get it!'];
+    document.getElementById('klFeedback').textContent = `${encouragements[klRand(0, encouragements.length - 1)]} It was ${klAnswer}`;
+    document.getElementById('klFeedback').style.color = '#f59e0b';
+  }
+
+  klSaveScore();
+  klUpdateScoreUI();
+  document.getElementById('klNextBtn').style.display = '';
+}
+
+// ── Fun mode ──
+function klToggleFun() {
+  klFunMode = document.getElementById('klFunToggle').checked;
+  localStorage.setItem('kl-fun', klFunMode);
+  klApplyFun();
+}
+
+function klApplyFun() {
+  const container = document.getElementById('klContainer');
+  if (klFunMode) {
+    container.classList.add('kl-fun');
+    klStartEmojiRain();
+  } else {
+    container.classList.remove('kl-fun');
+    klStopEmojiRain();
+  }
+}
+
+function klStartEmojiRain() {
+  klStopEmojiRain();
+  const rain = document.getElementById('klEmojiRain');
+  rain.innerHTML = '';
+  klEmojiTimer = setInterval(() => {
+    const emojis = ['⭐','🌈','✨','💫','🎀','🦄','🌸','💜','🎶','🍭'];
+    const el = document.createElement('span');
+    el.className = 'kl-emoji-float';
+    el.textContent = emojis[klRand(0, emojis.length - 1)];
+    el.style.left = klRand(5, 95) + '%';
+    el.style.animationDuration = klRand(4, 8) + 's';
+    rain.appendChild(el);
+    setTimeout(() => el.remove(), 9000);
+  }, 800);
+}
+
+function klStopEmojiRain() {
+  if (klEmojiTimer) { clearInterval(klEmojiTimer); klEmojiTimer = null; }
+  const rain = document.getElementById('klEmojiRain');
+  if (rain) rain.innerHTML = '';
+}
+
+function klSpawnCelebration() {
+  const rain = document.getElementById('klEmojiRain');
+  const celebs = ['🎉','🥳','⭐','🏆','💪','🌟','✨','🎊'];
+  for (let i = 0; i < 6; i++) {
+    const el = document.createElement('span');
+    el.className = 'kl-emoji-float';
+    el.textContent = celebs[klRand(0, celebs.length - 1)];
+    el.style.left = klRand(10, 90) + '%';
+    el.style.animationDuration = klRand(2, 4) + 's';
+    rain.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+}
+
+// ══════════════════════════════════════════════
 //  Init + Polling
 // ══════════════════════════════════════════════
 const savedTab = localStorage.getItem('mc-active-tab') || 'noteflow';
@@ -5836,6 +6568,7 @@ setInterval(() => {
     // Skip refresh if user has a card expanded (may be typing in note input)
     if (!stackSelectedId) loadStackTab();
   }
+  else if (currentTab === 'learning') loadLearning();
 }, 3000);
 </script>
 </body>
