@@ -11,6 +11,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/skill-backends/heartbeat"))
 from nf_lib import (
     load_store, save_store, now_iso, format_id,
     find_item, update_item, add_subnote, delete_subnote,
@@ -47,7 +48,10 @@ LEARNING_CATEGORY_LABELS = {
 
 
 def _load_learning_data():
-    """Load learning profile + concepts and compute evaluation."""
+    """Load learning profile + concepts and compute evaluation with SR data."""
+    from importlib import import_module
+    sr = import_module("spaced-repetition")
+
     try:
         with open(LEARNING_CONCEPTS_FILE) as f:
             concepts = json.load(f).get("concepts", [])
@@ -58,11 +62,15 @@ def _load_learning_data():
         with open(LEARNING_PROFILE_FILE) as f:
             profile = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        profile = {"ratings": {}, "category_weights": {}, "review_history": []}
+        profile = {"ratings": {}, "category_weights": {}, "review_history": [], "study_stats": {}}
 
     ratings = profile.get("ratings", {})
     weights = profile.get("category_weights", {})
     review_history = profile.get("review_history", [])
+    study_stats = profile.get("study_stats", {"daily_goal": 5, "study_log": {}})
+
+    # Build concept lookup for related resolution
+    concept_lookup = {c["id"]: c for c in concepts}
 
     # Group concepts by category
     cat_map = {}
@@ -83,12 +91,42 @@ def _load_learning_data():
         for c in cat_concepts:
             r = ratings.get(c["id"])
             base = {"id": c["id"], "name": c["name"], "body": c.get("body", ""),
-                    "tags": c.get("tags", [])}
+                    "tags": c.get("tags", []),
+                    "examples": c.get("examples", []),
+                    "difficulty": c.get("difficulty"),
+                    "drills": c.get("drills", [])}
+
+            # Resolve related concepts to {id, name, confidence}
+            related_ids = c.get("related", [])
+            resolved_related = []
+            for rid in related_ids:
+                rc = concept_lookup.get(rid)
+                if rc:
+                    rr = ratings.get(rid)
+                    resolved_related.append({
+                        "id": rid,
+                        "name": rc["name"],
+                        "confidence": rr["confidence"] if rr else None,
+                    })
+            base["related"] = resolved_related
+
             if r:
-                base.update({"confidence": r["confidence"], "times_seen": r.get("times_seen", 1),
-                             "notes": r.get("notes"), "last_rated": r.get("last_rated")})
+                migrated = sr.migrate_rating(r)
+                mastery = sr.compute_mastery(migrated)
+                base.update({
+                    "confidence": r["confidence"],
+                    "times_seen": r.get("times_seen", 1),
+                    "notes": r.get("notes"),
+                    "last_rated": r.get("last_rated"),
+                    "mastery": mastery,
+                    "next_review": migrated.get("next_review"),
+                    "streak": migrated.get("streak", 0),
+                    "ease_factor": migrated.get("ease_factor", 2.5),
+                    "interval_days": migrated.get("interval_days", 0),
+                })
                 rated.append(base)
             else:
+                base["related"] = resolved_related
                 unrated.append(base)
 
         rated_count = len(rated)
@@ -121,6 +159,51 @@ def _load_learning_data():
         if c in conf_dist:
             conf_dist[c] += 1
 
+    # Due concepts
+    due_concepts = sr.get_due_concepts(profile, concepts)
+    due_list = []
+    for dc in due_concepts:
+        r = dc.get("rating", {})
+        due_list.append({
+            "id": dc["id"],
+            "name": dc["name"],
+            "category": dc.get("category", "system-design"),
+            "confidence": r.get("confidence", 0),
+            "mastery": sr.compute_mastery(sr.migrate_rating(r)),
+            "overdue_hours": dc.get("overdue_hours", 0),
+        })
+
+    # Study stats for today
+    from datetime import timezone
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_log = study_stats.get("study_log", {}).get(today_str, {"reviewed": 0, "new": 0})
+
+    # Study streak: consecutive days with at least 1 review
+    study_log = study_stats.get("study_log", {})
+    study_streak = 0
+    from datetime import timedelta
+    check_date = datetime.now(timezone.utc).date()
+    while True:
+        ds = check_date.strftime("%Y-%m-%d")
+        if study_log.get(ds, {}).get("reviewed", 0) > 0:
+            study_streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+
+    # Mastery distribution buckets
+    mastery_dist = {"0-25": 0, "25-50": 0, "50-75": 0, "75-100": 0}
+    for r in ratings.values():
+        m = sr.compute_mastery(sr.migrate_rating(r))
+        if m < 25:
+            mastery_dist["0-25"] += 1
+        elif m < 50:
+            mastery_dist["25-50"] += 1
+        elif m < 75:
+            mastery_dist["50-75"] += 1
+        else:
+            mastery_dist["75-100"] += 1
+
     return {
         "readiness_score": readiness,
         "total_concepts": total_concepts,
@@ -128,6 +211,14 @@ def _load_learning_data():
         "categories": categories,
         "review_history": review_history,
         "confidence_distribution": conf_dist,
+        "due_concepts": due_list,
+        "study_stats": {
+            "daily_goal": study_stats.get("daily_goal", 5),
+            "today_reviewed": today_log.get("reviewed", 0),
+            "today_new": today_log.get("new", 0),
+            "study_streak": study_streak,
+        },
+        "mastery_distribution": mastery_dist,
     }
 
 
@@ -1193,7 +1284,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self._send_json(_load_learning_data())
 
     def _api_learning_rate(self):
-        """POST /api/learning/rate — rate a concept."""
+        """POST /api/learning/rate — rate a concept with spaced repetition."""
+        from importlib import import_module
+        sr = import_module("spaced-repetition")
+
         try:
             data = self._read_body()
         except (json.JSONDecodeError, ValueError):
@@ -1215,15 +1309,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with open(LEARNING_PROFILE_FILE) as f:
                 profile = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            profile = {"ratings": {}, "category_weights": {}, "review_history": []}
+            profile = {"ratings": {}, "category_weights": {}, "review_history": [], "study_stats": {}}
 
-        now = datetime.utcnow().isoformat() + "Z"
+        from datetime import timezone
+        now = datetime.now(timezone.utc).isoformat()
         ratings = profile.setdefault("ratings", {})
         existing = ratings.get(concept_id, {})
+        is_new = concept_id not in ratings
+
+        # Compute SR fields
+        sr_fields = sr.compute_next_review(confidence, existing if existing else None)
+
         ratings[concept_id] = {
             "confidence": confidence,
             "last_rated": now,
             "times_seen": existing.get("times_seen", 0) + 1,
+            **sr_fields,
         }
         if notes is not None:
             ratings[concept_id]["notes"] = notes
@@ -1236,13 +1337,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "confidence": confidence,
         })
 
+        # Update study stats
+        study_stats = profile.setdefault("study_stats", {"daily_goal": 5, "study_log": {}})
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today_log = study_stats.setdefault("study_log", {}).setdefault(today_str, {"reviewed": 0, "new": 0})
+        today_log["reviewed"] = today_log.get("reviewed", 0) + 1
+        if is_new:
+            today_log["new"] = today_log.get("new", 0) + 1
+
         # Atomic write
         tmp = LEARNING_PROFILE_FILE + ".tmp"
         with open(tmp, "w") as f:
             json.dump(profile, f, indent=2, default=str)
         os.replace(tmp, LEARNING_PROFILE_FILE)
 
-        self._send_json({"ok": True, "concept_id": concept_id, "confidence": confidence})
+        self._send_json({"ok": True, "concept_id": concept_id, "confidence": confidence,
+                         "next_review": sr_fields["next_review"], "mastery": sr.compute_mastery(ratings[concept_id])})
 
     # --- API Handlers: Stack ---
 

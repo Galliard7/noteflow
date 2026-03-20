@@ -1529,6 +1529,76 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-rate-save:disabled { background: #334155; color: #64748b; cursor: default; }
 .learn-modal-prev-rating { font-size: 0.7rem; color: #64748b; }
 .learn-modal-seen { font-size: 0.7rem; color: #64748b; }
+
+/* Due for Review section */
+.learn-due-section { margin-bottom: 1.2rem; }
+.learn-due-row { display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.4rem 0; scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+.learn-due-card { min-width: 180px; max-width: 220px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 0.6rem 0.8rem; cursor: pointer; transition: border-color 0.2s; flex-shrink: 0; }
+.learn-due-card:hover { border-color: #3b82f6; }
+.learn-due-card-name { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learn-due-card-cat { font-size: 0.6rem; color: #94a3b8; background: #334155; padding: 0.1rem 0.4rem; border-radius: 8px; display: inline-block; margin-bottom: 0.3rem; }
+.learn-due-card-bar { height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; margin-bottom: 0.2rem; }
+.learn-due-card-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.learn-due-card-overdue { font-size: 0.6rem; color: #f97316; }
+.learn-all-caught-up { font-size: 0.8rem; color: #22c55e; padding: 0.6rem 0; }
+
+/* Study stats bar */
+.learn-stats-bar { display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; padding: 0.5rem 0.8rem; background: #162032; border-radius: 8px; font-size: 0.75rem; color: #94a3b8; flex-wrap: wrap; }
+.learn-stat-item { display: flex; align-items: center; gap: 0.3rem; }
+.learn-stat-value { color: #e2e8f0; font-weight: 600; }
+.learn-mastery-bars { display: flex; gap: 0.2rem; align-items: flex-end; }
+.learn-mastery-bar { width: 20px; border-radius: 2px 2px 0 0; min-height: 2px; }
+.learn-mastery-bar-label { font-size: 0.55rem; color: #475569; text-align: center; }
+
+/* Mastery in concept grid */
+.learn-concept-mastery { width: 32px; height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+.learn-concept-mastery-fill { height: 100%; border-radius: 2px; }
+.learn-concept-overdue-icon { font-size: 0.6rem; color: #f97316; margin-left: auto; flex-shrink: 0; }
+
+/* Enhanced modal sections */
+.learn-modal-examples { margin-top: 0.8rem; }
+.learn-modal-example-tabs { display: flex; gap: 0.3rem; margin-bottom: 0.5rem; }
+.learn-modal-example-tab { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: #64748b; cursor: pointer; }
+.learn-modal-example-tab.active { background: #334155; color: #e2e8f0; border-color: #475569; }
+.learn-modal-example-content { background: #0f172a; border-radius: 6px; padding: 0.7rem; }
+.learn-modal-example-title { font-size: 0.7rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.3rem; }
+.learn-modal-example-text { font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; }
+.learn-modal-example-code { font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.75rem; color: #e2e8f0; white-space: pre-wrap; }
+
+.learn-modal-related { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.learn-modal-related-pill { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; padding: 0.2rem 0.6rem; background: #0f172a; border: 1px solid #334155; border-radius: 12px; cursor: pointer; color: #94a3b8; transition: border-color 0.2s; }
+.learn-modal-related-pill:hover { border-color: #3b82f6; color: #e2e8f0; }
+.learn-modal-related-dots { display: flex; gap: 1px; }
+.learn-modal-related-dot { width: 5px; height: 5px; border-radius: 50%; background: #334155; }
+.learn-modal-related-dot.filled { background: #e2e8f0; }
+
+.learn-modal-sr-status { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.7rem; color: #94a3b8; padding: 0.5rem 0.7rem; background: #0f172a; border-radius: 6px; margin-top: 0.5rem; }
+.learn-modal-sr-item { display: flex; gap: 0.25rem; }
+.learn-modal-sr-value { color: #e2e8f0; font-weight: 600; }
+
+.learn-modal-notes-section { margin-top: 0.6rem; }
+.learn-modal-notes-display { font-size: 0.8rem; color: #fbbf24; font-style: italic; padding: 0.4rem 0.6rem; background: rgba(251,191,36,0.08); border-radius: 6px; border-left: 2px solid #fbbf24; }
+.learn-modal-notes-hint { font-size: 0.65rem; color: #64748b; margin-top: 0.2rem; padding-left: 0.6rem; }
+
+/* Drill section in modal */
+.learn-modal-drill { margin-top: 0.6rem; }
+.learn-modal-drill-q { font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; padding: 0.5rem 0.7rem; background: #0f172a; border-radius: 6px; }
+.learn-modal-drill-hint { margin-top: 0.3rem; }
+.learn-modal-drill-hint-btn { font-size: 0.65rem; color: #3b82f6; background: none; border: 1px solid #334155; border-radius: 4px; padding: 0.2rem 0.5rem; cursor: pointer; }
+.learn-modal-drill-hint-text { font-size: 0.75rem; color: #94a3b8; padding: 0.3rem 0.6rem; display: none; }
+.learn-modal-drill-hint-text.show { display: block; }
+.learn-modal-drill-kp { display: none; margin-top: 0.3rem; }
+.learn-modal-drill-kp.show { display: block; }
+.learn-modal-drill-kp-list { font-size: 0.75rem; color: #22c55e; padding: 0.3rem 0.6rem; }
+.learn-modal-drill-reveal { font-size: 0.65rem; color: #22c55e; background: none; border: 1px solid #334155; border-radius: 4px; padding: 0.2rem 0.5rem; cursor: pointer; margin-left: 0.3rem; }
+
+/* Focus Areas section */
+.learn-focus-section { margin-top: 1.2rem; }
+.learn-focus-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.learn-focus-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.6rem; background: #1e293b; border-radius: 6px; font-size: 0.75rem; }
+.learn-focus-icon { width: 16px; text-align: center; }
+.learn-focus-name { color: #e2e8f0; flex: 1; }
+.learn-focus-detail { color: #64748b; font-size: 0.7rem; }
 </style>
 </head>
 <body>
@@ -1680,7 +1750,10 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
           </div>
           <div class="learn-conf-dist" id="learnConfDist"></div>
         </div>
+        <div class="learn-stats-bar" id="learnStatsBar"></div>
+        <div class="learn-due-section" id="learnDueSection"></div>
         <div class="learn-categories" id="learnCategories"></div>
+        <div class="learn-focus-section" id="learnFocusSection"></div>
         <div class="learn-timeline-section">
           <h3 class="learn-section-title">Review Timeline</h3>
           <div class="learn-timeline" id="learnTimeline"></div>
@@ -6102,6 +6175,13 @@ let learnModalRating = null;
 const CONF_COLORS = {
   1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#22c55e', 5: '#3b82f6'
 };
+const LEARNING_CATEGORY_LABELS = {
+  'system-design': 'System Design',
+  'ml-system-design': 'ML System Design',
+  'ml-fundamentals': 'ML Fundamentals',
+  'coding-patterns': 'Coding Patterns',
+  'sql-data': 'SQL & Data',
+};
 
 function confColor(c) { return CONF_COLORS[c] || '#475569'; }
 
@@ -6113,6 +6193,13 @@ async function loadLearning() {
       renderLearning();
     }
   } catch(e) {}
+}
+
+function masteryColor(m) {
+  if (m >= 75) return '#22c55e';
+  if (m >= 50) return '#eab308';
+  if (m >= 25) return '#f97316';
+  return '#ef4444';
 }
 
 function renderLearning() {
@@ -6138,6 +6225,52 @@ function renderLearning() {
     </div>`;
   }
   document.getElementById('learnConfDist').innerHTML = distHtml;
+
+  // Study stats bar
+  const ss = d.study_stats || {};
+  const md = d.mastery_distribution || {};
+  const mdMax = Math.max(1, ...Object.values(md));
+  let statsHtml = `
+    <div class="learn-stat-item">Today <span class="learn-stat-value">${ss.today_reviewed || 0}/${ss.daily_goal || 5}</span> reviewed</div>
+    <div class="learn-stat-item">Study streak: <span class="learn-stat-value">${ss.study_streak || 0} days</span></div>
+    <div class="learn-stat-item">Mastery:
+      <div class="learn-mastery-bars">
+        ${Object.entries(md).map(([k, v]) => {
+          const h = Math.max(2, (v / mdMax) * 24);
+          const colors = {'0-25': '#ef4444', '25-50': '#f97316', '50-75': '#eab308', '75-100': '#22c55e'};
+          return `<div style="display:flex;flex-direction:column;align-items:center;gap:1px">
+            <div class="learn-mastery-bar" style="height:${h}px;background:${colors[k] || '#334155'}"></div>
+            <div class="learn-mastery-bar-label">${v}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  document.getElementById('learnStatsBar').innerHTML = statsHtml;
+
+  // Due for Review section
+  const due = d.due_concepts || [];
+  let dueHtml = '<h3 class="learn-section-title">Due for Review</h3>';
+  if (due.length === 0) {
+    dueHtml += '<div class="learn-all-caught-up">All caught up! Check back later.</div>';
+  } else {
+    dueHtml += '<div class="learn-due-row">';
+    for (const dc of due) {
+      const catLabel = LEARNING_CATEGORY_LABELS[dc.category] || dc.category;
+      const overdueLabel = dc.overdue_hours >= 24
+        ? Math.round(dc.overdue_hours / 24) + 'd overdue'
+        : Math.round(dc.overdue_hours) + 'h overdue';
+      dueHtml += `<div class="learn-due-card" onclick="openLearnConcept('${dc.id}','${dc.category}')">
+        <div class="learn-due-card-cat">${escapeHtml(catLabel)}</div>
+        <div class="learn-due-card-name">${escapeHtml(dc.name)}</div>
+        <div class="learn-due-card-bar">
+          <div class="learn-due-card-bar-fill" style="width:${dc.mastery}%;background:${masteryColor(dc.mastery)}"></div>
+        </div>
+        <div class="learn-due-card-overdue">${overdueLabel}</div>
+      </div>`;
+    }
+    dueHtml += '</div>';
+  }
+  document.getElementById('learnDueSection').innerHTML = dueHtml;
 
   // Categories
   let catHtml = '';
@@ -6166,13 +6299,45 @@ function renderLearning() {
   }
   document.getElementById('learnCategories').innerHTML = catHtml;
 
+  // Focus Areas
+  let focusHtml = '';
+  const focusItems = [];
+  // Find concepts with low mastery or notes indicating confusion
+  for (const cat of d.categories) {
+    for (const c of cat.rated_concepts) {
+      const notes = (c.notes || '').toLowerCase();
+      if (notes.includes("confused") || notes.includes("don't understand") || notes.includes("no clue") || notes.includes("don't have")) {
+        focusItems.push({ name: c.name, detail: 'Has struggle notes', icon: '!', catLabel: cat.label });
+      } else if ((c.mastery || 0) < 30 && c.confidence <= 2) {
+        focusItems.push({ name: c.name, detail: `Mastery ${c.mastery || 0}/100`, icon: '\u2193', catLabel: cat.label });
+      }
+    }
+  }
+  // Lowest-mastery categories
+  const catsByConf = d.categories.filter(c => c.rated > 0).sort((a, b) => a.avg_confidence - b.avg_confidence);
+  if (catsByConf.length > 0 && catsByConf[0].avg_confidence < 3) {
+    focusItems.push({ name: catsByConf[0].label, detail: `Avg ${catsByConf[0].avg_confidence}/5`, icon: '\u2193', catLabel: 'Category' });
+  }
+
+  if (focusItems.length > 0) {
+    focusHtml = '<h3 class="learn-section-title">Focus Areas</h3><div class="learn-focus-list">';
+    for (const fi of focusItems.slice(0, 5)) {
+      focusHtml += `<div class="learn-focus-item">
+        <span class="learn-focus-icon" style="color:#f97316">${fi.icon}</span>
+        <span class="learn-focus-name">${escapeHtml(fi.name)}</span>
+        <span class="learn-focus-detail">${escapeHtml(fi.detail)}</span>
+      </div>`;
+    }
+    focusHtml += '</div>';
+  }
+  document.getElementById('learnFocusSection').innerHTML = focusHtml;
+
   // Timeline (most recent first)
   const history = (d.review_history || []).slice().reverse();
   let tlHtml = '';
   if (history.length === 0) {
     tlHtml = '<div class="learn-empty">No ratings yet. Rate concepts from heartbeat nudges to start tracking progress.</div>';
   } else {
-    // Build concept name lookup from categories
     const nameMap = {};
     for (const cat of d.categories) {
       for (const c of cat.rated_concepts) nameMap[c.id] = { name: c.name, cat: cat.label };
@@ -6194,6 +6359,11 @@ function renderLearning() {
   document.getElementById('learnTimeline').innerHTML = tlHtml;
 }
 
+function isConceptOverdue(c) {
+  if (!c.next_review) return false;
+  return new Date(c.next_review) <= new Date();
+}
+
 function renderLearnConcepts(cat) {
   const all = [...cat.rated_concepts.map(c => ({...c, isRated: true})),
                ...cat.unrated_concepts.map(c => ({...c, isRated: false}))];
@@ -6202,12 +6372,14 @@ function renderLearnConcepts(cat) {
   let html = '<div class="learn-concept-grid">';
   for (const c of all) {
     if (c.isRated) {
-      const seenTxt = c.times_seen > 1 ? `${c.times_seen}x` : '';
+      const mastery = c.mastery || 0;
+      const overdue = isConceptOverdue(c);
       html += `<div class="learn-concept learn-concept-rated" style="cursor:pointer"
         onclick="openLearnConcept('${c.id}','${cat.id}')" title="${escapeHtml(c.notes || '')}">
-        <span class="learn-concept-badge" style="background:${confColor(c.confidence)}">${c.confidence}</span>
+        <span class="learn-concept-badge" style="background:${confColor(c.confidence)};font-size:0.55rem">${c.confidence}</span>
+        <div class="learn-concept-mastery"><div class="learn-concept-mastery-fill" style="width:${mastery}%;background:${masteryColor(mastery)}"></div></div>
         <span class="learn-concept-name">${escapeHtml(c.name)}</span>
-        ${seenTxt ? `<span class="learn-concept-seen">${seenTxt}</span>` : ''}
+        ${overdue ? '<span class="learn-concept-overdue-icon" title="Due for review">\u23F0</span>' : ''}
       </div>`;
     } else {
       html += `<div class="learn-concept learn-concept-unrated" style="cursor:pointer"
@@ -6257,6 +6429,96 @@ function openLearnConcept(conceptId, catId) {
 
   const notesVal = c.notes ? escapeHtml(c.notes) : '';
 
+  // Examples section
+  const examples = c.examples || [];
+  const exTypes = [...new Set(examples.map(e => e.type))];
+  let examplesHtml = '';
+  if (examples.length > 0) {
+    const firstType = exTypes[0];
+    examplesHtml = `<div class="learn-modal-section learn-modal-examples">
+      <div class="learn-modal-label">Examples</div>
+      <div class="learn-modal-example-tabs">
+        ${exTypes.map((t, i) => `<span class="learn-modal-example-tab ${i === 0 ? 'active' : ''}"
+          onclick="switchExampleTab(this,'${t}')">${t}</span>`).join('')}
+      </div>
+      ${examples.map(ex => `<div class="learn-modal-example-content learn-ex-panel" data-extype="${ex.type}"
+        style="${ex.type !== firstType ? 'display:none' : ''}">
+        <div class="learn-modal-example-title">${escapeHtml(ex.title)}</div>
+        ${ex.type === 'code'
+          ? `<pre class="learn-modal-example-code">${escapeHtml(ex.content)}</pre>`
+          : `<div class="learn-modal-example-text">${escapeHtml(ex.content)}</div>`}
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Related concepts
+  const related = c.related || [];
+  let relatedHtml = '';
+  if (related.length > 0) {
+    relatedHtml = `<div class="learn-modal-section">
+      <div class="learn-modal-label">Related Concepts</div>
+      <div class="learn-modal-related">
+        ${related.map(r => {
+          const conf = r.confidence || 0;
+          const dots = [1,2,3,4,5].map(i => `<div class="learn-modal-related-dot ${i <= conf ? 'filled' : ''}"></div>`).join('');
+          return `<span class="learn-modal-related-pill" onclick="closeLearnModal();setTimeout(()=>openLearnConcept('${r.id}'),100)">
+            ${escapeHtml(r.name)} <span class="learn-modal-related-dots">${dots}</span>
+          </span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // SR status line
+  let srHtml = '';
+  if (c.isRated) {
+    const mastery = c.mastery || 0;
+    const streak = c.streak || 0;
+    const nextReview = c.next_review ? new Date(c.next_review) : null;
+    let nrLabel = '—';
+    if (nextReview) {
+      const diffH = (nextReview - new Date()) / 3600000;
+      if (diffH < 0) nrLabel = 'Now';
+      else if (diffH < 24) nrLabel = Math.round(diffH) + 'h';
+      else nrLabel = Math.round(diffH / 24) + 'd';
+    }
+    srHtml = `<div class="learn-modal-sr-status">
+      <div class="learn-modal-sr-item">Mastery: <span class="learn-modal-sr-value" style="color:${masteryColor(mastery)}">${mastery}/100</span></div>
+      <div class="learn-modal-sr-item">Streak: <span class="learn-modal-sr-value">${streak}</span></div>
+      <div class="learn-modal-sr-item">Next review: <span class="learn-modal-sr-value">${nrLabel}</span></div>
+      <div class="learn-modal-sr-item">Seen: <span class="learn-modal-sr-value">${c.times_seen || 1}x</span></div>
+    </div>`;
+  }
+
+  // Notes display
+  let notesDisplayHtml = '';
+  if (c.notes) {
+    notesDisplayHtml = `<div class="learn-modal-section learn-modal-notes-section">
+      <div class="learn-modal-label">Your Notes</div>
+      <div class="learn-modal-notes-display">"${escapeHtml(c.notes)}"</div>
+      <div class="learn-modal-notes-hint">\u21B3 These notes shape how this concept surfaces in heartbeat drills</div>
+    </div>`;
+  }
+
+  // Drills section
+  const drills = c.drills || [];
+  let drillHtml = '';
+  if (drills.length > 0) {
+    const drill = drills[0];
+    drillHtml = `<div class="learn-modal-section learn-modal-drill">
+      <div class="learn-modal-label">Drill Me</div>
+      <div class="learn-modal-drill-q">${escapeHtml(drill.question)}</div>
+      <div class="learn-modal-drill-hint" style="margin-top:0.4rem">
+        <button class="learn-modal-drill-hint-btn" onclick="this.nextElementSibling.classList.toggle('show')">Show Hint</button>
+        <div class="learn-modal-drill-hint-text">${escapeHtml(drill.hint || '')}</div>
+        <button class="learn-modal-drill-reveal" onclick="this.nextElementSibling.classList.toggle('show')">Reveal Key Points</button>
+        <div class="learn-modal-drill-kp">
+          <div class="learn-modal-drill-kp-list">${(drill.key_points || []).map(kp => '\u2713 ' + escapeHtml(kp)).join('<br>')}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   overlay.innerHTML = `<div class="learn-modal">
     <div class="learn-modal-header">
       <span class="learn-modal-cat">${escapeHtml(c.catLabel)}</span>
@@ -6271,6 +6533,11 @@ function openLearnConcept(conceptId, catId) {
       ${c.tags && c.tags.length ? `<div class="learn-modal-section">
         <div class="learn-modal-tags">${c.tags.map(t => `<span class="learn-modal-tag">${escapeHtml(t)}</span>`).join('')}</div>
       </div>` : ''}
+      ${examplesHtml}
+      ${relatedHtml}
+      ${srHtml}
+      ${notesDisplayHtml}
+      ${drillHtml}
     </div>
     <div class="learn-modal-rating">
       <div class="learn-modal-rating-row">
@@ -6295,6 +6562,13 @@ function openLearnConcept(conceptId, catId) {
   </div>`;
 
   document.body.appendChild(overlay);
+}
+
+function switchExampleTab(el, type) {
+  el.parentElement.querySelectorAll('.learn-modal-example-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const panels = el.closest('.learn-modal-examples').querySelectorAll('.learn-ex-panel');
+  panels.forEach(p => p.style.display = p.dataset.extype === type ? '' : 'none');
 }
 
 function selectLearnRating(n) {

@@ -234,7 +234,7 @@ python3 ~/skill-backends/noteflow/mc-comment.py \
 ```
 
 Board data: `~/.openclaw/workspace/mission-control/board.json`
-Plan files: `~/.openclaw/workspace/mission-control/plans/*.md`
+Plan files: `~/.openclaw/workspace/projects/{name}/plans/*.md` (organized by project)
 
 ## Status Changes
 
