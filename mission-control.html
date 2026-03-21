@@ -1564,6 +1564,7 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-modal-example-title { font-size: 0.7rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.3rem; }
 .learn-modal-example-text { font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; }
 .learn-modal-example-code { font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.75rem; color: #e2e8f0; white-space: pre-wrap; }
+.learn-modal-example-walkthrough { font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.75rem; color: #e2e8f0; white-space: pre-wrap; background: #1e1b4b; border-radius: 6px; padding: 0.7rem; }
 
 .learn-modal-related { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
 .learn-modal-related-pill { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; padding: 0.2rem 0.6rem; background: #0f172a; border: 1px solid #334155; border-radius: 12px; cursor: pointer; color: #94a3b8; transition: border-color 0.2s; }
@@ -1591,6 +1592,8 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-modal-drill-kp.show { display: block; }
 .learn-modal-drill-kp-list { font-size: 0.75rem; color: #22c55e; padding: 0.3rem 0.6rem; }
 .learn-modal-drill-reveal { font-size: 0.65rem; color: #22c55e; background: none; border: 1px solid #334155; border-radius: 4px; padding: 0.2rem 0.5rem; cursor: pointer; margin-left: 0.3rem; }
+.learn-modal-drill-sep { border-top: 1px solid #1e293b; margin: 0.7rem 0; }
+.learn-modal-drill-num { font-size: 0.65rem; color: #64748b; margin-bottom: 0.3rem; font-weight: 600; }
 
 /* Focus Areas section */
 .learn-focus-section { margin-top: 1.2rem; }
@@ -6432,6 +6435,7 @@ function openLearnConcept(conceptId, catId) {
   // Examples section
   const examples = c.examples || [];
   const exTypes = [...new Set(examples.map(e => e.type))];
+  const exTabLabels = { code: 'Code', scenario: 'Scenario', pitfall: 'Pitfall', walkthrough: '\u{1F463} Walkthrough' };
   let examplesHtml = '';
   if (examples.length > 0) {
     const firstType = exTypes[0];
@@ -6439,13 +6443,15 @@ function openLearnConcept(conceptId, catId) {
       <div class="learn-modal-label">Examples</div>
       <div class="learn-modal-example-tabs">
         ${exTypes.map((t, i) => `<span class="learn-modal-example-tab ${i === 0 ? 'active' : ''}"
-          onclick="switchExampleTab(this,'${t}')">${t}</span>`).join('')}
+          onclick="switchExampleTab(this,'${t}')">${exTabLabels[t] || t}</span>`).join('')}
       </div>
       ${examples.map(ex => `<div class="learn-modal-example-content learn-ex-panel" data-extype="${ex.type}"
         style="${ex.type !== firstType ? 'display:none' : ''}">
         <div class="learn-modal-example-title">${escapeHtml(ex.title)}</div>
         ${ex.type === 'code'
           ? `<pre class="learn-modal-example-code">${escapeHtml(ex.content)}</pre>`
+          : ex.type === 'walkthrough'
+          ? `<pre class="learn-modal-example-walkthrough">${escapeHtml(ex.content)}</pre>`
           : `<div class="learn-modal-example-text">${escapeHtml(ex.content)}</div>`}
       </div>`).join('')}
     </div>`;
@@ -6504,18 +6510,20 @@ function openLearnConcept(conceptId, catId) {
   const drills = c.drills || [];
   let drillHtml = '';
   if (drills.length > 0) {
-    const drill = drills[0];
+    const drillCount = drills.length;
     drillHtml = `<div class="learn-modal-section learn-modal-drill">
       <div class="learn-modal-label">Drill Me</div>
-      <div class="learn-modal-drill-q">${escapeHtml(drill.question)}</div>
-      <div class="learn-modal-drill-hint" style="margin-top:0.4rem">
-        <button class="learn-modal-drill-hint-btn" onclick="this.nextElementSibling.classList.toggle('show')">Show Hint</button>
-        <div class="learn-modal-drill-hint-text">${escapeHtml(drill.hint || '')}</div>
-        <button class="learn-modal-drill-reveal" onclick="this.nextElementSibling.classList.toggle('show')">Reveal Key Points</button>
-        <div class="learn-modal-drill-kp">
-          <div class="learn-modal-drill-kp-list">${(drill.key_points || []).map(kp => '\u2713 ' + escapeHtml(kp)).join('<br>')}</div>
-        </div>
-      </div>
+      ${drills.map((drill, idx) => `${idx > 0 ? '<div class="learn-modal-drill-sep"></div>' : ''}
+        ${drillCount > 1 ? `<div class="learn-modal-drill-num">Drill ${idx + 1} of ${drillCount}</div>` : ''}
+        <div class="learn-modal-drill-q">${escapeHtml(drill.question)}</div>
+        <div class="learn-modal-drill-hint" style="margin-top:0.4rem">
+          <button class="learn-modal-drill-hint-btn" onclick="this.nextElementSibling.classList.toggle('show')">Show Hint</button>
+          <div class="learn-modal-drill-hint-text">${escapeHtml(drill.hint || '')}</div>
+          <button class="learn-modal-drill-reveal" onclick="this.nextElementSibling.classList.toggle('show')">Reveal Key Points</button>
+          <div class="learn-modal-drill-kp">
+            <div class="learn-modal-drill-kp-list">${(drill.key_points || []).map(kp => '\u2713 ' + escapeHtml(kp)).join('<br>')}</div>
+          </div>
+        </div>`).join('')}
     </div>`;
   }
 
