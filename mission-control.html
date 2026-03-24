@@ -1469,6 +1469,10 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-conf-bar-fill { width: 28px; border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }
 .learn-conf-bar-label { font-size: 0.65rem; color: #64748b; }
 .learn-conf-bar-count { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+.learn-study-btn { background: #3b82f6; color: #fff; border: none; padding: 0.5rem 1.2rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.learn-study-btn:hover { background: #2563eb; }
+.learn-study-btn:active { background: #1d4ed8; }
+.learn-study-btn:disabled { background: #334155; color: #64748b; cursor: default; }
 
 .learn-section-title { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.2rem 0 0.6rem; }
 .learn-categories { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -1578,7 +1582,18 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-modal-sr-value { color: #e2e8f0; font-weight: 600; }
 
 .learn-modal-notes-section { margin-top: 0.6rem; }
-.learn-modal-notes-display { font-size: 0.8rem; color: #fbbf24; font-style: italic; padding: 0.4rem 0.6rem; background: rgba(251,191,36,0.08); border-radius: 6px; border-left: 2px solid #fbbf24; }
+.learn-modal-notes-toggle { cursor: pointer; font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; user-select: none; display: flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0; }
+.learn-modal-notes-toggle:hover { color: #e2e8f0; }
+.learn-modal-notes-arrow { font-size: 0.55rem; transition: transform 0.15s; display: inline-block; }
+.learn-modal-notes-section.open .learn-modal-notes-arrow { transform: rotate(90deg); }
+.learn-modal-notes-count { font-size: 0.6rem; background: rgba(251,191,36,0.2); color: #fbbf24; padding: 0.05rem 0.4rem; border-radius: 8px; font-weight: 600; }
+.learn-modal-notes-collapsible { display: none; margin-top: 0.3rem; }
+.learn-modal-notes-section.open .learn-modal-notes-collapsible { display: block; }
+.learn-modal-notes-display { font-size: 0.8rem; padding: 0.4rem 0.6rem; background: rgba(251,191,36,0.08); border-radius: 6px; border-left: 2px solid #fbbf24; max-height: 12rem; overflow-y: auto; }
+.learn-modal-note-entry { padding: 0.35rem 0; border-bottom: 1px solid rgba(251,191,36,0.1); }
+.learn-modal-note-entry:last-child { border-bottom: none; }
+.learn-modal-note-ts { font-size: 0.6rem; color: #64748b; margin-bottom: 0.15rem; }
+.learn-modal-note-text { color: #fbbf24; font-style: italic; }
 .learn-modal-notes-hint { font-size: 0.65rem; color: #64748b; margin-top: 0.2rem; padding-left: 0.6rem; }
 
 /* Drill section in modal */
@@ -1602,6 +1617,10 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-focus-icon { width: 16px; text-align: center; }
 .learn-focus-name { color: #e2e8f0; flex: 1; }
 .learn-focus-detail { color: #64748b; font-size: 0.7rem; }
+.learn-focus-note { color: #94a3b8; font-size: 0.65rem; font-style: italic; margin-left: 22px; padding: 0.15rem 0.6rem 0.25rem; }
+.learn-focus-type { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.1rem 0.3rem; border-radius: 3px; font-weight: 600; }
+.learn-focus-type-concept { background: #1e3a5f; color: #60a5fa; }
+.learn-focus-type-category { background: #3b1f2b; color: #f472b6; }
 </style>
 </head>
 <body>
@@ -1751,6 +1770,7 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
             <div class="learn-readiness-score" id="learnScore">—</div>
             <div class="learn-readiness-label">Readiness<br><span id="learnRated">0</span>/<span id="learnTotal">0</span> rated</div>
           </div>
+          <button class="learn-study-btn" id="learnStudyBtn" onclick="drawStudyCard()" title="Draw an SR-weighted card to study">Study</button>
           <div class="learn-conf-dist" id="learnConfDist"></div>
         </div>
         <div class="learn-stats-bar" id="learnStatsBar"></div>
@@ -2099,6 +2119,28 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function formatBody(text) {
+  if (!text) return '';
+  // Split on double newlines for paragraphs, single newlines for line breaks
+  return text.split(/\n\n+/).map(para => {
+    // Within each paragraph, detect numbered lists (1. 2. etc.)
+    const lines = para.split('\n');
+    const formatted = lines.map(line => {
+      const trimmed = line.trim();
+      // Numbered list item
+      if (/^\d+\.\s/.test(trimmed)) {
+        return `<div style="padding-left:1rem;margin:0.15rem 0">${escapeHtml(trimmed)}</div>`;
+      }
+      // Bullet point (- or *)
+      if (/^[-*]\s/.test(trimmed)) {
+        return `<div style="padding-left:1rem;margin:0.15rem 0">\u2022 ${escapeHtml(trimmed.slice(2))}</div>`;
+      }
+      return escapeHtml(trimmed);
+    }).join('<br>');
+    return `<p style="margin:0.4rem 0">${formatted}</p>`;
+  }).join('');
 }
 
 function formatDate(iso) {
@@ -6198,6 +6240,23 @@ async function loadLearning() {
   } catch(e) {}
 }
 
+async function drawStudyCard() {
+  const btn = document.getElementById('learnStudyBtn');
+  btn.disabled = true;
+  btn.textContent = 'Drawing...';
+  try {
+    const res = await api('GET', '/api/learning/draw');
+    if (res.error) { btn.textContent = 'No cards'; setTimeout(() => { btn.textContent = 'Study'; btn.disabled = false; }, 1500); return; }
+    // Ensure learning data is loaded so the modal can find the concept
+    if (!learningData) await loadLearning();
+    openLearnConcept(res.id, res.category);
+  } catch(e) {
+    console.error('Draw failed:', e);
+  }
+  btn.textContent = 'Study';
+  btn.disabled = false;
+}
+
 function masteryColor(m) {
   if (m >= 75) return '#22c55e';
   if (m >= 50) return '#eab308';
@@ -6305,31 +6364,44 @@ function renderLearning() {
   // Focus Areas
   let focusHtml = '';
   const focusItems = [];
-  // Find concepts with low mastery or notes indicating confusion
+  // Struggle keywords — broad enough to catch natural language feedback
+  const struggleWords = ['weak', 'confused', "don't understand", "don't know", 'no clue',
+    "don't have", 'need more', 'unfamiliar', 'not sure', 'struggle', 'hard', 'difficult'];
+  // Find concepts with low mastery, low confidence, or struggle notes
   for (const cat of d.categories) {
     for (const c of cat.rated_concepts) {
-      const notes = (c.notes || '').toLowerCase();
-      if (notes.includes("confused") || notes.includes("don't understand") || notes.includes("no clue") || notes.includes("don't have")) {
-        focusItems.push({ name: c.name, detail: 'Has struggle notes', icon: '!', catLabel: cat.label });
+      const notesText = Array.isArray(c.notes) ? c.notes.map(n => n.text).join(' ') : (c.notes || '');
+      const hasStruggleNotes = struggleWords.some(w => notesText.toLowerCase().includes(w));
+      if (hasStruggleNotes) {
+        focusItems.push({ type: 'concept', name: c.name, detail: `Confidence ${c.confidence}/5`, icon: '!', note: c.notes, catLabel: cat.label });
       } else if ((c.mastery || 0) < 30 && c.confidence <= 2) {
-        focusItems.push({ name: c.name, detail: `Mastery ${c.mastery || 0}/100`, icon: '\u2193', catLabel: cat.label });
+        focusItems.push({ type: 'concept', name: c.name, detail: `Confidence ${c.confidence}/5`, icon: '\u2193', note: c.notes, catLabel: cat.label });
       }
     }
   }
-  // Lowest-mastery categories
+  // Lowest-confidence categories (separate visual treatment)
   const catsByConf = d.categories.filter(c => c.rated > 0).sort((a, b) => a.avg_confidence - b.avg_confidence);
   if (catsByConf.length > 0 && catsByConf[0].avg_confidence < 3) {
-    focusItems.push({ name: catsByConf[0].label, detail: `Avg ${catsByConf[0].avg_confidence}/5`, icon: '\u2193', catLabel: 'Category' });
+    const wc = catsByConf[0];
+    focusItems.push({ type: 'category', name: wc.label, detail: `Avg confidence ${wc.avg_confidence.toFixed(1)}/5 \u00b7 ${wc.rated}/${wc.total} rated`, icon: '\u2193', note: null, catLabel: null });
   }
 
   if (focusItems.length > 0) {
     focusHtml = '<h3 class="learn-section-title">Focus Areas</h3><div class="learn-focus-list">';
-    for (const fi of focusItems.slice(0, 5)) {
+    for (const fi of focusItems.slice(0, 8)) {
+      const typeClass = fi.type === 'category' ? 'learn-focus-type-category' : 'learn-focus-type-concept';
+      const typeLabel = fi.type === 'category' ? 'Category' : fi.catLabel;
+      const iconColor = fi.icon === '!' ? '#ef4444' : '#f97316';
       focusHtml += `<div class="learn-focus-item">
-        <span class="learn-focus-icon" style="color:#f97316">${fi.icon}</span>
+        <span class="learn-focus-icon" style="color:${iconColor}">${fi.icon}</span>
+        <span class="learn-focus-type ${typeClass}">${escapeHtml(typeLabel)}</span>
         <span class="learn-focus-name">${escapeHtml(fi.name)}</span>
         <span class="learn-focus-detail">${escapeHtml(fi.detail)}</span>
       </div>`;
+      if (fi.note) {
+        const truncNote = fi.note.length > 120 ? fi.note.substring(0, 117) + '...' : fi.note;
+        focusHtml += `<div class="learn-focus-note">"${escapeHtml(truncNote)}"</div>`;
+      }
     }
     focusHtml += '</div>';
   }
@@ -6378,7 +6450,7 @@ function renderLearnConcepts(cat) {
       const mastery = c.mastery || 0;
       const overdue = isConceptOverdue(c);
       html += `<div class="learn-concept learn-concept-rated" style="cursor:pointer"
-        onclick="openLearnConcept('${c.id}','${cat.id}')" title="${escapeHtml(c.notes || '')}">
+        onclick="openLearnConcept('${c.id}','${cat.id}')" title="${escapeHtml(Array.isArray(c.notes) ? (c.notes.length ? c.notes[c.notes.length-1].text : '') : (c.notes || ''))}">
         <span class="learn-concept-badge" style="background:${confColor(c.confidence)};font-size:0.55rem">${c.confidence}</span>
         <div class="learn-concept-mastery"><div class="learn-concept-mastery-fill" style="width:${mastery}%;background:${masteryColor(mastery)}"></div></div>
         <span class="learn-concept-name">${escapeHtml(c.name)}</span>
@@ -6430,7 +6502,7 @@ function openLearnConcept(conceptId, catId) {
        <span class="learn-modal-seen">Seen ${c.times_seen || 1}x</span>`
     : '<span class="learn-modal-prev-rating">Not yet rated</span>';
 
-  const notesVal = c.notes ? escapeHtml(c.notes) : '';
+  // notesVal no longer pre-filled — input is always fresh (append mode)
 
   // Examples section
   const examples = c.examples || [];
@@ -6496,14 +6568,28 @@ function openLearnConcept(conceptId, catId) {
     </div>`;
   }
 
-  // Notes display
+  // Notes display — collapsible, supports list of {text, ts} entries or legacy string
   let notesDisplayHtml = '';
   if (c.notes) {
-    notesDisplayHtml = `<div class="learn-modal-section learn-modal-notes-section">
-      <div class="learn-modal-label">Your Notes</div>
-      <div class="learn-modal-notes-display">"${escapeHtml(c.notes)}"</div>
-      <div class="learn-modal-notes-hint">\u21B3 These notes shape how this concept surfaces in heartbeat drills</div>
-    </div>`;
+    const notesList = typeof c.notes === 'string'
+      ? [{text: c.notes, ts: null}]
+      : (Array.isArray(c.notes) ? c.notes : []);
+    if (notesList.length) {
+      const entriesHtml = notesList.slice().reverse().map(n => {
+        const tsLine = n.ts ? `<div class="learn-modal-note-ts">${new Date(n.ts).toLocaleString()}</div>` : '';
+        return `<div class="learn-modal-note-entry">${tsLine}<div class="learn-modal-note-text">"${escapeHtml(n.text)}"</div></div>`;
+      }).join('');
+      notesDisplayHtml = `<div class="learn-modal-section learn-modal-notes-section">
+        <div class="learn-modal-notes-toggle" onclick="this.parentElement.classList.toggle('open')">
+          <span class="learn-modal-notes-arrow">\u25B6</span>
+          Your Notes <span class="learn-modal-notes-count">${notesList.length}</span>
+        </div>
+        <div class="learn-modal-notes-collapsible">
+          <div class="learn-modal-notes-display">${entriesHtml}</div>
+          <div class="learn-modal-notes-hint">\u21B3 These notes shape how this concept surfaces in heartbeat drills</div>
+        </div>
+      </div>`;
+    }
   }
 
   // Drills section
@@ -6536,7 +6622,7 @@ function openLearnConcept(conceptId, catId) {
     <div class="learn-modal-body">
       <div class="learn-modal-section">
         <div class="learn-modal-label">Interview Context</div>
-        <div class="learn-modal-text">${escapeHtml(c.body || 'No content available.')}</div>
+        <div class="learn-modal-text">${formatBody(c.body || 'No content available.')}</div>
       </div>
       ${c.tags && c.tags.length ? `<div class="learn-modal-section">
         <div class="learn-modal-tags">${c.tags.map(t => `<span class="learn-modal-tag">${escapeHtml(t)}</span>`).join('')}</div>
@@ -6544,8 +6630,8 @@ function openLearnConcept(conceptId, catId) {
       ${examplesHtml}
       ${relatedHtml}
       ${srHtml}
-      ${notesDisplayHtml}
       ${drillHtml}
+      ${notesDisplayHtml}
     </div>
     <div class="learn-modal-rating">
       <div class="learn-modal-rating-row">
@@ -6560,8 +6646,8 @@ function openLearnConcept(conceptId, catId) {
         </div>
       </div>
       <div class="learn-modal-rating-row">
-        <span class="learn-modal-rating-label">Notes:</span>
-        <input class="learn-notes-input" id="learnNotesInput" placeholder="Optional — what tripped you up?" value="${notesVal}">
+        <span class="learn-modal-rating-label">Add note:</span>
+        <input class="learn-notes-input" id="learnNotesInput" placeholder="Optional — what tripped you up?">
       </div>
       <div class="learn-modal-rating-row" style="justify-content:flex-end">
         <button class="learn-rate-save" id="learnSaveBtn" onclick="saveLearnRating()" ${learnModalRating ? '' : 'disabled'}>Save Rating</button>

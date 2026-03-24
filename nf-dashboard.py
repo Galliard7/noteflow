@@ -317,6 +317,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._api_vault_daily()
         elif parts == ["api", "learning"]:
             self._api_learning()
+        elif parts == ["api", "learning", "draw"]:
+            self._api_learning_draw()
         else:
             self._send_error(404, "Not found")
 
@@ -1283,6 +1285,44 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _api_learning(self):
         self._send_json(_load_learning_data())
 
+    def _api_learning_draw(self):
+        """GET /api/learning/draw — draw an SR-weighted concept for study."""
+        from importlib import import_module
+        learn_draw = import_module("learn-draw")
+
+        query = self._parse_query()
+        category = query.get("category") or None
+
+        try:
+            with open(LEARNING_CONCEPTS_FILE) as f:
+                concepts_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            concepts_data = {"concepts": []}
+
+        if not concepts_data.get("concepts"):
+            self._send_error(404, "No concepts found")
+            return
+
+        try:
+            with open(LEARNING_PROFILE_FILE) as f:
+                profile = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            profile = {"ratings": {}, "category_weights": {}}
+
+        if category and category not in LEARNING_CATEGORY_LABELS:
+            self._send_error(400, f"Unknown category: {category}")
+            return
+
+        concept = learn_draw.pick_concept(category, profile, concepts_data)
+        if not concept:
+            self._send_error(404, "No concepts available")
+            return
+
+        self._send_json({
+            "id": concept["id"],
+            "category": concept.get("category", "system-design"),
+        })
+
     def _api_learning_rate(self):
         """POST /api/learning/rate — rate a concept with spaced repetition."""
         from importlib import import_module
@@ -1296,12 +1336,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         concept_id = data.get("concept_id", "").strip()
         confidence = data.get("confidence")
         notes = data.get("notes")
+        notes_only = data.get("notes_only", False)
 
         if not concept_id:
             self._send_error(400, "concept_id is required")
-            return
-        if not isinstance(confidence, int) or confidence < 1 or confidence > 5:
-            self._send_error(400, "confidence must be 1-5")
             return
 
         # Load profile
@@ -1311,15 +1349,44 @@ class DashboardHandler(BaseHTTPRequestHandler):
         except (FileNotFoundError, json.JSONDecodeError):
             profile = {"ratings": {}, "category_weights": {}, "review_history": [], "study_stats": {}}
 
+        ratings = profile.setdefault("ratings", {})
+
         from datetime import timezone
         now = datetime.now(timezone.utc).isoformat()
-        ratings = profile.setdefault("ratings", {})
+
+        # Notes-only update: append note without touching SR state
+        if notes_only:
+            if not notes:
+                self._send_error(400, "notes is required with notes_only")
+                return
+            existing = ratings.get(concept_id)
+            if not existing:
+                self._send_error(400, f"concept '{concept_id}' has not been rated yet")
+                return
+            prev = existing.get("notes")
+            if isinstance(prev, str):
+                existing["notes"] = [{"text": prev, "ts": now}]
+            elif not isinstance(prev, list):
+                existing["notes"] = []
+            existing["notes"].append({"text": notes, "ts": now})
+            tmp = LEARNING_PROFILE_FILE + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(profile, f, indent=2, default=str)
+            os.replace(tmp, LEARNING_PROFILE_FILE)
+            self._send_json({"ok": True, "concept_id": concept_id, "notes": existing["notes"]})
+            return
+
+        if not isinstance(confidence, int) or confidence < 1 or confidence > 5:
+            self._send_error(400, "confidence must be 1-5")
+            return
+
         existing = ratings.get(concept_id, {})
         is_new = concept_id not in ratings
 
         # Compute SR fields
         sr_fields = sr.compute_next_review(confidence, existing if existing else None)
 
+        prev_notes = existing.get("notes")
         ratings[concept_id] = {
             "confidence": confidence,
             "last_rated": now,
@@ -1327,9 +1394,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             **sr_fields,
         }
         if notes is not None:
-            ratings[concept_id]["notes"] = notes
-        elif existing.get("notes"):
-            ratings[concept_id]["notes"] = existing["notes"]
+            if isinstance(prev_notes, str):
+                ratings[concept_id]["notes"] = [{"text": prev_notes, "ts": now}]
+            elif isinstance(prev_notes, list):
+                ratings[concept_id]["notes"] = list(prev_notes)
+            else:
+                ratings[concept_id]["notes"] = []
+            ratings[concept_id]["notes"].append({"text": notes, "ts": now})
+        elif prev_notes is not None:
+            if isinstance(prev_notes, str):
+                ratings[concept_id]["notes"] = [{"text": prev_notes, "ts": now}]
+            else:
+                ratings[concept_id]["notes"] = prev_notes
 
         profile.setdefault("review_history", []).append({
             "concept_id": concept_id,
