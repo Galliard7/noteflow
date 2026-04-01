@@ -453,122 +453,182 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* ═══════ Kid Learn Tab ═══════ */
-.kl-container { padding: 1.5rem; max-width: 700px; margin: 0 auto; position: relative; overflow: hidden; }
+/* ═══════ Kid Learn Tab — Number Jungle 🌿 ═══════ */
+#tab-kidlearn {
+  background: linear-gradient(180deg, #87CEEB 0%, #98FB98 30%, #2d8a4e 70%, #1a5c32 100%);
+  min-height: 100%; position: relative; overflow: hidden;
+}
+.kl-container { padding: 1.5rem; max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
 .kl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.kl-title { font-size: 1.8rem; font-weight: 800; color: #f1f5f9; margin: 0; }
-
-/* Fun toggle */
-.kl-fun-toggle { position: relative; display: inline-block; width: 56px; height: 30px; cursor: pointer; }
-.kl-fun-toggle input { opacity: 0; width: 0; height: 0; }
-.kl-fun-slider {
-  position: absolute; inset: 0; background: #334155; border-radius: 30px;
-  display: flex; align-items: center; padding: 0 6px; font-size: 16px;
-  transition: background 0.3s;
+.kl-title {
+  font-size: 2.4rem; font-weight: 800; margin: 0;
+  background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8, #34d399, #fbbf24);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: kl-rainbow 3s linear infinite; background-size: 200%;
 }
-.kl-fun-slider::before {
-  content: ''; width: 22px; height: 22px; border-radius: 50%; background: #64748b;
-  transition: transform 0.3s, background 0.3s; flex-shrink: 0;
-}
-.kl-fun-toggle input:checked + .kl-fun-slider { background: #7c3aed; }
-.kl-fun-toggle input:checked + .kl-fun-slider::before { transform: translateX(24px); background: #fbbf24; }
+@keyframes kl-rainbow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 
 /* Score bar */
 .kl-score-bar {
   display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;
-  background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 0.8rem 1.2rem;
+  background: rgba(255,255,255,0.85); border: 2px solid #4ade80; border-radius: 12px; padding: 0.8rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .kl-score-item { display: flex; flex-direction: column; align-items: center; min-width: 60px; }
-.kl-score-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+.kl-score-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #166534; }
 .kl-score-num { font-size: 1.6rem; font-weight: 800; }
-.kl-score-correct .kl-score-num { color: #22c55e; }
-.kl-score-streak .kl-score-num { color: #f59e0b; }
-.kl-score-total .kl-score-num { color: #3b82f6; }
+.kl-score-correct .kl-score-num { color: #16a34a; }
+.kl-score-streak .kl-score-num { color: #d97706; }
+.kl-score-total .kl-score-num { color: #2563eb; }
 .kl-reset-btn {
-  margin-left: auto; background: #334155; color: #94a3b8; border: none; border-radius: 8px;
-  padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+  margin-left: auto; background: #bbf7d0; color: #166534; border: none; border-radius: 8px;
+  padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; font-weight: 600;
 }
-.kl-reset-btn:hover { background: #475569; color: #e2e8f0; }
+.kl-reset-btn:hover { background: #86efac; color: #14532d; }
 
 /* Topics */
 .kl-topics { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.8rem; }
 .kl-topic-btn {
-  background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 20px;
-  padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
+  background: #fff; border: 2px solid #4ade80; color: #166534; border-radius: 20px;
+  padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; font-weight: 600;
 }
-.kl-topic-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
-.kl-topic-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+.kl-topic-btn:hover { border-color: #16a34a; background: #f0fdf4; }
+.kl-topic-btn.active { background: linear-gradient(135deg, #22c55e, #06b6d4); border-color: transparent; color: #fff; }
 
 /* Difficulty */
 .kl-difficulty { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
-.kl-diff-label { font-size: 0.8rem; color: #94a3b8; }
+.kl-diff-label { font-size: 0.8rem; color: #14532d; font-weight: 600; }
 .kl-diff-btn {
-  background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 12px;
-  padding: 0.3rem 0.8rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+  background: #fff; border: 2px solid #fbbf24; color: #92400e; border-radius: 12px;
+  padding: 0.3rem 0.8rem; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; font-weight: 600;
 }
-.kl-diff-btn:hover { border-color: #64748b; color: #e2e8f0; }
-.kl-diff-btn.active { background: #059669; border-color: #059669; color: #fff; }
+.kl-diff-btn:hover { border-color: #f59e0b; background: #fffbeb; }
+.kl-diff-btn.active { background: linear-gradient(135deg, #f59e0b, #f97316); border-color: transparent; color: #fff; }
 
 /* Flash card */
-.kl-card-area { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+.kl-card-area { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; align-items: stretch; flex-wrap: wrap; }
+
+/* Scratch pad */
+.kl-scratch {
+  background: #fff; border: 3px dashed #a3e635; border-radius: 20px;
+  flex-direction: column; min-width: 220px; max-width: 280px; flex: 0 0 auto;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden;
+}
+.kl-scratch-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.4rem 0.7rem; background: #f0fdf4; border-bottom: 2px dashed #bbf7d0;
+}
+.kl-scratch-label { font-size: 0.8rem; font-weight: 700; color: #166534; }
+.kl-scratch-tools { display: flex; gap: 0.3rem; align-items: center; }
+.kl-scratch-tool {
+  background: none; border: 2px solid #86efac; border-radius: 8px; cursor: pointer;
+  font-size: 1rem; padding: 0.15rem 0.4rem; transition: all 0.15s; line-height: 1;
+}
+.kl-scratch-tool:hover { background: #dcfce7; }
+.kl-scratch-tool.active { background: #bbf7d0; border-color: #22c55e; }
+.kl-scratch-close {
+  background: none; border: 2px solid #fca5a5; border-radius: 8px; cursor: pointer;
+  font-size: 0.85rem; padding: 0.15rem 0.4rem; transition: all 0.15s; line-height: 1; color: #dc2626;
+}
+.kl-scratch-close:hover { background: #fee2e2; }
+.kl-scratch-colors { display: flex; gap: 0.2rem; align-items: center; }
+.kl-scratch-color {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+}
+.kl-scratch-color:hover { transform: scale(1.15); }
+.kl-scratch-color.active { border-color: #1e293b; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1e293b; }
+.kl-scratch canvas { cursor: crosshair; display: block; width: 100%; height: 300px; }
 .kl-card {
-  background: #1e293b; border: 2px solid #334155; border-radius: 20px;
+  background: #fff; border: 3px solid #4ade80; border-radius: 24px;
   padding: 2.5rem 3rem; min-width: 340px; text-align: center;
   transition: all 0.3s; position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 0 30px rgba(74,222,128,0.2);
 }
-.kl-question { font-size: 2.8rem; font-weight: 800; color: #f1f5f9; margin-bottom: 1.5rem; letter-spacing: 2px; }
-.kl-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.kl-question { font-size: 3.2rem; font-weight: 800; color: #1e293b; margin-bottom: 1.5rem; letter-spacing: 2px; }
+.kl-choices { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
 .kl-choice-btn {
-  background: #0f172a; border: 2px solid #475569; color: #e2e8f0; border-radius: 14px;
-  padding: 1rem; font-size: 1.5rem; font-weight: 700; cursor: pointer;
+  border: 2px solid transparent; color: #fff; border-radius: 16px;
+  padding: 1rem; font-size: 1.8rem; font-weight: 700; cursor: pointer;
   transition: all 0.15s;
 }
-.kl-choice-btn:hover { border-color: #3b82f6; transform: scale(1.04); }
-.kl-choice-btn.correct { background: #166534; border-color: #22c55e; color: #fff; animation: kl-pop 0.3s ease; }
-.kl-choice-btn.wrong { background: #7f1d1d; border-color: #ef4444; color: #fff; animation: kl-shake 0.4s ease; }
-.kl-choice-btn.reveal { border-color: #22c55e; background: #14532d; }
+.kl-choice-btn:nth-child(1) { background: #ef4444; }
+.kl-choice-btn:nth-child(2) { background: #f97316; }
+.kl-choice-btn:nth-child(3) { background: #22c55e; }
+.kl-choice-btn:nth-child(4) { background: #3b82f6; }
+.kl-choice-btn:nth-child(5) { background: #d946ef; }
+.kl-choice-btn:nth-child(6) { background: #eab308; }
+.kl-choice-btn:hover { transform: scale(1.06); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.kl-choice-btn.correct { background: #166534 !important; border-color: #22c55e; animation: kl-pop 0.3s ease; }
+.kl-choice-btn.wrong { background: #7f1d1d !important; border-color: #ef4444; animation: kl-shake 0.4s ease; }
+.kl-choice-btn.reveal { border-color: #22c55e; background: #14532d !important; }
 
 .kl-feedback {
   margin-top: 1rem; font-size: 1.5rem; font-weight: 700; min-height: 2rem;
   transition: all 0.3s;
 }
 
+/* Tip area */
+.kl-tip-area { text-align: center; margin-bottom: 1rem; }
+.kl-tip-btn {
+  background: rgba(255,255,255,0.7); border: 2px solid #fbbf24; color: #92400e; border-radius: 20px;
+  padding: 0.4rem 1.2rem; font-size: 0.9rem; cursor: pointer; transition: all 0.15s; font-weight: 600;
+}
+.kl-tip-btn:hover { background: #fffbeb; }
+.kl-tip-content {
+  background: #fefce8; border: 2px solid #fde68a; border-radius: 16px;
+  padding: 1rem 1.5rem; margin-top: 0.6rem; font-size: 1rem; color: #713f12;
+  line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;
+  animation: kl-tip-slide 0.3s ease;
+}
+@keyframes kl-tip-slide { 0% { opacity: 0; transform: translateY(-8px); } 100% { opacity: 1; transform: translateY(0); } }
+
 /* Actions */
 .kl-actions { text-align: center; }
 .kl-next-btn {
-  background: #3b82f6; color: #fff; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, #22c55e, #06b6d4); color: #fff; border: none; border-radius: 14px;
   padding: 0.8rem 2rem; font-size: 1.1rem; font-weight: 700; cursor: pointer;
   transition: all 0.15s;
 }
-.kl-next-btn:hover { background: #2563eb; transform: translateY(-1px); }
+.kl-next-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34,197,94,0.4); }
+
+/* Streak milestone */
+.kl-streak-msg {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 2.5rem; font-weight: 800; color: #fff; z-index: 1000;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5); pointer-events: none;
+  animation: kl-streak-pop 2s ease forwards;
+}
+@keyframes kl-streak-pop {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
 
 /* Animations */
 @keyframes kl-pop { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
 @keyframes kl-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-@keyframes kl-float {
-  0% { transform: translateY(100vh) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+
+/* Confetti */
+.kl-confetti-piece {
+  position: fixed; width: 10px; height: 10px; z-index: 999; pointer-events: none;
+  animation: kl-confetti-fall 3.5s ease forwards;
+}
+@keyframes kl-confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
-/* Emoji rain (fun mode) */
-.kl-emoji-rain { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-.kl-emoji-float {
-  position: absolute; bottom: -40px; font-size: 1.8rem;
-  animation: kl-float linear forwards; opacity: 0.8;
+/* Jungle decorations */
+.kl-jungle-deco {
+  position: absolute; pointer-events: none; font-size: 2rem; z-index: 0;
+  animation: kl-bob 4s ease-in-out infinite;
 }
-
-/* ── Fun mode overrides ── */
-.kl-fun .kl-title { background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8, #34d399, #fbbf24);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: kl-rainbow 3s linear infinite; background-size: 200%; }
-@keyframes kl-rainbow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-.kl-fun .kl-card { border-color: #a78bfa; box-shadow: 0 0 30px rgba(167,139,250,0.3), 0 0 60px rgba(167,139,250,0.1); }
-.kl-fun .kl-choice-btn { border-color: #7c3aed; }
-.kl-fun .kl-choice-btn:hover { border-color: #fbbf24; box-shadow: 0 0 12px rgba(251,191,36,0.4); }
-.kl-fun .kl-score-bar { border-color: #a78bfa; background: linear-gradient(135deg, #1e1b4b, #1e293b); }
-.kl-fun .kl-topic-btn.active { background: linear-gradient(135deg, #7c3aed, #ec4899); border-color: transparent; }
-.kl-fun .kl-diff-btn.active { background: linear-gradient(135deg, #059669, #0ea5e9); border-color: transparent; }
-.kl-fun .kl-next-btn { background: linear-gradient(135deg, #7c3aed, #ec4899); }
-.kl-fun .kl-container { background: radial-gradient(ellipse at top, rgba(124,58,237,0.08), transparent 60%); }
+@keyframes kl-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
 
 /* ── Projects Tab ── */
 .projects-grid {
@@ -1649,8 +1709,8 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       <button class="tab-btn" onclick="switchTab('learning')" title="Learning">
         &#x1F9E0;<span class="tab-label">Learning</span>
       </button>
-      <button class="tab-btn" onclick="switchTab('kidlearn')" title="Kidlearn">
-        &#x2B50;<span class="tab-label">Learn!</span>
+      <button class="tab-btn" onclick="switchTab('kidlearn')" title="Number Jungle 🌿">
+        &#x1F33F;<span class="tab-label">Jungle</span>
       </button>
     </div>
     <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#x276F;</button>
@@ -1789,13 +1849,7 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       <div class="kl-container" id="klContainer">
         <!-- Header -->
         <div class="kl-header">
-          <h2 class="kl-title" id="klTitle">Math Time!</h2>
-          <div class="kl-header-controls">
-            <label class="kl-fun-toggle" title="Fun mode!">
-              <input type="checkbox" id="klFunToggle" onchange="klToggleFun()">
-              <span class="kl-fun-slider">&#x1F389;</span>
-            </label>
-          </div>
+          <h2 class="kl-title" id="klTitle">Number Jungle &#x1F33F;</h2>
         </div>
 
         <!-- Score bar -->
@@ -1819,6 +1873,8 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         <div class="kl-topics">
           <button class="kl-topic-btn active" data-topic="addition" onclick="klSetTopic('addition')">Addition</button>
           <button class="kl-topic-btn" data-topic="subtraction" onclick="klSetTopic('subtraction')">Subtraction</button>
+          <button class="kl-topic-btn" data-topic="multiplication" onclick="klSetTopic('multiplication')">Multiplication</button>
+          <button class="kl-topic-btn" data-topic="division" onclick="klSetTopic('division')">Division</button>
           <button class="kl-topic-btn" data-topic="mixed" onclick="klSetTopic('mixed')">Mix It Up!</button>
           <button class="kl-topic-btn" data-topic="counting" onclick="klSetTopic('counting')">Counting</button>
           <button class="kl-topic-btn" data-topic="compare" onclick="klSetTopic('compare')">Bigger / Smaller</button>
@@ -1832,23 +1888,52 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
           <button class="kl-diff-btn" data-diff="hard" onclick="klSetDifficulty('hard')">Hard</button>
         </div>
 
-        <!-- Flash card -->
+        <!-- Flash card + Scratch pad -->
         <div class="kl-card-area">
           <div class="kl-card" id="klCard">
             <div class="kl-question" id="klQuestion">3 + 2 = ?</div>
             <div class="kl-choices" id="klChoices"></div>
             <div class="kl-feedback" id="klFeedback"></div>
           </div>
+          <div class="kl-scratch" id="klScratch" style="display:none">
+            <div class="kl-scratch-header">
+              <span class="kl-scratch-label">&#x270F;&#xFE0F; Scratch Pad</span>
+              <div class="kl-scratch-tools">
+                <button class="kl-scratch-tool active" onclick="klScratchSetMode('draw')" title="Draw" id="klScratchDraw">&#x1F58D;&#xFE0F;</button>
+                <button class="kl-scratch-tool" onclick="klScratchSetMode('erase')" title="Eraser" id="klScratchErase">&#x1F9F9;</button>
+                <button class="kl-scratch-tool" onclick="klScratchClear()" title="Clear all">&#x1F5D1;&#xFE0F;</button>
+                <button class="kl-scratch-close" onclick="klToggleScratch()" title="Close scratch pad">&#x2716;</button>
+              </div>
+            </div>
+            <div class="kl-scratch-header" style="padding:0.3rem 0.7rem; border-bottom:none">
+              <div class="kl-scratch-colors">
+                <span class="kl-scratch-color active" style="background:#1e293b" onclick="klScratchSetColor('#1e293b',this)"></span>
+                <span class="kl-scratch-color" style="background:#ef4444" onclick="klScratchSetColor('#ef4444',this)"></span>
+                <span class="kl-scratch-color" style="background:#3b82f6" onclick="klScratchSetColor('#3b82f6',this)"></span>
+                <span class="kl-scratch-color" style="background:#22c55e" onclick="klScratchSetColor('#22c55e',this)"></span>
+                <span class="kl-scratch-color" style="background:#d946ef" onclick="klScratchSetColor('#d946ef',this)"></span>
+                <span class="kl-scratch-color" style="background:#f97316" onclick="klScratchSetColor('#f97316',this)"></span>
+              </div>
+            </div>
+            <canvas id="klScratchCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Tip area -->
+        <div class="kl-tip-area">
+          <button class="kl-tip-btn" onclick="klShowTip()">&#x1F4A1; Need a hint?</button>
+          <button class="kl-tip-btn" onclick="klToggleScratch()">&#x270F;&#xFE0F; Scratch Pad</button>
+          <div class="kl-tip-content" id="klTipContent" style="display:none"></div>
         </div>
 
         <!-- Next button -->
         <div class="kl-actions">
           <button class="kl-next-btn" id="klNextBtn" onclick="klNextCard()" style="display:none">Next Card &#x27A1;</button>
         </div>
-
-        <!-- Fun mode floating emojis container -->
-        <div class="kl-emoji-rain" id="klEmojiRain"></div>
       </div>
+
+      <!-- Jungle decorations (outside kl-container, inside tab) -->
+      <div id="klJungleDeco"></div>
     </div>
 
   </div><!-- /mc-main -->
@@ -2110,8 +2195,15 @@ let calendarMode = localStorage.getItem('mc-calendar-mode') || 'jobs';
 async function api(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
-  return res.json();
+  try {
+    const res = await fetch(path, opts);
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { return { error: 'Invalid JSON response' }; }
+  } catch (e) {
+    console.warn(`API ${method} ${path} failed:`, e.message);
+    return { error: e.message || 'Network error' };
+  }
 }
 
 function escapeHtml(str) {
@@ -2791,47 +2883,50 @@ function renderCronDayPanel() {
 }
 
 async function loadCronCalendar() {
-  const [jobsRes, itemsRes, archiveRes, vaultRes, boardRes] = await Promise.all([
-    api('GET', '/api/cron/jobs'),
-    api('GET', '/api/items'),
-    api('GET', '/api/archive'),
-    api('GET', '/api/vault/daily'),
-    api('GET', '/api/board'),
-  ]);
-  if (!jobsRes.error) cronJobs = jobsRes.jobs || [];
-  const board = boardRes && !boardRes.error ? boardRes : null;
-  buildTaskCalendarData(
-    itemsRes && !itemsRes.error ? itemsRes.items : [],
-    archiveRes && !archiveRes.error ? archiveRes.items : [],
-    board
-  );
-  buildCronCalendarData();
-  // Index vault daily folders by date
-  vaultDailyByDay = {};
-  if (vaultRes && !vaultRes.error && Array.isArray(vaultRes.folders)) {
-    for (const f of vaultRes.folders) {
-      vaultDailyByDay[f.date] = { files: f.files || [], count: f.count || 0 };
+  try {
+    const [jobsRes, itemsRes, archiveRes, vaultRes, boardRes] = await Promise.all([
+      api('GET', '/api/cron/jobs'),
+      api('GET', '/api/items'),
+      api('GET', '/api/archive'),
+      api('GET', '/api/vault/daily'),
+      api('GET', '/api/board'),
+    ]);
+    if (!jobsRes.error) cronJobs = jobsRes.jobs || [];
+    const boardData = boardRes && !boardRes.error ? boardRes : null;
+    if (boardData) board = boardData;
+    buildTaskCalendarData(
+      itemsRes && !itemsRes.error ? itemsRes.items : [],
+      archiveRes && !archiveRes.error ? archiveRes.items : [],
+      boardData
+    );
+    buildCronCalendarData();
+    // Index vault daily folders by date
+    vaultDailyByDay = {};
+    if (vaultRes && !vaultRes.error && Array.isArray(vaultRes.folders)) {
+      for (const f of vaultRes.folders) {
+        vaultDailyByDay[f.date] = { files: f.files || [], count: f.count || 0 };
+      }
     }
-  }
 
-  if (!cronSelectedDayKey) {
-    const today = new Date();
-    if (today.getFullYear() === cronCursor.getFullYear() && today.getMonth() === cronCursor.getMonth()) {
-      cronSelectedDayKey = dayKeyFromDate(today);
-    } else {
-      cronSelectedDayKey = dayKeyFromDate(new Date(cronCursor.getFullYear(), cronCursor.getMonth(), 1));
+    if (!cronSelectedDayKey) {
+      const today = new Date();
+      if (today.getFullYear() === cronCursor.getFullYear() && today.getMonth() === cronCursor.getMonth()) {
+        cronSelectedDayKey = dayKeyFromDate(today);
+      } else {
+        cronSelectedDayKey = dayKeyFromDate(new Date(cronCursor.getFullYear(), cronCursor.getMonth(), 1));
+      }
     }
-  }
 
-  if (!cronOccurrencesByDay[cronSelectedDayKey]) {
-    cronSelectedOccurrenceId = null;
-  }
-  if (!taskCompletionsByDay[cronSelectedDayKey]) {
-    taskSelectedCompletionId = null;
-  }
+    if (!cronOccurrencesByDay[cronSelectedDayKey]) {
+      cronSelectedOccurrenceId = null;
+    }
+    if (!taskCompletionsByDay[cronSelectedDayKey]) {
+      taskSelectedCompletionId = null;
+    }
 
-  renderCronCalendar();
-  renderCronDayPanel();
+    renderCronCalendar();
+    renderCronDayPanel();
+  } catch (e) { console.warn('loadCronCalendar failed:', e.message); }
 }
 
 function cronPrevMonth() {
@@ -3174,23 +3269,25 @@ function renderStackList() {
 }
 
 async function loadStackTab() {
-  const [boardRes, stackRes, nfRes, colsRes] = await Promise.all([
-    api('GET', '/api/board'),
-    api('GET', '/api/stack'),
-    api('GET', '/api/items'),
-    api('GET', '/api/columns'),
-  ]);
-  if (!boardRes.error) board = boardRes;
-  if (stackRes && Array.isArray(stackRes.items)) {
-    stackItems = stackRes.items.map(normalizeStackItem);
-  }
-  poolNfItems = nfRes.items || [];
-  poolNfColumns = colsRes.columns || [];
-  // Restore pool toggle state
-  const saved = localStorage.getItem('mc-pool-source');
-  if (saved && saved !== poolSource) switchPoolSource(saved);
-  renderStackList();
-  renderTaskPool();
+  try {
+    const [boardRes, stackRes, nfRes, colsRes] = await Promise.all([
+      api('GET', '/api/board'),
+      api('GET', '/api/stack'),
+      api('GET', '/api/items'),
+      api('GET', '/api/columns'),
+    ]);
+    if (!boardRes.error) board = boardRes;
+    if (stackRes && !stackRes.error && Array.isArray(stackRes.items)) {
+      stackItems = stackRes.items.map(normalizeStackItem);
+    }
+    if (!nfRes.error) poolNfItems = nfRes.items || [];
+    if (!colsRes.error) poolNfColumns = colsRes.columns || [];
+    // Restore pool toggle state
+    const saved = localStorage.getItem('mc-pool-source');
+    if (saved && saved !== poolSource) switchPoolSource(saved);
+    renderStackList();
+    renderTaskPool();
+  } catch (e) { console.warn('loadStackTab failed:', e.message); }
 }
 
 // Close suggestion dropdown on outside click
@@ -3593,17 +3690,19 @@ function poolAddToStack(source, id) {
 // ══════════════════════════════════════════════
 
 async function loadNoteFlow() {
-  const [itemsRes, colsRes, boardRes, archiveRes] = await Promise.all([
-    api('GET', '/api/items'),
-    api('GET', '/api/columns'),
-    api('GET', '/api/board'),
-    api('GET', '/api/archive'),
-  ]);
-  nfItems = itemsRes.items || [];
-  nfColumns = colsRes.columns || [];
-  if (!boardRes.error) board = boardRes;
-  archiveItems = archiveRes.items || [];
-  renderNoteFlow();
+  try {
+    const [itemsRes, colsRes, boardRes, archiveRes] = await Promise.all([
+      api('GET', '/api/items'),
+      api('GET', '/api/columns'),
+      api('GET', '/api/board'),
+      api('GET', '/api/archive'),
+    ]);
+    if (!itemsRes.error) nfItems = itemsRes.items || [];
+    if (!colsRes.error) nfColumns = colsRes.columns || [];
+    if (!boardRes.error) board = boardRes;
+    if (!archiveRes.error) archiveItems = archiveRes.items || [];
+    renderNoteFlow();
+  } catch (e) { console.warn('loadNoteFlow failed:', e.message); }
 }
 
 function renderLinkedCardBadges(linkedSlugs) {
@@ -4217,10 +4316,12 @@ async function pcDrop(e, targetId) {
 // ══════════════════════════════════════════════
 
 async function loadBoard() {
-  const res = await api('GET', '/api/board');
-  if (!res.error) board = res;
-  renderBoard();
-  renderActivity();
+  try {
+    const res = await api('GET', '/api/board');
+    if (!res.error) board = res;
+    renderBoard();
+    renderActivity();
+  } catch (e) { console.warn('loadBoard failed:', e.message); }
 }
 
 function getProjectColor(projectId) {
@@ -5072,12 +5173,14 @@ let projectsData = [];
 let selectedProjectId = null;
 
 async function loadProjects() {
-  const res = await api('GET', '/api/board');
-  if (res.error) return;
-  board = res;
-  projectsData = res.projects || [];
-  if (selectedProjectId) renderProjectDetail();
-  else renderProjectsGrid();
+  try {
+    const res = await api('GET', '/api/board');
+    if (res.error) return;
+    board = res;
+    projectsData = res.projects || [];
+    if (selectedProjectId) renderProjectDetail();
+    else renderProjectsGrid();
+  } catch (e) { console.warn('loadProjects failed:', e.message); }
 }
 
 function getPhaseProgress(phases) {
@@ -6703,19 +6806,26 @@ function closeLearnModal() {
 }
 
 // ══════════════════════════════════════════════
-//  KID LEARN TAB
+//  KID LEARN TAB — Number Jungle 🌿
 // ══════════════════════════════════════════════
 let klTopic = 'addition';
 let klDiff = 'easy';
 let klScore = JSON.parse(localStorage.getItem('kl-score') || '{"correct":0,"total":0,"streak":0,"bestStreak":0}');
 let klAnswer = null;
 let klAnswered = false;
-let klFunMode = localStorage.getItem('kl-fun') === 'true';
-let klEmojiTimer = null;
+let klCurrentTopic = 'addition'; // track actual topic for tips (needed for mixed)
+
+const klTips = {
+  addition:       { text: 'When you add, put groups together! 3 apples + 2 more = count them all: 3\u20264\u20265!' },
+  subtraction:    { text: 'When you subtract, take away! 7 cookies \u2212 3 eaten = count back: 7\u20266\u20265\u20264!' },
+  multiplication: { text: 'Multiplication = adding the same number! 3 \u00d7 4 means 3 + 3 + 3 + 3 = 12' },
+  division:       { text: 'Division = sharing equally! 12 candies \u00f7 3 friends = 4 each!' },
+  counting:       { text: 'Point to each one as you count! Go slowly and don\'t skip any.' },
+  compare:        { text: 'Think of a number line \u2014 the number further right is always bigger!' }
+};
 
 function klInit() {
-  document.getElementById('klFunToggle').checked = klFunMode;
-  klApplyFun();
+  klSpawnJungleDecorations();
   klUpdateScoreUI();
   klNextCard();
 }
@@ -6758,7 +6868,9 @@ function klRand(min, max) { return Math.floor(Math.random() * (max - min + 1)) +
 
 function klGenerateQuestion() {
   const r = klRange();
-  let topic = klTopic === 'mixed' ? (Math.random() < 0.5 ? 'addition' : 'subtraction') : klTopic;
+  const mixTopics = ['addition', 'subtraction', 'multiplication', 'division'];
+  let topic = klTopic === 'mixed' ? mixTopics[klRand(0, mixTopics.length - 1)] : klTopic;
+  klCurrentTopic = topic;
 
   if (topic === 'addition') {
     const a = klRand(1, r.max);
@@ -6766,13 +6878,25 @@ function klGenerateQuestion() {
     return { question: `${a} + ${b} = ?`, answer: a + b, type: 'number' };
   }
   if (topic === 'subtraction') {
-    // Ensure non-negative result
     let a = klRand(1, r.max);
     let b = klRand(0, a);
-    return { question: `${a} - ${b} = ?`, answer: a - b, type: 'number' };
+    return { question: `${a} \u2212 ${b} = ?`, answer: a - b, type: 'number' };
+  }
+  if (topic === 'multiplication') {
+    const mRange = klDiff === 'easy' ? 5 : klDiff === 'medium' ? 10 : 12;
+    const a = klRand(1, mRange);
+    const b = klRand(1, mRange);
+    return { question: `${a} \u00d7 ${b} = ?`, answer: a * b, type: 'number' };
+  }
+  if (topic === 'division') {
+    const mRange = klDiff === 'easy' ? 5 : klDiff === 'medium' ? 10 : 12;
+    const b = klRand(1, mRange);
+    const answer = klRand(1, mRange);
+    const a = b * answer;
+    return { question: `${a} \u00f7 ${b} = ?`, answer: answer, type: 'number' };
   }
   if (topic === 'counting') {
-    const emojis = ['🍎','🌟','🐱','🐶','🦋','🌈','🍕','🎈','🐟','🌻'];
+    const emojis = ['\u{1F34E}','\u{1F31F}','\u{1F431}','\u{1F436}','\u{1F98B}','\u{1F308}','\u{1F355}','\u{1F388}','\u{1F41F}','\u{1F33B}'];
     const emoji = emojis[klRand(0, emojis.length - 1)];
     const count = klRand(1, Math.min(r.max, 12));
     const display = (emoji + ' ').repeat(count);
@@ -6784,25 +6908,22 @@ function klGenerateQuestion() {
     while (b === a) b = klRand(1, r.max);
     return { question: `Which is bigger?<br><span style="font-size:2.2rem">${a}</span> or <span style="font-size:2.2rem">${b}</span>`, answer: Math.max(a, b), type: 'compare', choices: [a, b] };
   }
-  // fallback
   const a = klRand(1, 10); const b = klRand(1, 10);
   return { question: `${a} + ${b} = ?`, answer: a + b, type: 'number' };
 }
 
 function klMakeChoices(answer, q) {
   if (q.type === 'compare') return q.choices.sort(() => Math.random() - 0.5);
-  // Generate 3 wrong answers + the right one
   const choices = new Set([answer]);
   let attempts = 0;
-  while (choices.size < 4 && attempts < 50) {
-    const offset = klRand(-5, 5);
+  while (choices.size < 6 && attempts < 80) {
+    const offset = klRand(-8, 8);
     const wrong = answer + offset;
     if (wrong >= 0 && wrong !== answer) choices.add(wrong);
     attempts++;
   }
-  // If we couldn't get 4 unique, fill with sequential
   let fill = 0;
-  while (choices.size < 4) { if (!choices.has(fill)) choices.add(fill); fill++; }
+  while (choices.size < 6) { if (!choices.has(fill)) choices.add(fill); fill++; }
   return [...choices].sort(() => Math.random() - 0.5);
 }
 
@@ -6810,6 +6931,8 @@ function klNextCard() {
   klAnswered = false;
   document.getElementById('klNextBtn').style.display = 'none';
   document.getElementById('klFeedback').textContent = '';
+  // Hide tip
+  document.getElementById('klTipContent').style.display = 'none';
 
   const q = klGenerateQuestion();
   klAnswer = q.answer;
@@ -6836,18 +6959,21 @@ function klChoose(btn, value) {
     btn.classList.add('correct');
     const cheers = ['Awesome!', 'Great job!', 'You got it!', 'Perfect!', 'Amazing!', 'Way to go!', 'Super!', 'Nailed it!'];
     document.getElementById('klFeedback').textContent = cheers[klRand(0, cheers.length - 1)];
-    document.getElementById('klFeedback').style.color = '#22c55e';
-    if (klFunMode) klSpawnCelebration();
+    document.getElementById('klFeedback').style.color = '#166534';
+    klSpawnConfetti();
+    // Streak milestones
+    if (klScore.streak > 0 && klScore.streak % 5 === 0) {
+      klShowStreakMilestone(klScore.streak);
+    }
   } else {
     klScore.streak = 0;
     btn.classList.add('wrong');
-    // Reveal correct answer
     document.querySelectorAll('.kl-choice-btn').forEach(b => {
       if (parseInt(b.textContent) === klAnswer) b.classList.add('reveal');
     });
     const encouragements = ['Almost!', 'So close!', 'Try the next one!', 'Keep going!', 'You\'ll get it!'];
     document.getElementById('klFeedback').textContent = `${encouragements[klRand(0, encouragements.length - 1)]} It was ${klAnswer}`;
-    document.getElementById('klFeedback').style.color = '#f59e0b';
+    document.getElementById('klFeedback').style.color = '#b45309';
   }
 
   klSaveScore();
@@ -6855,58 +6981,166 @@ function klChoose(btn, value) {
   document.getElementById('klNextBtn').style.display = '';
 }
 
-// ── Fun mode ──
-function klToggleFun() {
-  klFunMode = document.getElementById('klFunToggle').checked;
-  localStorage.setItem('kl-fun', klFunMode);
-  klApplyFun();
-}
-
-function klApplyFun() {
-  const container = document.getElementById('klContainer');
-  if (klFunMode) {
-    container.classList.add('kl-fun');
-    klStartEmojiRain();
-  } else {
-    container.classList.remove('kl-fun');
-    klStopEmojiRain();
+// ── Tips ──
+function klShowTip() {
+  const tipEl = document.getElementById('klTipContent');
+  if (tipEl.style.display === 'block') {
+    tipEl.style.display = 'none';
+    return;
+  }
+  const tip = klTips[klCurrentTopic];
+  if (tip) {
+    tipEl.textContent = tip.text;
+    tipEl.style.display = 'block';
   }
 }
 
-function klStartEmojiRain() {
-  klStopEmojiRain();
-  const rain = document.getElementById('klEmojiRain');
-  rain.innerHTML = '';
-  klEmojiTimer = setInterval(() => {
-    const emojis = ['⭐','🌈','✨','💫','🎀','🦄','🌸','💜','🎶','🍭'];
-    const el = document.createElement('span');
-    el.className = 'kl-emoji-float';
-    el.textContent = emojis[klRand(0, emojis.length - 1)];
-    el.style.left = klRand(5, 95) + '%';
-    el.style.animationDuration = klRand(4, 8) + 's';
-    rain.appendChild(el);
-    setTimeout(() => el.remove(), 9000);
-  }, 800);
-}
-
-function klStopEmojiRain() {
-  if (klEmojiTimer) { clearInterval(klEmojiTimer); klEmojiTimer = null; }
-  const rain = document.getElementById('klEmojiRain');
-  if (rain) rain.innerHTML = '';
-}
-
-function klSpawnCelebration() {
-  const rain = document.getElementById('klEmojiRain');
-  const celebs = ['🎉','🥳','⭐','🏆','💪','🌟','✨','🎊'];
-  for (let i = 0; i < 6; i++) {
-    const el = document.createElement('span');
-    el.className = 'kl-emoji-float';
-    el.textContent = celebs[klRand(0, celebs.length - 1)];
-    el.style.left = klRand(10, 90) + '%';
-    el.style.animationDuration = klRand(2, 4) + 's';
-    rain.appendChild(el);
-    setTimeout(() => el.remove(), 5000);
+// ── Confetti celebration ──
+function klSpawnConfetti() {
+  const colors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#d946ef','#ec4899','#06b6d4'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'kl-confetti-piece';
+    el.style.left = klRand(10, 90) + 'vw';
+    el.style.top = klRand(-10, 30) + 'vh';
+    el.style.background = colors[klRand(0, colors.length - 1)];
+    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    el.style.width = klRand(6, 12) + 'px';
+    el.style.height = klRand(6, 12) + 'px';
+    el.style.animationDuration = (2 + Math.random() * 2).toFixed(1) + 's';
+    el.style.animationDelay = (Math.random() * 0.5).toFixed(2) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
   }
+}
+
+// ── Streak milestones ──
+function klShowStreakMilestone(count) {
+  const el = document.createElement('div');
+  el.className = 'kl-streak-msg';
+  el.textContent = `\u{1F525} ${count} in a row!`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+  // Extra confetti for milestones
+  klSpawnConfetti();
+}
+
+// ── Jungle decorations ──
+function klSpawnJungleDecorations() {
+  const container = document.getElementById('klJungleDeco');
+  if (!container) return;
+  container.innerHTML = '';
+  const emojis = ['\u{1F98B}','\u{1F338}','\u{1F366}','\u{1F426}','\u{1F425}','\u{1F33B}','\u{1F33A}','\u{1F99C}','\u{1F412}','\u{1F334}','\u{1F343}','\u{1FAB9}','\u{1F98E}','\u{1F33F}'];
+  const positions = [
+    { top: '5%', left: '3%' }, { top: '8%', right: '4%' }, { top: '20%', left: '2%' },
+    { top: '25%', right: '2%' }, { top: '40%', left: '1%' }, { top: '45%', right: '3%' },
+    { top: '60%', left: '3%' }, { top: '65%', right: '2%' }, { bottom: '15%', left: '5%' },
+    { bottom: '10%', right: '5%' }, { bottom: '5%', left: '15%' }, { bottom: '3%', right: '15%' },
+    { top: '2%', left: '30%' }, { top: '3%', right: '25%' }
+  ];
+  const count = Math.min(positions.length, 14);
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('span');
+    el.className = 'kl-jungle-deco';
+    el.textContent = emojis[i % emojis.length];
+    const pos = positions[i];
+    Object.assign(el.style, pos);
+    el.style.fontSize = (2 + Math.random()) + 'rem';
+    el.style.opacity = (0.4 + Math.random() * 0.2).toFixed(2);
+    el.style.animationDelay = (Math.random() * 3).toFixed(1) + 's';
+    container.appendChild(el);
+  }
+}
+
+// ── Scratch pad ──
+let klScratchCtx = null;
+let klScratchDrawing = false;
+let klScratchMode = 'draw'; // 'draw' or 'erase'
+let klScratchColor = '#1e293b';
+let klScratchInited = false;
+
+function klScratchInit() {
+  const canvas = document.getElementById('klScratchCanvas');
+  if (!canvas) return;
+  if (!klScratchInited) {
+    klScratchCtx = canvas.getContext('2d');
+    // Pointer events (only bind once)
+    klScratchBindEvents(canvas);
+    klScratchInited = true;
+  }
+  // Size canvas to its CSS-rendered size (must be called when visible)
+  requestAnimationFrame(() => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      klScratchCtx.fillStyle = '#fff';
+      klScratchCtx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  });
+
+}
+
+function klScratchBindEvents(canvas) {
+  canvas.addEventListener('pointerdown', e => {
+    klScratchDrawing = true;
+    klScratchCtx.beginPath();
+    const r = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / r.width;
+    const scaleY = canvas.height / r.height;
+    klScratchCtx.moveTo((e.clientX - r.left) * scaleX, (e.clientY - r.top) * scaleY);
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!klScratchDrawing) return;
+    const r = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / r.width;
+    const scaleY = canvas.height / r.height;
+    klScratchCtx.lineTo((e.clientX - r.left) * scaleX, (e.clientY - r.top) * scaleY);
+    if (klScratchMode === 'erase') {
+      klScratchCtx.strokeStyle = '#fff';
+      klScratchCtx.lineWidth = 20;
+    } else {
+      klScratchCtx.strokeStyle = klScratchColor;
+      klScratchCtx.lineWidth = 3;
+    }
+    klScratchCtx.lineCap = 'round';
+    klScratchCtx.lineJoin = 'round';
+    klScratchCtx.stroke();
+  });
+  canvas.addEventListener('pointerup', () => { klScratchDrawing = false; });
+  canvas.addEventListener('pointerleave', () => { klScratchDrawing = false; });
+  canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+}
+
+function klScratchSetMode(mode) {
+  klScratchMode = mode;
+  document.getElementById('klScratchDraw').classList.toggle('active', mode === 'draw');
+  document.getElementById('klScratchErase').classList.toggle('active', mode === 'erase');
+  const canvas = document.getElementById('klScratchCanvas');
+  if (canvas) canvas.style.cursor = mode === 'erase' ? 'cell' : 'crosshair';
+}
+
+function klScratchSetColor(color, el) {
+  klScratchColor = color;
+  klScratchSetMode('draw');
+  document.querySelectorAll('.kl-scratch-color').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function klToggleScratch() {
+  const pad = document.getElementById('klScratch');
+  if (!pad) return;
+  const showing = pad.style.display !== 'none';
+  pad.style.display = showing ? 'none' : 'flex';
+  if (!showing) klScratchInit();
+}
+
+function klScratchClear() {
+  const canvas = document.getElementById('klScratchCanvas');
+  if (!canvas || !klScratchCtx) return;
+  klScratchCtx.fillStyle = '#fff';
+  klScratchCtx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 // ══════════════════════════════════════════════
@@ -6920,23 +7154,25 @@ const savedTab = localStorage.getItem('mc-active-tab') || 'noteflow';
     switchTab(savedTab);
   }
 })();
-setInterval(() => {
-  if (currentTab === 'noteflow') {
-    // Skip refresh if user is interacting (expanded card, typing in add form)
-    if (!document.querySelector('.inline-add.active') && !nfExpandedId) loadNoteFlow();
-  }
-  else if (currentTab === 'tasks') loadBoard();
-  else if (currentTab === 'projects') {
-    // Skip refresh while viewing project detail — roadmap destroys Cytoscape graph,
-    // list view loses expanded phase state
-    if (!selectedProjectId) loadProjects();
-  }
-  else if (currentTab === 'calendar') loadCronCalendar();
-  else if (currentTab === 'stack') {
-    // Skip refresh if user has a card expanded (may be typing in note input)
-    if (!stackSelectedId) loadStackTab();
-  }
-  else if (currentTab === 'learning') loadLearning();
+setInterval(async () => {
+  try {
+    if (currentTab === 'noteflow') {
+      // Skip refresh if user is interacting (expanded card, typing in add form)
+      if (!document.querySelector('.inline-add.active') && !nfExpandedId) await loadNoteFlow();
+    }
+    else if (currentTab === 'tasks') await loadBoard();
+    else if (currentTab === 'projects') {
+      // Skip refresh while viewing project detail — roadmap destroys Cytoscape graph,
+      // list view loses expanded phase state
+      if (!selectedProjectId) await loadProjects();
+    }
+    else if (currentTab === 'calendar') await loadCronCalendar();
+    else if (currentTab === 'stack') {
+      // Skip refresh if user has a card expanded (may be typing in note input)
+      if (!stackSelectedId) await loadStackTab();
+    }
+    else if (currentTab === 'learning') await loadLearning();
+  } catch (e) { console.warn('Auto-refresh error:', e.message); }
 }, 3000);
 </script>
 </body>

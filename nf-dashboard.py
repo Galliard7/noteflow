@@ -7,7 +7,7 @@ import subprocess
 import sys
 from datetime import datetime
 import webbrowser
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -244,6 +244,9 @@ def _save_stack(items):
 class DashboardHandler(BaseHTTPRequestHandler):
     """Handles REST API requests and serves the dashboard HTML."""
 
+    timeout = 30            # socket-level timeout — drops idle connections
+    protocol_version = "HTTP/1.0"  # disable keep-alive — one request per connection
+
     def log_message(self, format, *args):
         """Suppress default request logging for cleaner output."""
         pass
@@ -288,132 +291,156 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        parts = self._parse_path()
+        try:
+            parts = self._parse_path()
 
-        if not parts or parts == [""]:
-            self._serve_html()
-        elif parts == ["api", "items"]:
-            self._api_list_items()
-        elif parts == ["api", "columns"]:
-            self._api_list_columns()
-        elif parts == ["api", "reminders"]:
-            self._api_list_reminders()
-        elif parts == ["api", "cron", "jobs"]:
-            self._api_list_cron_jobs()
-        elif parts == ["api", "archive"]:
-            self._api_list_archive()
-        elif parts == ["api", "board"]:
-            self._api_board_get()
-        elif parts == ["api", "board", "activity"]:
-            self._api_board_list_activity()
-        elif (len(parts) == 5 and parts[:3] == ["api", "board", "projects"]
-              and parts[4] == "graph"):
-            self._api_board_project_graph(parts[3])
-        elif parts == ["api", "files"]:
-            self._api_read_file()
-        elif parts == ["api", "stack"]:
-            self._api_stack_list()
-        elif parts == ["api", "vault", "daily"]:
-            self._api_vault_daily()
-        elif parts == ["api", "learning"]:
-            self._api_learning()
-        elif parts == ["api", "learning", "draw"]:
-            self._api_learning_draw()
-        else:
-            self._send_error(404, "Not found")
+            if not parts or parts == [""]:
+                self._serve_html()
+            elif parts == ["api", "items"]:
+                self._api_list_items()
+            elif parts == ["api", "columns"]:
+                self._api_list_columns()
+            elif parts == ["api", "reminders"]:
+                self._api_list_reminders()
+            elif parts == ["api", "cron", "jobs"]:
+                self._api_list_cron_jobs()
+            elif parts == ["api", "archive"]:
+                self._api_list_archive()
+            elif parts == ["api", "board"]:
+                self._api_board_get()
+            elif parts == ["api", "board", "activity"]:
+                self._api_board_list_activity()
+            elif (len(parts) == 5 and parts[:3] == ["api", "board", "projects"]
+                  and parts[4] == "graph"):
+                self._api_board_project_graph(parts[3])
+            elif parts == ["api", "files"]:
+                self._api_read_file()
+            elif parts == ["api", "stack"]:
+                self._api_stack_list()
+            elif parts == ["api", "vault", "daily"]:
+                self._api_vault_daily()
+            elif parts == ["api", "learning"]:
+                self._api_learning()
+            elif parts == ["api", "learning", "draw"]:
+                self._api_learning_draw()
+            else:
+                self._send_error(404, "Not found")
+        except Exception as e:
+            try:
+                self._send_error(500, f"Internal error: {e}")
+            except Exception:
+                pass
 
     def do_POST(self):
-        parts = self._parse_path()
+        try:
+            parts = self._parse_path()
 
-        if parts == ["api", "items"]:
-            self._api_add_item()
-        elif parts == ["api", "columns"]:
-            self._api_add_column()
-        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "done":
-            self._api_mark_done(parts[2])
-        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "reopen":
-            self._api_reopen(parts[2])
-        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "subnotes":
-            self._api_add_subnote(parts[2])
-        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "cron":
-            self._api_set_cron(parts[2])
-        # Board API
-        elif parts == ["api", "board", "cards"]:
-            self._api_board_add_card()
-        elif len(parts) == 5 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
-            self._api_board_add_comment(parts[3])
-        elif len(parts) == 5 and parts[:3] == ["api", "board", "cards"] and parts[4] == "move":
-            self._api_board_move_card(parts[3])
-        elif parts == ["api", "board", "statuses"]:
-            self._api_board_add_status()
-        elif parts == ["api", "board", "activity"]:
-            self._api_board_add_activity()
-        elif parts == ["api", "board", "projects"]:
-            self._api_board_add_project()
-        elif parts == ["api", "board", "decisions"]:
-            self._api_board_add_decision()
-        elif parts == ["api", "board", "log"]:
-            self._api_board_add_log()
-        elif parts == ["api", "stack"]:
-            self._api_stack_add()
-        elif parts == ["api", "learning", "rate"]:
-            self._api_learning_rate()
-        else:
-            self._send_error(404, "Not found")
+            if parts == ["api", "items"]:
+                self._api_add_item()
+            elif parts == ["api", "columns"]:
+                self._api_add_column()
+            elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "done":
+                self._api_mark_done(parts[2])
+            elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "reopen":
+                self._api_reopen(parts[2])
+            elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "subnotes":
+                self._api_add_subnote(parts[2])
+            elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "cron":
+                self._api_set_cron(parts[2])
+            # Board API
+            elif parts == ["api", "board", "cards"]:
+                self._api_board_add_card()
+            elif len(parts) == 5 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
+                self._api_board_add_comment(parts[3])
+            elif len(parts) == 5 and parts[:3] == ["api", "board", "cards"] and parts[4] == "move":
+                self._api_board_move_card(parts[3])
+            elif parts == ["api", "board", "statuses"]:
+                self._api_board_add_status()
+            elif parts == ["api", "board", "activity"]:
+                self._api_board_add_activity()
+            elif parts == ["api", "board", "projects"]:
+                self._api_board_add_project()
+            elif parts == ["api", "board", "decisions"]:
+                self._api_board_add_decision()
+            elif parts == ["api", "board", "log"]:
+                self._api_board_add_log()
+            elif parts == ["api", "stack"]:
+                self._api_stack_add()
+            elif parts == ["api", "learning", "rate"]:
+                self._api_learning_rate()
+            else:
+                self._send_error(404, "Not found")
+        except Exception as e:
+            try:
+                self._send_error(500, f"Internal error: {e}")
+            except Exception:
+                pass
 
     def do_PUT(self):
-        parts = self._parse_path()
+        try:
+            parts = self._parse_path()
 
-        if len(parts) == 3 and parts[:2] == ["api", "items"]:
-            self._api_update_item(parts[2])
-        elif parts == ["api", "columns", "reorder"]:
-            self._api_reorder_columns()
-        elif len(parts) == 3 and parts[:2] == ["api", "columns"]:
-            self._api_update_column(parts[2])
-        elif parts == ["api", "board", "statuses", "reorder"]:
-            self._api_board_reorder_statuses()
-        elif len(parts) == 4 and parts[:3] == ["api", "board", "statuses"]:
-            self._api_board_update_status(parts[3])
-        elif parts == ["api", "board", "projects", "reorder"]:
-            self._api_board_reorder_projects()
-        elif len(parts) == 6 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
-            self._api_board_update_comment(parts[3], parts[5])
-        elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
-            self._api_board_update_card(parts[3])
-        elif len(parts) == 4 and parts[:3] == ["api", "board", "projects"]:
-            self._api_board_update_project(parts[3])
-        elif len(parts) == 6 and parts[:3] == ["api", "board", "projects"] and parts[4] == "phases":
-            self._api_board_update_phase(parts[3], parts[5])
-        elif parts == ["api", "stack"]:
-            self._api_stack_replace()
-        elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
-            self._api_stack_update(parts[2])
-        else:
-            self._send_error(404, "Not found")
+            if len(parts) == 3 and parts[:2] == ["api", "items"]:
+                self._api_update_item(parts[2])
+            elif parts == ["api", "columns", "reorder"]:
+                self._api_reorder_columns()
+            elif len(parts) == 3 and parts[:2] == ["api", "columns"]:
+                self._api_update_column(parts[2])
+            elif parts == ["api", "board", "statuses", "reorder"]:
+                self._api_board_reorder_statuses()
+            elif len(parts) == 4 and parts[:3] == ["api", "board", "statuses"]:
+                self._api_board_update_status(parts[3])
+            elif parts == ["api", "board", "projects", "reorder"]:
+                self._api_board_reorder_projects()
+            elif len(parts) == 6 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
+                self._api_board_update_comment(parts[3], parts[5])
+            elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
+                self._api_board_update_card(parts[3])
+            elif len(parts) == 4 and parts[:3] == ["api", "board", "projects"]:
+                self._api_board_update_project(parts[3])
+            elif len(parts) == 6 and parts[:3] == ["api", "board", "projects"] and parts[4] == "phases":
+                self._api_board_update_phase(parts[3], parts[5])
+            elif parts == ["api", "stack"]:
+                self._api_stack_replace()
+            elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
+                self._api_stack_update(parts[2])
+            else:
+                self._send_error(404, "Not found")
+        except Exception as e:
+            try:
+                self._send_error(500, f"Internal error: {e}")
+            except Exception:
+                pass
 
     def do_DELETE(self):
-        parts = self._parse_path()
+        try:
+            parts = self._parse_path()
 
-        if len(parts) == 3 and parts[:2] == ["api", "items"]:
-            self._api_delete_item(parts[2])
-        elif len(parts) == 3 and parts[:2] == ["api", "columns"]:
-            self._api_delete_column(parts[2])
-        elif len(parts) == 5 and parts[:2] == ["api", "items"] and parts[3] == "subnotes":
-            self._api_delete_subnote(parts[2], parts[4])
-        elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "cron":
-            self._api_cancel_cron(parts[2])
-        elif len(parts) == 6 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
-            self._api_board_delete_comment(parts[3], parts[5])
-        elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
-            self._api_board_delete_card(parts[3])
-        elif len(parts) == 4 and parts[:3] == ["api", "board", "statuses"]:
-            self._api_board_delete_status(parts[3])
-        elif len(parts) == 4 and parts[:3] == ["api", "board", "activity"]:
-            self._api_board_delete_activity(parts[3])
-        elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
-            self._api_stack_delete(parts[2])
-        else:
-            self._send_error(404, "Not found")
+            if len(parts) == 3 and parts[:2] == ["api", "items"]:
+                self._api_delete_item(parts[2])
+            elif len(parts) == 3 and parts[:2] == ["api", "columns"]:
+                self._api_delete_column(parts[2])
+            elif len(parts) == 5 and parts[:2] == ["api", "items"] and parts[3] == "subnotes":
+                self._api_delete_subnote(parts[2], parts[4])
+            elif len(parts) == 4 and parts[:2] == ["api", "items"] and parts[3] == "cron":
+                self._api_cancel_cron(parts[2])
+            elif len(parts) == 6 and parts[:3] == ["api", "board", "cards"] and parts[4] == "comments":
+                self._api_board_delete_comment(parts[3], parts[5])
+            elif len(parts) == 4 and parts[:3] == ["api", "board", "cards"]:
+                self._api_board_delete_card(parts[3])
+            elif len(parts) == 4 and parts[:3] == ["api", "board", "statuses"]:
+                self._api_board_delete_status(parts[3])
+            elif len(parts) == 4 and parts[:3] == ["api", "board", "activity"]:
+                self._api_board_delete_activity(parts[3])
+            elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
+                self._api_stack_delete(parts[2])
+            else:
+                self._send_error(404, "Not found")
+        except Exception as e:
+            try:
+                self._send_error(500, f"Internal error: {e}")
+            except Exception:
+                pass
 
     # --- Serve HTML ---
 
@@ -1514,12 +1541,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 def main():
     import argparse
+    import faulthandler
+    faulthandler.enable()  # dump tracebacks on SIGSEGV/SIGABRT/hung threads
+
     parser = argparse.ArgumentParser(description="Mission Control Server")
     parser.add_argument("--port", type=int, default=PORT, help=f"Port (default: {PORT})")
     parser.add_argument("--no-open", action="store_true", help="Don't open browser")
     args = parser.parse_args()
 
-    server = HTTPServer((HOST, args.port), DashboardHandler)
+    server = ThreadingHTTPServer((HOST, args.port), DashboardHandler)
+    server.daemon_threads = True
+    server.timeout = 30  # accept() timeout — prevents blocking in select loop
     url = f"http://{HOST}:{args.port}"
     print(f"Mission Control running at {url}")
 
