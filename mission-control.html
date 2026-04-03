@@ -1196,33 +1196,28 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 }
 .status-delete-btn:hover { color: #ef4444; }
 
-/* ── Stack Tab — Mission Control HUD ── */
-.stack-wrap {
-  padding: 0.7rem 1rem; height: 100%; display: flex; flex-direction: column;
-  gap: 0.5rem; flex: 1; min-width: 0; max-width: 560px; margin: 0 auto;
+/* ── Stack Tab — Kanban Lanes ── */
+.stack-board-wrap {
+  height: 100%; display: flex; flex-direction: column; overflow: hidden;
 }
-
-/* Command bar */
-.stack-cmd {
-  display: flex; gap: 0.4rem; align-items: center;
-  padding: 0.4rem 0.6rem;
-  background: rgba(15,23,42,0.95);
-  border: 1px solid #1e3a5f;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(59,130,246,0.06);
+.stack-toolbar {
+  display: flex; gap: 0.5rem; align-items: center;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
 }
-.stack-cmd input {
-  flex: 1; min-width: 0; background: transparent; border: 1px solid #334155;
-  color: #e2e8f0; font-size: 0.76rem; padding: 0.28rem 0.5rem;
-  border-radius: 5px; font-family: inherit;
+.stack-toolbar-title {
+  font-size: 0.85rem; font-weight: 600; color: #e2e8f0;
+  margin-right: auto;
 }
-.stack-cmd input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px rgba(59,130,246,0.25); }
-.stack-cmd input::placeholder { color: #475569; }
-.stack-cmd-sep { width: 1px; height: 16px; background: #334155; flex-shrink: 0; }
-
-/* Unified input with suggestion dropdown */
-.stack-input-wrap { flex: 1; position: relative; min-width: 0; }
-.stack-input-wrap input { width: 100%; }
+.stack-input-wrap { position: relative; min-width: 0; flex: 1; max-width: 320px; }
+.stack-input-wrap input {
+  width: 100%; background: rgba(15,23,42,0.95); border: 1px solid #334155;
+  color: #e2e8f0; font-size: 0.76rem; padding: 0.3rem 0.55rem;
+  border-radius: 6px; font-family: inherit;
+}
+.stack-input-wrap input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px rgba(59,130,246,0.25); }
+.stack-input-wrap input::placeholder { color: #475569; }
 .stack-suggest {
   display: none; position: absolute; left: 0; right: 0; top: 100%; margin-top: 3px;
   background: #1e293b; border: 1px solid #334155; border-radius: 6px;
@@ -1251,114 +1246,134 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .stack-sug-create .sug-plus { color: #3b82f6; font-weight: 700; }
 .stack-btn {
   background: transparent; border: 1px solid #334155;
-  color: #94a3b8; font-size: 0.7rem; padding: 0.22rem 0.55rem;
-  border-radius: 5px; cursor: pointer; white-space: nowrap;
+  color: #94a3b8; font-size: 0.7rem; padding: 0.25rem 0.6rem;
+  border-radius: 6px; cursor: pointer; white-space: nowrap;
   transition: all 0.15s; font-family: inherit;
 }
 .stack-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
-.stack-btn.pop { border-color: #f59e0b44; color: #f59e0b; }
-.stack-btn.pop:hover { border-color: #f59e0b; background: #f59e0b11; }
 
-/* Stack list */
-.stack-list {
-  flex: 1; overflow-y: auto;
-  padding: 0.5rem 0;
+/* ── Lanes board ── */
+.stack-board {
+  flex: 1; display: flex; gap: 16px;
+  padding: 16px; overflow-x: auto; min-height: 0;
+  justify-content: center;
 }
-.stack-empty {
-  text-align: center; padding: 3rem 1rem; color: #475569;
-  background: #0c1222; border: 1px dashed #1e3a5f; border-radius: 8px;
-}
-.stack-empty-icon { font-size: 2.2rem; margin-bottom: 0.4rem; opacity: 0.25; }
-.stack-empty-text { font-size: 0.78rem; }
 
-/* ── Stack card — pancake stack ── */
+/* ── Individual lane ── */
+.stack-lane {
+  flex: 1; min-width: 240px; max-width: 380px;
+  display: flex; flex-direction: column; min-height: 0;
+  background: rgba(15,23,42,0.4);
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  transition: flex 0.25s ease, min-width 0.25s ease, opacity 0.2s ease;
+}
+.stack-lane.drag-over {
+  border-color: #3b82f644;
+  background: rgba(59,130,246,0.04);
+}
+
+.stack-lane-header {
+  padding: 0.55rem 0.7rem;
+  display: flex; align-items: center; gap: 0.4rem;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
+}
+.stack-lane-label {
+  font-size: 0.68rem; color: #64748b; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.stack-lane-count {
+  font-size: 0.6rem; color: #475569; margin-left: 2px;
+}
+.stack-lane-close {
+  margin-left: auto;
+  background: none; border: none; color: #334155; cursor: pointer;
+  font-size: 0.85rem; padding: 0.1rem 0.3rem; border-radius: 4px;
+  line-height: 1; transition: all 0.15s;
+}
+.stack-lane-close:hover { color: #f85149; background: rgba(248,81,73,0.1); }
+
+.stack-lane-cards {
+  flex: 1; overflow-y: auto; padding: 10px 8px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.stack-lane-cards::-webkit-scrollbar { width: 3px; }
+.stack-lane-cards::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+
+.stack-lane-empty {
+  display: flex; align-items: center; justify-content: center;
+  flex: 1; color: #334155; font-size: 0.7rem; font-style: italic;
+  min-height: 80px;
+}
+
+/* ── Add-lane button ── */
+.stack-add-lane {
+  min-width: 52px; display: flex; align-items: center; justify-content: center;
+  border: 1px dashed #1e293b; border-radius: 10px;
+  color: #334155; font-size: 1.3rem; cursor: pointer;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.stack-add-lane:hover { border-color: #3b82f644; color: #64748b; background: rgba(59,130,246,0.03); }
+
+/* Collapse animation */
+.stack-lane.collapsing {
+  flex: 0 !important; min-width: 0 !important;
+  overflow: hidden; opacity: 0;
+}
+
+/* ── Floating card ── */
 .stack-card {
-  display: flex; flex-direction: column;
   background: #1e293b;
   border: 1px solid #233048;
   border-radius: 8px;
-  margin-bottom: -2px;
-  padding: 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  padding: 0.55rem 0.65rem;
+  cursor: grab;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   transition: border-color 0.18s, background 0.18s, opacity 0.18s, transform 0.15s, box-shadow 0.18s;
-  cursor: pointer;
   position: relative;
-  z-index: 1;
 }
-.stack-card:hover { border-color: #3b82f688; background: #243047; z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
-.stack-card.top { border-left: 3px solid #3b82f6; box-shadow: 0 3px 10px rgba(59,130,246,0.15); z-index: 3; }
-.stack-card.selected { border-color: #22d3ee88; background: #1f3044; z-index: 4; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
-.stack-card.dragging { opacity: 0.35; transform: scale(0.95); }
-.stack-card.drag-over { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b44; }
+.stack-card:hover { border-color: #3b82f688; background: #243047; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+.stack-card.dragging { opacity: 0.3; transform: scale(0.96); cursor: grabbing; }
+.stack-card.drag-over-card { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b44; }
+.stack-card.selected { border-color: #22d3ee88; background: #1f3044; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
 
-/* Card header — the compact single-line row */
-.stack-card-header {
-  display: flex; align-items: center; gap: 0.35rem;
-  padding: 0.3rem 0.45rem;
-  min-height: 30px;
-}
-.stack-drag {
-  cursor: grab; color: #475569; font-size: 0.65rem;
-  user-select: none; line-height: 1; padding: 0.1rem;
-  transition: color 0.15s;
-}
-.stack-drag:hover { color: #94a3b8; }
-.stack-card.dragging .stack-drag { cursor: grabbing; }
-
-/* Position badge */
-.stack-pos {
-  font-size: 0.58rem; font-weight: 700; min-width: 1.5rem;
-  text-align: center; padding: 0.08rem 0.25rem;
-  border-radius: 3px; line-height: 1.3;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-}
-.stack-pos.is-top {
-  background: #3b82f6; color: #fff;
-  text-shadow: 0 0 3px rgba(255,255,255,0.25);
-  box-shadow: 0 0 5px rgba(59,130,246,0.35);
-}
-.stack-pos.is-num { background: #1e293b; color: #64748b; border: 1px solid #334155; }
-
-/* Title */
 .stack-card-title {
-  flex: 1; min-width: 0; font-size: 0.76rem; color: #e2e8f0;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-weight: 500;
+  font-size: 0.78rem; font-weight: 500; line-height: 1.35;
+  color: #e2e8f0; margin-bottom: 0.35rem;
+}
+
+.stack-card-tags {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
 }
 
 /* Badges */
 .stack-badge {
-  font-size: 0.56rem; padding: 0.05rem 0.3rem; border-radius: 3px;
+  font-size: 0.56rem; padding: 0.08rem 0.32rem; border-radius: 3px;
   border: 1px solid; white-space: nowrap; font-weight: 500;
 }
 .stack-badge.brd { color: #22c55e; border-color: #22c55e44; background: #22c55e08; }
 .stack-badge.cst { color: #64748b; border-color: #33415544; background: #0f172a; }
 .stack-badge.slug { color: #94a3b8; border-color: #33415544; background: #0f172a; font-family: monospace; font-size: 0.54rem; }
+.stack-note-hint { color: #64748b; font-size: 0.56rem; white-space: nowrap; }
 
-/* Note count hint */
-.stack-note-hint { color: #64748b; font-size: 0.58rem; white-space: nowrap; }
-
-/* Kebab menu */
-/* Move arrows */
-.stack-arrows { display: flex; flex-direction: column; gap: 0; margin-left: auto; }
-.stack-arrow-btn {
-  background: none; border: none; cursor: pointer; padding: 0;
-  font-size: 0.7rem; line-height: 1; color: #475569;
-  transition: color 0.15s, transform 0.12s;
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 12px;
+/* Pop button on card */
+.stack-pop-btn {
+  position: absolute; top: 0.3rem; right: 1.6rem;
+  background: none; border: none; color: #47556988; cursor: pointer;
+  font-size: 0.72rem; padding: 0.1rem 0.25rem; line-height: 1;
+  border-radius: 3px; transition: all 0.15s;
 }
-.stack-arrow-btn:hover:not(:disabled) { color: #38bdf8; transform: scale(1.3); }
-.stack-arrow-btn:active:not(:disabled) { color: #22d3ee; transform: scale(0.9); }
-.stack-arrow-btn:disabled { color: #1e293b; cursor: default; }
+.stack-pop-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
-.stack-kebab-wrap { position: relative; }
+/* Kebab menu on card */
+.stack-kebab-wrap { position: absolute; top: 0.35rem; right: 0.35rem; }
 .stack-kebab {
-  background: none; border: none; color: #475569; cursor: pointer;
-  font-size: 0.95rem; padding: 0 0.15rem; line-height: 1;
-  transition: color 0.15s;
+  background: none; border: none; color: #33415588; cursor: pointer;
+  font-size: 0.85rem; padding: 0.1rem 0.2rem; line-height: 1;
+  border-radius: 3px; transition: all 0.15s;
 }
-.stack-kebab:hover { color: #e2e8f0; }
+.stack-kebab:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
 .stack-menu {
   position: absolute; right: 0; top: 100%; margin-top: 2px;
   background: #1e293b; border: 1px solid #334155;
@@ -1376,64 +1391,9 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .stack-menu-item.danger { color: #ef4444; }
 .stack-menu-item.danger:hover { background: #ef444418; }
 
-/* ── Task Pool Sidebar ── */
-.stack-layout {
-  display: flex; flex-direction: row; height: 100%; gap: 0;
-}
-.task-pool {
-  width: 220px; flex-shrink: 0; height: 100%;
-  border-left: 1px solid #1e3a5f;
-  display: flex; flex-direction: column;
-  background: rgba(15,23,42,0.6);
-}
-.task-pool-header {
-  display: flex; gap: 0.25rem; padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid #1e3a5f;
-}
-.task-pool-toggle {
-  flex: 1; background: none; border: 1px solid #334155;
-  color: #64748b; font-size: 0.62rem; padding: 0.2rem 0.4rem;
-  border-radius: 10px; cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
-}
-.task-pool-toggle:hover { color: #94a3b8; border-color: #475569; }
-.task-pool-toggle.active {
-  background: #1e3a5f; color: #60a5fa; border-color: #3b82f6;
-}
-.task-pool-list {
-  flex: 1; overflow-y: auto; padding: 0.35rem 0.4rem;
-  display: flex; flex-direction: column; gap: 0.25rem;
-}
-.task-pool-card {
-  padding: 0.3rem 0.4rem; border: 1px solid #233048;
-  border-radius: 5px; cursor: grab; background: #0f172a;
-  transition: border-color 0.15s, opacity 0.15s;
-  display: flex; align-items: center; gap: 0.3rem;
-}
-.task-pool-card:hover { border-color: #3b82f6; }
-.task-pool-card.dragging { opacity: 0.35; }
-.task-pool-card-title {
-  font-size: 0.65rem; color: #cbd5e1; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
-}
-.task-pool-badge {
-  font-size: 0.5rem; padding: 0.08rem 0.3rem;
-  border-radius: 8px; border: 1px solid; white-space: nowrap; flex-shrink: 0;
-}
-.task-pool-empty {
-  color: #475569; font-size: 0.62rem; text-align: center;
-  padding: 1.5rem 0.5rem; font-style: italic;
-}
-.stack-list.drag-pool-over {
-  outline: 2px dashed #f59e0b44; outline-offset: -2px;
-}
-@media (max-width: 768px) {
-  .task-pool { display: none; }
-}
-
 /* ── Expanded card body ── */
 .stack-card-body {
-  padding: 0.25rem 0.45rem 0.35rem;
+  margin-top: 0.4rem; padding-top: 0.4rem;
   border-top: 1px solid #233048;
 }
 .stack-edit-title {
@@ -1513,9 +1473,9 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .stack-modal select:focus { outline: none; border-color: #3b82f6; }
 .stack-modal label { display: block; color: #94a3b8; font-size: 0.68rem; margin-bottom: 0.2rem; }
 
-@media (max-width: 1024px) {
-  .stack-cmd { flex-wrap: wrap; }
-  .stack-list { min-height: 320px; }
+@media (max-width: 768px) {
+  .stack-board { gap: 10px; padding: 10px; }
+  .stack-lane { min-width: 200px; }
 }
 
 /* ── Learning Tab ── */
@@ -1797,27 +1757,18 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 
     <!-- ═══════ Stack Tab ═══════ -->
     <div class="tab-content" id="tab-stack">
-      <div class="stack-layout">
-        <div class="stack-wrap">
-          <div class="stack-cmd">
-            <div class="stack-input-wrap">
-              <input id="stackInput" type="text" placeholder="+ Add task or search board..."
-                oninput="stackInputChanged()" onfocus="stackInputFocus()" autocomplete="off"
-                onkeydown="stackInputKey(event)">
-              <div class="stack-suggest" id="stackSuggest"></div>
-            </div>
-            <button class="stack-btn pop" onclick="stackPopTop()">Pop Top</button>
+      <div class="stack-board-wrap">
+        <div class="stack-toolbar">
+          <span class="stack-toolbar-title">Stack</span>
+          <div class="stack-input-wrap">
+            <input id="stackInput" type="text" placeholder="+ Add task or search board..."
+              oninput="stackInputChanged()" onfocus="stackInputFocus()" autocomplete="off"
+              onkeydown="stackInputKey(event)">
+            <div class="stack-suggest" id="stackSuggest"></div>
           </div>
-          <div class="stack-list" id="stackList"
-            ondragover="stackListDragOver(event)" ondragleave="stackListDragLeave(event)" ondrop="stackListDrop(event)"></div>
+          <button class="stack-btn" onclick="stackAddLane()">+ Lane</button>
         </div>
-        <div class="task-pool" id="taskPool">
-          <div class="task-pool-header">
-            <button class="task-pool-toggle active" id="poolToggleBoard" onclick="switchPoolSource('board')">Board</button>
-            <button class="task-pool-toggle" id="poolToggleNF" onclick="switchPoolSource('noteflow')">NoteFlow</button>
-          </div>
-          <div class="task-pool-list" id="taskPoolList"></div>
-        </div>
+        <div class="stack-board" id="stackBoard"></div>
       </div>
       <div id="stackCompletionModal"></div>
     </div>
@@ -2171,6 +2122,7 @@ const BUILTIN_STATUSES = new Set(); // all statuses are user-editable
 // Stack tab state
 const STACK_STORAGE_KEY = 'mc-stack-v1';
 let stackItems = [];
+let stackLanes = [];
 let poolSource = localStorage.getItem('mc-pool-source') || 'board';
 let poolNfItems = [];
 let poolNfColumns = [];
@@ -2952,7 +2904,7 @@ function cronToday() {
 }
 
 // ══════════════════════════════════════════════
-//  STACK TAB — Mission Control Session Stack
+//  STACK TAB — Kanban Lanes
 // ══════════════════════════════════════════════
 function makeId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
@@ -2965,18 +2917,23 @@ function normalizeStackItem(item) {
     source: item.source === 'board' ? 'board' : 'custom',
     boardSlug: item.boardSlug || null,
     notes: Array.isArray(item.notes) ? item.notes.filter(n => typeof n === 'string') : [],
+    lane: item.lane || (stackLanes.length ? stackLanes[0].id : 'lane-1'),
     createdAt: item.createdAt || new Date().toISOString(),
   };
 }
 
 function saveStackState() {
-  // Persist to server (fire-and-forget for responsiveness)
-  api('PUT', '/api/stack', { items: stackItems });
+  api('PUT', '/api/stack', { lanes: stackLanes, items: stackItems });
 }
 
 async function loadStackState() {
   try {
     const res = await api('GET', '/api/stack');
+    if (res && Array.isArray(res.lanes) && res.lanes.length) {
+      stackLanes = res.lanes;
+    } else {
+      stackLanes = [{ id: 'lane-1', label: 'Lane 1' }];
+    }
     if (res && Array.isArray(res.items) && res.items.length) {
       stackItems = res.items.map(normalizeStackItem);
     } else {
@@ -2984,13 +2941,14 @@ async function loadStackState() {
       const local = JSON.parse(localStorage.getItem(STACK_STORAGE_KEY) || '[]');
       if (Array.isArray(local) && local.length) {
         stackItems = local.map(normalizeStackItem);
-        saveStackState(); // push to server
+        saveStackState();
         localStorage.removeItem(STACK_STORAGE_KEY);
       } else {
         stackItems = [];
       }
     }
   } catch (_) {
+    stackLanes = [{ id: 'lane-1', label: 'Lane 1' }];
     stackItems = [];
   }
 }
@@ -3008,8 +2966,49 @@ function getDoneStatusId() {
   return statuses.length ? (statuses[statuses.length - 1].id || statuses[statuses.length - 1]) : 'done';
 }
 
+// ── Lane management ──
+function stackAddLane() {
+  const num = stackLanes.length + 1;
+  const lane = { id: makeId('lane'), label: 'Lane ' + num };
+  stackLanes.push(lane);
+  saveStackState();
+  renderStackBoard();
+}
+
+function stackCollapseLane(laneId) {
+  if (stackLanes.length <= 1) return;
+  const otherLanes = stackLanes.filter(l => l.id !== laneId);
+  // Distribute cards to remaining lanes
+  stackItems.forEach(item => {
+    if (item.lane === laneId) {
+      const target = otherLanes[Math.floor(Math.random() * otherLanes.length)];
+      item.lane = target.id;
+    }
+  });
+  // Animate then remove
+  const el = document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`);
+  if (el) {
+    el.classList.add('collapsing');
+    setTimeout(() => {
+      stackLanes = otherLanes;
+      renumberLanes();
+      saveStackState();
+      renderStackBoard();
+    }, 250);
+  } else {
+    stackLanes = otherLanes;
+    renumberLanes();
+    saveStackState();
+    renderStackBoard();
+  }
+}
+
+function renumberLanes() {
+  stackLanes.forEach((l, i) => { l.label = 'Lane ' + (i + 1); });
+}
+
 // ── Unified input with suggestions ──
-let stackSugIndex = -1; // -1 = "create custom" row, 0+ = board matches
+let stackSugIndex = -1;
 
 function stackInputChanged() {
   stackSugIndex = -1;
@@ -3047,7 +3046,6 @@ function renderStackSuggestions() {
     html += `<span class="sug-status" style="color:${sColor};border-color:${sColor}44">${escapeHtml(c.status)}</span>`;
     html += `</div>`;
   });
-  // Always show "create as custom" at the bottom
   html += `<div class="stack-sug-create${stackSugIndex === -1 ? ' active' : ''}" onmousedown="stackAddCustom()">`;
   html += `<span class="sug-plus">+</span> Create <strong>&quot;${escapeHtml(q)}&quot;</strong> as custom task`;
   html += `</div>`;
@@ -3083,10 +3081,11 @@ function stackInputKey(e) {
 function stackPickBoard(slug) {
   const card = (board.cards || []).find(c => c.slug === slug);
   if (!card) return;
+  const firstLane = stackLanes.length ? stackLanes[0].id : 'lane-1';
   const item = normalizeStackItem({
     id: makeId('stk'), title: card.title,
     source: 'board', boardSlug: card.slug,
-    notes: [], createdAt: new Date().toISOString(),
+    notes: [], lane: firstLane, createdAt: new Date().toISOString(),
   });
   stackItems.unshift(item);
   const input = document.getElementById('stackInput');
@@ -3094,8 +3093,7 @@ function stackPickBoard(slug) {
   const dd = document.getElementById('stackSuggest');
   if (dd) dd.classList.remove('open');
   saveStackState();
-  renderStackList();
-  renderTaskPool();
+  renderStackBoard();
 }
 
 function getStackIndex(id) {
@@ -3129,7 +3127,7 @@ function stackToggleMenu(id) {
   }, 0);
 }
 
-// ── Completion modal (replaces confirm()) ──
+// ── Completion modal ──
 function showCompletionModal(title) {
   return new Promise((resolve) => {
     const container = document.getElementById('stackCompletionModal');
@@ -3161,132 +3159,144 @@ function stackResolveModal(action) {
 // ── Select / expand ──
 function stackSelect(id) {
   stackSelectedId = stackSelectedId === id ? null : id;
-  renderStackList();
+  renderStackBoard();
 }
 
-// ── Render ──
-function renderStackList() {
-  const list = document.getElementById('stackList');
-  if (!list) return;
-  if (!stackItems.length) {
-    list.innerHTML = `<div class="stack-empty">
-      <div class="stack-empty-icon">&#x1F6F0;</div>
-      <div class="stack-empty-text">No active missions.<br>Add tasks or link board cards to build your stack.</div>
-    </div>`;
-    return;
+// ── Render card HTML ──
+function renderStackCard(item) {
+  const isSelected = item.id === stackSelectedId;
+  const cls = ['stack-card'];
+  if (isSelected) cls.push('selected');
+
+  let html = `<div class="${cls.join(' ')}" data-stack-id="${item.id}" draggable="true"
+    onclick="stackSelect('${item.id}')"
+    ondragstart="stackDragStart(event,'${item.id}')" ondragend="stackDragEnd(event)">`;
+
+  // Pop button (visible ×)
+  html += `<button class="stack-pop-btn" onclick="event.stopPropagation();stackDeleteItem('${item.id}')" title="Pop from stack">&#x2715;</button>`;
+
+  // Kebab menu (absolute positioned)
+  html += `<div class="stack-kebab-wrap">`;
+  html += `<button class="stack-kebab" onclick="event.stopPropagation();stackToggleMenu('${item.id}')" title="Actions">&#x22EE;</button>`;
+  html += `<div class="stack-menu" id="stack-menu-${item.id}" style="display:none">`;
+  if (!item.boardSlug) {
+    html += `<button class="stack-menu-item" onclick="event.stopPropagation();stackPushToBoard('${item.id}')">Push to Board</button>`;
+  } else {
+    html += `<button class="stack-menu-item" onclick="event.stopPropagation();openCardDetail('${item.boardSlug}')">Open Card</button>`;
   }
-  let html = '';
-  stackItems.forEach((item, idx) => {
-    const isTop = idx === 0;
-    const isSelected = item.id === stackSelectedId;
-    const cls = ['stack-card'];
-    if (isTop) cls.push('top');
-    if (isSelected) cls.push('selected');
+  html += `<button class="stack-menu-item danger" onclick="event.stopPropagation();stackDeleteItem('${item.id}')">Remove</button>`;
+  html += `</div></div>`;
 
-    html += `<div class="${cls.join(' ')}" data-stack-id="${item.id}" data-stack-idx="${idx}" draggable="true"
-      onclick="stackSelect('${item.id}')"
-      ondragstart="stackDragStart(event,'${item.id}')" ondragend="stackDragEnd(event)"
-      ondragover="stackCardDragOver(event,'${item.id}')" ondragleave="stackCardDragLeave(event,'${item.id}')"
-      ondrop="stackCardDrop(event,'${item.id}')">`;
+  // Title
+  html += `<div class="stack-card-title">${escapeHtml(item.title)}</div>`;
 
-    // ── Header row (compact) ──
-    html += `<div class="stack-card-header">`;
-    html += `<span class="stack-drag" title="Drag to reorder">&#x2630;</span>`;
-    html += `<span class="stack-pos ${isTop ? 'is-top' : 'is-num'}">${isTop ? 'TOP' : idx + 1}</span>`;
-    html += `<span class="stack-badge ${item.source === 'board' ? 'brd' : 'cst'}">${item.source === 'board' ? 'Board' : 'Custom'}</span>`;
-    html += `<span class="stack-card-title">${escapeHtml(item.title)}</span>`;
-    if (item.boardSlug) {
-      html += `<span class="stack-badge slug">${escapeHtml(item.boardSlug)}</span>`;
-    }
-    const boardCard = item.boardSlug ? (board.cards || []).find(c => c.slug === item.boardSlug) : null;
-    const comments = boardCard ? (boardCard.comments || []) : [];
-    const noteCount = boardCard ? comments.length : item.notes.length;
-    if (noteCount) {
-      html += `<span class="stack-note-hint">&#x1F4DD; ${noteCount}</span>`;
-    }
-    // ── Move arrows ──
-    html += `<div class="stack-arrows">`;
-    html += `<button class="stack-arrow-btn" onclick="event.stopPropagation();stackMoveUp('${item.id}')" title="Move up" ${idx === 0 ? 'disabled' : ''}>&#x25B2;</button>`;
-    html += `<button class="stack-arrow-btn" onclick="event.stopPropagation();stackMoveDown('${item.id}')" title="Move down" ${idx === stackItems.length - 1 ? 'disabled' : ''}>&#x25BC;</button>`;
-    html += `</div>`;
+  // Tags
+  const boardCard = item.boardSlug ? (board.cards || []).find(c => c.slug === item.boardSlug) : null;
+  const comments = boardCard ? (boardCard.comments || []) : [];
+  const noteCount = boardCard ? comments.length : item.notes.length;
 
-    html += `<div class="stack-kebab-wrap">`;
-    html += `<button class="stack-kebab" onclick="event.stopPropagation();stackToggleMenu('${item.id}')" title="Actions">&#x22EE;</button>`;
-    html += `<div class="stack-menu" id="stack-menu-${item.id}" style="display:none">`;
-    if (!item.boardSlug) {
-      html += `<button class="stack-menu-item" onclick="event.stopPropagation();stackPushToBoard('${item.id}')">Push to Board</button>`;
-    } else {
-      html += `<button class="stack-menu-item" onclick="event.stopPropagation();openCardDetail('${item.boardSlug}')">Open Card</button>`;
-    }
-    html += `<button class="stack-menu-item danger" onclick="event.stopPropagation();stackDeleteItem('${item.id}')">Remove</button>`;
-    html += `</div></div>`;
-    html += `</div>`;
+  html += `<div class="stack-card-tags">`;
+  html += `<span class="stack-badge ${item.source === 'board' ? 'brd' : 'cst'}">${item.source === 'board' ? 'Board' : 'Custom'}</span>`;
+  if (item.boardSlug) {
+    html += `<span class="stack-badge slug">${escapeHtml(item.boardSlug)}</span>`;
+  }
+  if (noteCount) {
+    html += `<span class="stack-note-hint">&#x1F4DD; ${noteCount}</span>`;
+  }
+  html += `</div>`;
 
-    // ── Expanded body ──
-    if (isSelected) {
-      html += `<div class="stack-card-body" onclick="event.stopPropagation()">`;
-      html += `<input class="stack-edit-title" value="${escapeHtml(item.title)}"
-        onchange="stackRename('${item.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
-      html += `<div class="stack-card-meta">${item.boardSlug ? 'Linked: ' + escapeHtml(item.boardSlug) : 'Stack-only'} &middot; ${noteCount} comment${noteCount !== 1 ? 's' : ''}</div>`;
-      html += `<div class="stack-notes-list">`;
-      if (boardCard) {
-        // Board-linked: render from board card comments
-        if (!comments.length) {
-          html += `<div style="color:#475569;font-size:0.63rem;font-style:italic;padding:0.15rem 0">No comments yet</div>`;
-        } else {
-          comments.forEach((c, ci) => {
-            html += `<div class="stack-note-row">`;
-            html += `<span class="stack-note-text"><span style="color:#64748b;font-size:0.58rem">[${escapeHtml(c.author)}] ${formatDateTime(c.ts)}</span><br>${escapeHtml(c.text)}</span>`;
-            html += `<span class="stack-note-x" onclick="event.stopPropagation();stackDeleteComment('${item.boardSlug}',${ci})" title="Remove">&#x2715;</span>`;
-            html += `</div>`;
-          });
-        }
+  // Expanded body
+  if (isSelected) {
+    html += `<div class="stack-card-body" onclick="event.stopPropagation()">`;
+    html += `<input class="stack-edit-title" value="${escapeHtml(item.title)}"
+      onchange="stackRename('${item.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
+    html += `<div class="stack-card-meta">${item.boardSlug ? 'Linked: ' + escapeHtml(item.boardSlug) : 'Stack-only'} &middot; ${noteCount} comment${noteCount !== 1 ? 's' : ''}</div>`;
+    html += `<div class="stack-notes-list">`;
+    if (boardCard) {
+      if (!comments.length) {
+        html += `<div style="color:#475569;font-size:0.63rem;font-style:italic;padding:0.15rem 0">No comments yet</div>`;
       } else {
-        // Custom stack-only: keep local notes
-        if (!item.notes.length) {
-          html += `<div style="color:#475569;font-size:0.63rem;font-style:italic;padding:0.15rem 0">No comments yet</div>`;
-        } else {
-          item.notes.forEach((note, ni) => {
-            html += `<div class="stack-note-row">`;
-            html += `<span class="stack-note-text">${escapeHtml(note)}</span>`;
-            html += `<span class="stack-note-x" onclick="event.stopPropagation();stackDeleteNote('${item.id}',${ni})" title="Remove">&#x2715;</span>`;
-            html += `</div>`;
-          });
-        }
+        comments.forEach((c, ci) => {
+          html += `<div class="stack-note-row">`;
+          html += `<span class="stack-note-text"><span style="color:#64748b;font-size:0.58rem">[${escapeHtml(c.author)}] ${formatDateTime(c.ts)}</span><br>${escapeHtml(c.text)}</span>`;
+          html += `<span class="stack-note-x" onclick="event.stopPropagation();stackDeleteComment('${item.boardSlug}',${ci})" title="Remove">&#x2715;</span>`;
+          html += `</div>`;
+        });
       }
-      html += `</div>`;
-      html += `<div class="stack-add-note">`;
-      html += `<input id="stack-note-input-${item.id}" type="text" placeholder="+ Add comment..." onclick="event.stopPropagation()"
-        onkeydown="event.stopPropagation();if(event.key==='Enter')stackAddComment('${item.id}')">`;
-      html += `<button onclick="event.stopPropagation();stackAddComment('${item.id}')">Post</button>`;
-      html += `</div>`;
-      html += `</div>`;
+    } else {
+      if (!item.notes.length) {
+        html += `<div style="color:#475569;font-size:0.63rem;font-style:italic;padding:0.15rem 0">No comments yet</div>`;
+      } else {
+        item.notes.forEach((note, ni) => {
+          html += `<div class="stack-note-row">`;
+          html += `<span class="stack-note-text">${escapeHtml(note)}</span>`;
+          html += `<span class="stack-note-x" onclick="event.stopPropagation();stackDeleteNote('${item.id}',${ni})" title="Remove">&#x2715;</span>`;
+          html += `</div>`;
+        });
+      }
     }
-
     html += `</div>`;
-  });
-  list.innerHTML = html;
+    html += `<div class="stack-add-note">`;
+    html += `<input id="stack-note-input-${item.id}" type="text" placeholder="+ Add comment..." onclick="event.stopPropagation()"
+      onkeydown="event.stopPropagation();if(event.key==='Enter')stackAddComment('${item.id}')">`;
+    html += `<button onclick="event.stopPropagation();stackAddComment('${item.id}')">Post</button>`;
+    html += `</div>`;
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
 }
+
+// ── Render full board ──
+function renderStackBoard() {
+  const boardEl = document.getElementById('stackBoard');
+  if (!boardEl) return;
+
+  let html = '';
+  stackLanes.forEach(lane => {
+    const laneItems = stackItems.filter(i => i.lane === lane.id);
+    html += `<div class="stack-lane" data-lane-id="${lane.id}"
+      ondragover="stackLaneDragOver(event)" ondrop="stackLaneDrop(event,'${lane.id}')"
+      ondragleave="stackLaneDragLeave(event)">`;
+    html += `<div class="stack-lane-header">`;
+    html += `<span class="stack-lane-label">${escapeHtml(lane.label)}</span>`;
+    html += `<span class="stack-lane-count">${laneItems.length}</span>`;
+    html += `<button class="stack-lane-close" onclick="stackCollapseLane('${lane.id}')" title="Collapse lane">&times;</button>`;
+    html += `</div>`;
+    html += `<div class="stack-lane-cards">`;
+    if (!laneItems.length) {
+      html += `<div class="stack-lane-empty">drop tasks here</div>`;
+    } else {
+      laneItems.forEach(item => { html += renderStackCard(item); });
+    }
+    html += `</div></div>`;
+  });
+
+  html += `<div class="stack-add-lane" onclick="stackAddLane()" title="Add a new lane">+</div>`;
+  boardEl.innerHTML = html;
+}
+
+// Keep old name as alias for backward compat within this file
+function renderStackList() { renderStackBoard(); }
 
 async function loadStackTab() {
   try {
-    const [boardRes, stackRes, nfRes, colsRes] = await Promise.all([
+    const [boardRes, stackRes] = await Promise.all([
       api('GET', '/api/board'),
       api('GET', '/api/stack'),
-      api('GET', '/api/items'),
-      api('GET', '/api/columns'),
     ]);
     if (!boardRes.error) board = boardRes;
-    if (stackRes && !stackRes.error && Array.isArray(stackRes.items)) {
-      stackItems = stackRes.items.map(normalizeStackItem);
+    if (stackRes && !stackRes.error) {
+      if (Array.isArray(stackRes.lanes) && stackRes.lanes.length) {
+        stackLanes = stackRes.lanes;
+      } else {
+        stackLanes = [{ id: 'lane-1', label: 'Lane 1' }];
+      }
+      const items = stackRes.items || [];
+      stackItems = (Array.isArray(items) ? items : []).map(normalizeStackItem);
     }
-    if (!nfRes.error) poolNfItems = nfRes.items || [];
-    if (!colsRes.error) poolNfColumns = colsRes.columns || [];
-    // Restore pool toggle state
-    const saved = localStorage.getItem('mc-pool-source');
-    if (saved && saved !== poolSource) switchPoolSource(saved);
-    renderStackList();
-    renderTaskPool();
+    renderStackBoard();
   } catch (e) { console.warn('loadStackTab failed:', e.message); }
 }
 
@@ -3302,18 +3312,18 @@ function stackAddCustom() {
   if (!input) return;
   const title = input.value.trim();
   if (!title) return;
+  const firstLane = stackLanes.length ? stackLanes[0].id : 'lane-1';
   const item = normalizeStackItem({
     id: makeId('stk'), title,
     source: 'custom', boardSlug: null,
-    notes: [], createdAt: new Date().toISOString(),
+    notes: [], lane: firstLane, createdAt: new Date().toISOString(),
   });
   stackItems.unshift(item);
   input.value = '';
   const dd = document.getElementById('stackSuggest');
   if (dd) dd.classList.remove('open');
   saveStackState();
-  renderStackList();
-  renderTaskPool();
+  renderStackBoard();
 }
 
 function stackRename(id, value) {
@@ -3335,15 +3345,13 @@ async function stackAddComment(id) {
   input.value = '';
   const slug = stackItems[idx].boardSlug;
   if (slug) {
-    // Board-linked: post to board card comments (single source of truth)
     await api('POST', `/api/board/cards/${slug}/comments`, { text, author: 'user' });
     await loadBoard();
   } else {
-    // Stack-only: keep local notes
     stackItems[idx].notes.push(text);
     saveStackState();
   }
-  renderStackList();
+  renderStackBoard();
   const newInput = document.getElementById(`stack-note-input-${id}`);
   if (newInput) newInput.focus();
 }
@@ -3351,7 +3359,7 @@ async function stackAddComment(id) {
 async function stackDeleteComment(slug, commentIdx) {
   await api('DELETE', `/api/board/cards/${slug}/comments/${commentIdx}`);
   await loadBoard();
-  renderStackList();
+  renderStackBoard();
 }
 
 function stackDeleteNote(id, noteIdx) {
@@ -3359,7 +3367,7 @@ function stackDeleteNote(id, noteIdx) {
   if (idx < 0) return;
   stackItems[idx].notes.splice(noteIdx, 1);
   saveStackState();
-  renderStackList();
+  renderStackBoard();
 }
 
 function showPushToBoardModal(title) {
@@ -3402,7 +3410,7 @@ async function stackPushToBoard(id) {
   const item = stackItems[idx];
   if (item.boardSlug) return;
   const projectId = await showPushToBoardModal(item.title);
-  if (projectId === null) return; // cancelled
+  if (projectId === null) return;
   const payload = {
     title: item.title,
     description: item.notes && item.notes.length ? item.notes.join('\n') : 'Created from Stack tab',
@@ -3439,250 +3447,84 @@ async function stackDeleteItem(id) {
   if (action === 'cancel') return;
   if (action === 'done') await stackFinalizeBoardCompletion(item);
   stackItems.splice(idx, 1);
-  if (stackSelectedId === id) {
-    stackSelectedId = stackItems.length ? stackItems[Math.max(0, idx - 1)].id : null;
-  }
+  if (stackSelectedId === id) stackSelectedId = null;
   saveStackState();
   await loadStackTab();
 }
 
-async function stackPopTop() {
-  if (!stackItems.length) return;
-  const top = stackItems[0];
-  const action = await showCompletionModal(top.title);
-  if (action === 'cancel') return;
-  if (action === 'done') await stackFinalizeBoardCompletion(top);
-  stackItems.shift();
-  if (stackSelectedId === top.id) {
-    stackSelectedId = stackItems.length ? stackItems[0].id : null;
-  }
-  saveStackState();
-  await loadStackTab();
-}
-
-function stackMove(fromIdx, toIdx) {
-  if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= stackItems.length || toIdx >= stackItems.length) return;
-  const [item] = stackItems.splice(fromIdx, 1);
-  stackItems.splice(toIdx, 0, item);
-  saveStackState();
-  renderStackList();
-  renderTaskPool();
-}
-function stackMoveUp(id) {
-  const idx = getStackIndex(id);
-  if (idx > 0) stackMove(idx, idx - 1);
-}
-function stackMoveDown(id) {
-  const idx = getStackIndex(id);
-  if (idx < stackItems.length - 1) stackMove(idx, idx + 1);
-}
-
+// ── Drag and drop (cross-lane) ──
 function stackDragStart(e, id) {
   stackDragId = id;
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', id);
   setTimeout(() => {
-    const card = e.currentTarget.closest('.stack-card');
+    const card = document.querySelector(`.stack-card[data-stack-id="${id}"]`);
     if (card) card.classList.add('dragging');
   }, 0);
 }
 
 function stackDragEnd(e) {
   stackDragId = null;
-  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over').forEach(el => {
-    el.classList.remove('dragging', 'drag-over');
+  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over-card, .stack-lane.drag-over').forEach(el => {
+    el.classList.remove('dragging', 'drag-over-card', 'drag-over');
   });
 }
 
-function stackCardDragOver(e, id) {
+function stackLaneDragOver(e) {
   e.preventDefault();
-  // Allow pool drops too
-  if (!stackDragId && !e.dataTransfer.types.includes('application/pool-item')) return;
-  if (stackDragId === id) return;
-  const card = e.currentTarget.closest('.stack-card');
-  if (card) card.classList.add('drag-over');
-}
+  const lane = e.target.closest('.stack-lane');
+  if (!lane) return;
+  lane.classList.add('drag-over');
 
-function stackCardDragLeave(e, id) {
-  const card = e.currentTarget.closest('.stack-card');
-  if (card) card.classList.remove('drag-over');
-}
-
-function stackCardDrop(e, id) {
-  e.preventDefault();
-  // Handle pool drops onto a specific card position
-  const poolData = e.dataTransfer.getData('application/pool-item');
-  if (poolData) {
-    try {
-      const { source, id: poolId } = JSON.parse(poolData);
-      const toIdx = getStackIndex(id);
-      poolInsertAtIndex(source, poolId, toIdx);
-    } catch(err) {}
-    return;
-  }
-  const fromIdx = getStackIndex(stackDragId);
-  const toIdx = getStackIndex(id);
-  stackMove(fromIdx, toIdx);
-  stackDragId = null;
-}
-
-function stackListDragOver(e) {
-  e.preventDefault();
-  // Visual cue for pool drops
-  if (e.dataTransfer.types.includes('application/pool-item')) {
-    e.currentTarget.classList.add('drag-pool-over');
-  }
-}
-
-function stackListDragLeave(e) {
-  e.currentTarget.classList.remove('drag-pool-over');
-}
-
-function stackListDrop(e) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-pool-over');
-  // Handle pool drops to end of list
-  const poolData = e.dataTransfer.getData('application/pool-item');
-  if (poolData) {
-    try {
-      const { source, id } = JSON.parse(poolData);
-      poolInsertAtIndex(source, id, 0); // insert at top
-    } catch(err) {}
-    return;
-  }
-  if (!stackDragId || !stackItems.length) return;
-  const fromIdx = getStackIndex(stackDragId);
-  const toIdx = stackItems.length - 1;
-  stackMove(fromIdx, toIdx);
-  stackDragId = null;
-}
-
-function poolInsertAtIndex(source, poolId, idx) {
-  let item;
-  if (source === 'board') {
-    const card = (board.cards || []).find(c => c.slug === poolId);
-    if (!card) return;
-    // Check if already in stack
-    if (stackItems.some(i => i.boardSlug === poolId)) return;
-    item = normalizeStackItem({
-      id: makeId('stk'), title: card.title,
-      source: 'board', boardSlug: card.slug,
-      notes: [], createdAt: new Date().toISOString(),
+  // Reorder within lane: find insertion point
+  if (stackDragId) {
+    const cards = lane.querySelector('.stack-lane-cards');
+    const siblings = [...cards.querySelectorAll('.stack-card:not(.dragging)')];
+    const next = siblings.find(s => {
+      const box = s.getBoundingClientRect();
+      return e.clientY < box.top + box.height / 2;
     });
-  } else {
-    const nfItem = (poolNfItems || []).find(i => i.id === poolId);
-    if (!nfItem) return;
-    item = normalizeStackItem({
-      id: makeId('stk'), title: nfItem.title,
-      source: 'custom', boardSlug: null,
-      notes: [], createdAt: new Date().toISOString(),
-    });
+    const draggedEl = document.querySelector(`.stack-card[data-stack-id="${stackDragId}"]`);
+    if (draggedEl) {
+      if (next) cards.insertBefore(draggedEl, next);
+      else cards.appendChild(draggedEl);
+      // Remove empty placeholder if it exists
+      const empty = cards.querySelector('.stack-lane-empty');
+      if (empty) empty.remove();
+    }
   }
-  if (idx >= 0 && idx < stackItems.length) {
-    stackItems.splice(idx, 0, item);
-  } else {
-    stackItems.unshift(item);
+}
+
+function stackLaneDragLeave(e) {
+  const lane = e.target.closest('.stack-lane');
+  if (lane && !lane.contains(e.relatedTarget)) lane.classList.remove('drag-over');
+}
+
+function stackLaneDrop(e, laneId) {
+  e.preventDefault();
+  document.querySelectorAll('.stack-lane.drag-over').forEach(l => l.classList.remove('drag-over'));
+
+  if (!stackDragId) return;
+  const item = stackItems.find(i => i.id === stackDragId);
+  if (!item) return;
+
+  // Update lane assignment
+  item.lane = laneId;
+
+  // Rebuild order from DOM for this lane
+  const laneEl = document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`);
+  if (laneEl) {
+    const cardEls = laneEl.querySelectorAll('.stack-card');
+    const laneOrder = [...cardEls].map(el => el.dataset.stackId).filter(Boolean);
+    // Reorder stackItems: remove all items in this lane, reinsert in DOM order
+    const otherItems = stackItems.filter(i => i.lane !== laneId);
+    const laneItems = laneOrder.map(id => stackItems.find(i => i.id === id)).filter(Boolean);
+    stackItems = [...otherItems, ...laneItems];
   }
+
   saveStackState();
-  renderStackList();
-  renderTaskPool();
-}
-
-// ══════════════════════════════════════════════
-//  TASK POOL SIDEBAR
-// ══════════════════════════════════════════════
-
-function switchPoolSource(source) {
-  poolSource = source;
-  localStorage.setItem('mc-pool-source', source);
-  document.getElementById('poolToggleBoard').classList.toggle('active', source === 'board');
-  document.getElementById('poolToggleNF').classList.toggle('active', source === 'noteflow');
-  renderTaskPool();
-}
-
-function renderTaskPool() {
-  const list = document.getElementById('taskPoolList');
-  if (!list) return;
-  const stackSlugs = new Set(stackItems.filter(i => i.boardSlug).map(i => i.boardSlug));
-  const stackTitles = new Set(stackItems.map(i => i.title.toLowerCase()));
-
-  if (poolSource === 'board') {
-    const doneId = getDoneStatusId();
-    const cards = (board.cards || []).filter(c => {
-      if (stackSlugs.has(c.slug)) return false;
-      if (c.status === doneId) return false;
-      return true;
-    });
-    if (!cards.length) {
-      list.innerHTML = '<div class="task-pool-empty">No available board cards</div>';
-      return;
-    }
-    const statuses = board.statuses || [];
-    list.innerHTML = cards.map(c => {
-      const st = statuses.find(s => (s.id || s) === c.status);
-      const stLabel = st ? (st.label || st.id || c.status) : c.status;
-      const stColor = st && st.color ? st.color : '#64748b';
-      return `<div class="task-pool-card" draggable="true"
-        ondragstart="poolDragStart(event,'board','${c.slug}')"
-        ondragend="poolDragEnd(event)"
-        ondblclick="poolAddToStack('board','${c.slug}')"
-        title="${escapeHtml(c.title)}">
-        <span class="task-pool-card-title">${escapeHtml(c.title)}</span>
-        <span class="task-pool-badge" style="color:${stColor};border-color:${stColor}44">${escapeHtml(stLabel)}</span>
-      </div>`;
-    }).join('');
-  } else {
-    const items = (poolNfItems || []).filter(i => {
-      if (i.status === 'done') return false;
-      if (stackTitles.has(i.title.toLowerCase())) return false;
-      return true;
-    });
-    if (!items.length) {
-      list.innerHTML = '<div class="task-pool-empty">No open NoteFlow items</div>';
-      return;
-    }
-    list.innerHTML = items.map(i => {
-      const col = (poolNfColumns || []).find(c => c.id === (i.type || i.column));
-      const colLabel = col ? (col.label || col.name) : '';
-      const colColor = col && col.color ? col.color : '#64748b';
-      return `<div class="task-pool-card" draggable="true"
-        ondragstart="poolDragStart(event,'noteflow','${i.id}')"
-        ondragend="poolDragEnd(event)"
-        ondblclick="poolAddToStack('noteflow','${i.id}')"
-        title="${escapeHtml(i.title)}">
-        <span class="task-pool-card-title">${escapeHtml(i.title)}</span>
-        ${colLabel ? `<span class="task-pool-badge" style="color:${colColor};border-color:${colColor}44">${escapeHtml(colLabel)}</span>` : ''}
-      </div>`;
-    }).join('');
-  }
-}
-
-function poolDragStart(e, source, id) {
-  e.dataTransfer.effectAllowed = 'copy';
-  e.dataTransfer.setData('application/pool-item', JSON.stringify({ source, id }));
-  setTimeout(() => e.target.classList.add('dragging'), 0);
-}
-
-function poolDragEnd(e) {
-  e.target.classList.remove('dragging');
-}
-
-function poolAddToStack(source, id) {
-  if (source === 'board') {
-    stackPickBoard(id);
-  } else {
-    const nfItem = (poolNfItems || []).find(i => i.id === id);
-    if (!nfItem) return;
-    const item = normalizeStackItem({
-      id: makeId('stk'), title: nfItem.title,
-      source: 'custom', boardSlug: null,
-      notes: [], createdAt: new Date().toISOString(),
-    });
-    stackItems.unshift(item);
-    saveStackState();
-    renderStackList();
-  }
-  renderTaskPool();
+  stackDragId = null;
+  renderStackBoard();
 }
 
 // ══════════════════════════════════════════════

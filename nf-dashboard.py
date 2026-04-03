@@ -223,21 +223,37 @@ def _load_learning_data():
 
 
 def _load_stack():
-    """Load stack items from disk."""
+    """Load stack data from disk. Returns { lanes: [...], items: [...] }."""
     try:
         with open(STACK_FILE, "r") as f:
             data = json.load(f)
-        return data if isinstance(data, list) else []
+        # Migrate old flat-array format to new lanes format
+        if isinstance(data, list):
+            lanes = [{"id": "lane-1", "label": "Lane 1"}]
+            items = []
+            for item in data:
+                if isinstance(item, dict):
+                    item.setdefault("lane", "lane-1")
+                    items.append(item)
+            return {"lanes": lanes, "items": items}
+        if isinstance(data, dict):
+            data.setdefault("lanes", [{"id": "lane-1", "label": "Lane 1"}])
+            data.setdefault("items", [])
+            return data
+        return {"lanes": [{"id": "lane-1", "label": "Lane 1"}], "items": []}
     except (FileNotFoundError, json.JSONDecodeError):
-        return []
+        return {"lanes": [{"id": "lane-1", "label": "Lane 1"}], "items": []}
 
 
-def _save_stack(items):
-    """Save stack items to disk (atomic write)."""
+def _save_stack(data):
+    """Save stack data to disk (atomic write). Accepts { lanes, items } or bare items list."""
     os.makedirs(os.path.dirname(STACK_FILE), exist_ok=True)
+    # Normalize: if caller passes a bare list, wrap it
+    if isinstance(data, list):
+        data = {"lanes": [{"id": "lane-1", "label": "Lane 1"}], "items": data}
     tmp = STACK_FILE + ".tmp"
     with open(tmp, "w") as f:
-        json.dump(items, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=2)
     os.replace(tmp, STACK_FILE)
 
 
@@ -1460,7 +1476,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
     # --- API Handlers: Stack ---
 
     def _api_stack_list(self):
-        self._send_json({"items": _load_stack()})
+        stack_data = _load_stack()
+        self._send_json(stack_data)
 
     def _api_stack_add(self):
         try:
@@ -1473,17 +1490,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_error(400, "Title is required")
             return
         import random, string
+        stack_data = _load_stack()
+        first_lane = stack_data["lanes"][0]["id"] if stack_data["lanes"] else "lane-1"
         item = {
             "id": "stk-" + "".join(random.choices(string.ascii_lowercase + string.digits, k=8)),
             "title": title,
             "source": data.get("source", "custom"),
             "boardSlug": data.get("boardSlug") or None,
             "notes": list(data.get("notes", [])),
+            "lane": data.get("lane", first_lane),
             "createdAt": datetime.utcnow().isoformat() + "Z",
         }
-        items = _load_stack()
-        items.insert(0, item)
-        _save_stack(items)
+        stack_data["items"].insert(0, item)
+        _save_stack(stack_data)
         self._send_json({"item": item}, 201)
 
     def _api_stack_replace(self):
@@ -1493,11 +1512,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
         except (json.JSONDecodeError, ValueError):
             self._send_error(400, "Invalid JSON")
             return
+        # Accept new format { lanes, items } or legacy { items }
         items = data.get("items")
         if not isinstance(items, list):
             self._send_error(400, "items array is required")
             return
-        _save_stack(items)
+        lanes = data.get("lanes")
+        if isinstance(lanes, list):
+            _save_stack({"lanes": lanes, "items": items})
+        else:
+            _save_stack({"lanes": _load_stack().get("lanes", [{"id": "lane-1", "label": "Lane 1"}]), "items": items})
         self._send_json({"ok": True})
 
     def _api_stack_update(self, item_id):
@@ -1507,9 +1531,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
         except (json.JSONDecodeError, ValueError):
             self._send_error(400, "Invalid JSON")
             return
-        items = _load_stack()
+        stack_data = _load_stack()
         target = None
-        for it in items:
+        for it in stack_data["items"]:
             if it.get("id") == item_id:
                 target = it
                 break
@@ -1524,18 +1548,21 @@ class DashboardHandler(BaseHTTPRequestHandler):
             target["boardSlug"] = data["boardSlug"]
         if "source" in data:
             target["source"] = data["source"]
-        _save_stack(items)
+        if "lane" in data:
+            target["lane"] = data["lane"]
+        _save_stack(stack_data)
         self._send_json({"item": target})
 
     def _api_stack_delete(self, item_id):
         """DELETE /api/stack/{id} — remove a stack item."""
-        items = _load_stack()
-        new_items = [it for it in items if it.get("id") != item_id]
-        if len(new_items) == len(items):
+        stack_data = _load_stack()
+        new_items = [it for it in stack_data["items"] if it.get("id") != item_id]
+        if len(new_items) == len(stack_data["items"]):
             self._send_error(404, "Stack item not found")
             return
-        removed = [it for it in items if it.get("id") == item_id][0]
-        _save_stack(new_items)
+        removed = [it for it in stack_data["items"] if it.get("id") == item_id][0]
+        stack_data["items"] = new_items
+        _save_stack(stack_data)
         self._send_json({"item": removed})
 
 

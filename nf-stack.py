@@ -16,19 +16,46 @@ STACK_FILE = os.path.expanduser("~/.openclaw/workspace/data/noteflow/stack.json"
 
 
 def _load_stack():
+    """Load stack data. Returns { lanes: [...], items: [...] }."""
     try:
         with open(STACK_FILE, "r") as f:
-            items = json.load(f)
-        return items if isinstance(items, list) else []
+            data = json.load(f)
+        # Migrate old flat-array format
+        if isinstance(data, list):
+            lanes = [{"id": "lane-1", "label": "Lane 1"}]
+            for item in data:
+                if isinstance(item, dict):
+                    item.setdefault("lane", "lane-1")
+            return {"lanes": lanes, "items": data}
+        if isinstance(data, dict):
+            data.setdefault("lanes", [{"id": "lane-1", "label": "Lane 1"}])
+            data.setdefault("items", [])
+            return data
+        return {"lanes": [{"id": "lane-1", "label": "Lane 1"}], "items": []}
     except (FileNotFoundError, json.JSONDecodeError):
-        return []
+        return {"lanes": [{"id": "lane-1", "label": "Lane 1"}], "items": []}
 
 
-def _save_stack(items):
+def _save_stack(data):
+    """Save stack data (lanes + items) to disk."""
+    if isinstance(data, list):
+        data = {"lanes": [{"id": "lane-1", "label": "Lane 1"}], "items": data}
     tmp = STACK_FILE + ".tmp"
     with open(tmp, "w") as f:
-        json.dump(items, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=2)
     os.replace(tmp, STACK_FILE)
+
+
+def _get_items():
+    """Convenience: get just the items list."""
+    return _load_stack()["items"]
+
+
+def _save_items(items):
+    """Convenience: save items while preserving lanes."""
+    data = _load_stack()
+    data["items"] = items
+    _save_stack(data)
 
 
 def _gen_id():
@@ -37,7 +64,7 @@ def _gen_id():
 
 
 def cmd_list(args):
-    items = _load_stack()
+    items = _get_items()
     if not items:
         print("Stack is empty.")
         return
@@ -51,7 +78,7 @@ def cmd_list(args):
 
 
 def cmd_add(args):
-    items = _load_stack()
+    items = _get_items()
     title = args.title
 
     # Check if it matches a board card slug
@@ -64,12 +91,15 @@ def cmd_add(args):
             if item.get("boardSlug") == card["slug"]:
                 print(f"Already on stack: {card['title']}")
                 return
+        stack_data = _load_stack()
+        first_lane = stack_data["lanes"][0]["id"] if stack_data["lanes"] else "lane-1"
         new_item = {
             "id": _gen_id(),
             "title": card["title"],
             "source": "board",
             "boardSlug": card["slug"],
             "notes": [],
+            "lane": first_lane,
             "createdAt": datetime.now(timezone.utc).isoformat(),
         }
     else:
@@ -78,12 +108,15 @@ def cmd_add(args):
             if item["title"].lower() == title.lower():
                 print(f"Already on stack: {item['title']}")
                 return
+        stack_data = _load_stack()
+        first_lane = stack_data["lanes"][0]["id"] if stack_data["lanes"] else "lane-1"
         new_item = {
             "id": _gen_id(),
             "title": title,
             "source": "custom",
             "boardSlug": None,
             "notes": [],
+            "lane": first_lane,
             "createdAt": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -92,23 +125,23 @@ def cmd_add(args):
     else:
         items.append(new_item)
 
-    _save_stack(items)
+    _save_items(items)
     pos = "top" if args.top else f"#{len(items)}"
     print(f"Added to stack ({pos}): {new_item['title']}")
 
 
 def cmd_pop(args):
-    items = _load_stack()
+    items = _get_items()
     if not items:
         print("Stack is empty.")
         return
     popped = items.pop(0)
-    _save_stack(items)
+    _save_items(items)
     print(f"Popped: {popped['title']}")
 
 
 def cmd_remove(args):
-    items = _load_stack()
+    items = _get_items()
     target = args.target.lower()
 
     match = None
@@ -135,7 +168,7 @@ def cmd_remove(args):
             return
 
     items = [i for i in items if i["id"] != match["id"]]
-    _save_stack(items)
+    _save_items(items)
     print(f"Removed: {match['title']}")
 
 
