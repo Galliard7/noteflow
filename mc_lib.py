@@ -200,10 +200,6 @@ def update_card(board, slug, updates):
     card["updated"] = _now_iso()
     save_board(board)
 
-    # Auto-remove linked stack cards when status changes to done
-    if updates.get("status") == "done":
-        _remove_from_stack(slug)
-
     return card, None
 
 
@@ -255,10 +251,6 @@ def move_card(board, slug, new_status):
     card["status"] = new_status
     card["updated"] = _now_iso()
     save_board(board)
-
-    # Auto-remove linked stack cards when a board card is completed
-    if new_status == "done":
-        _remove_from_stack(slug)
 
     return card, None
 

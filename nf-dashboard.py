@@ -12,6 +12,7 @@ from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/skill-backends/heartbeat"))
+sys.path.insert(0, os.path.expanduser("~/skill-backends/neetcode"))
 from nf_lib import (
     load_store, save_store, now_iso, format_id,
     find_item, update_item, add_subnote, delete_subnote,
@@ -45,6 +46,389 @@ LEARNING_CATEGORY_LABELS = {
     "coding-patterns": "Coding Patterns",
     "sql-data": "SQL & Data",
 }
+
+NEETCODE_PROFILE_FILE = os.path.expanduser("~/.openclaw/workspace/data/neetcode/neetcode-profile.json")
+NEETCODE_PROBLEMS_FILE = os.path.expanduser("~/.openclaw/workspace/data/neetcode/problems.json")
+
+NEETCODE_TOPIC_LABELS = {
+    "arrays-hashing": "Arrays & Hashing",
+    "two-pointers": "Two Pointers",
+    "stack": "Stack",
+    "binary-search": "Binary Search",
+    "sliding-window": "Sliding Window",
+    "linked-list": "Linked List",
+    "trees": "Trees",
+    "tries": "Tries",
+    "heap-priority-queue": "Heap / Priority Queue",
+    "backtracking": "Backtracking",
+    "graphs": "Graphs",
+    "advanced-graphs": "Advanced Graphs",
+    "1d-dp": "1-D Dynamic Programming",
+    "2d-dp": "2-D Dynamic Programming",
+    "greedy": "Greedy",
+    "intervals": "Intervals",
+    "math-geometry": "Math & Geometry",
+    "bit-manipulation": "Bit Manipulation",
+}
+
+NEETCODE_DIFFICULTY_COLORS = {"easy": "#22c55e", "medium": "#eab308", "hard": "#ef4444"}
+
+
+def _evaluate_neetcode_mode(problems, profile, mode):
+    """Evaluate one mode's NeetCode state — returns per-topic + aggregates."""
+    from importlib import import_module
+    import profile_io
+    sr = import_module("spaced-repetition")
+
+    mode_state = profile_io.get_mode_state(profile, mode)
+    ratings = mode_state["ratings"]
+    review_history = mode_state["review_history"]
+    study_stats = profile.get("study_stats", {"daily_goal": 3, "study_log": {}})
+
+    # Build problem lookup
+    problem_lookup = {p["id"]: p for p in problems}
+
+    # Group by topic
+    topic_map = {}
+    for p in problems:
+        t = p.get("topic", "arrays-hashing")
+        topic_map.setdefault(t, []).append(p)
+
+    topics = []
+    weighted_sum = 0.0
+    weight_total = 0.0
+
+    for topic_id in sorted(NEETCODE_TOPIC_LABELS.keys()):
+        topic_problems = topic_map.get(topic_id, [])
+        total = len(topic_problems)
+        rated = []
+        unrated = []
+
+        for p in topic_problems:
+            r = ratings.get(p["id"])
+            base = {
+                "id": p["id"], "name": p["name"], "number": p.get("number"),
+                "difficulty": p.get("difficulty", "medium"),
+                "url": p.get("url", ""),
+                "youtube_url": p.get("youtube_url", ""),
+                "statement": p.get("statement", ""),
+                "approaches": p.get("approaches", []),
+                "patterns": p.get("patterns", []),
+                "key_insight": p.get("key_insight", ""),
+            }
+
+            # Resolve related problems
+            related_ids = p.get("related", [])
+            resolved_related = []
+            for rid in related_ids:
+                rp = problem_lookup.get(rid)
+                if rp:
+                    rr = ratings.get(rid)
+                    resolved_related.append({
+                        "id": rid, "name": rp["name"],
+                        "confidence": rr["confidence"] if rr else None,
+                    })
+            base["related"] = resolved_related
+
+            if r:
+                migrated = sr.migrate_rating(r)
+                mastery = sr.compute_mastery(migrated)
+                base.update({
+                    "confidence": r["confidence"],
+                    "times_seen": r.get("times_seen", 1),
+                    "notes": r.get("notes"),
+                    "last_rated": r.get("last_rated"),
+                    "mastery": mastery,
+                    "next_review": migrated.get("next_review"),
+                    "streak": migrated.get("streak", 0),
+                    "ease_factor": migrated.get("ease_factor", 2.5),
+                    "interval_days": migrated.get("interval_days", 0),
+                })
+                rated.append(base)
+            else:
+                unrated.append(base)
+
+        rated_count = len(rated)
+        coverage = round(rated_count / total * 100, 1) if total > 0 else 0
+        avg_conf = round(sum(r["confidence"] for r in rated) / rated_count, 2) if rated_count > 0 else 0
+
+        if rated_count > 0:
+            weighted_sum += avg_conf
+            weight_total += 1
+
+        # Difficulty distribution
+        diff_dist = {"easy": {"total": 0, "solved": 0}, "medium": {"total": 0, "solved": 0}, "hard": {"total": 0, "solved": 0}}
+        for p in topic_problems:
+            d = p.get("difficulty", "medium")
+            diff_dist[d]["total"] += 1
+            if p["id"] in ratings:
+                diff_dist[d]["solved"] += 1
+
+        topics.append({
+            "id": topic_id,
+            "label": NEETCODE_TOPIC_LABELS.get(topic_id, topic_id),
+            "total": total, "rated": rated_count,
+            "coverage_pct": coverage, "avg_confidence": avg_conf,
+            "difficulty_distribution": diff_dist,
+            "rated_problems": sorted(rated, key=lambda x: x["confidence"]),
+            "unrated_problems": unrated,
+        })
+
+    readiness = round(weighted_sum / weight_total, 2) if weight_total > 0 else 0
+    total_problems = sum(t["total"] for t in topics)
+    total_rated = sum(t["rated"] for t in topics)
+
+    # Confidence distribution
+    conf_dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for r in ratings.values():
+        c = r.get("confidence", 0)
+        if c in conf_dist:
+            conf_dist[c] += 1
+
+    # Difficulty solved counts
+    diff_solved = {"easy": 0, "medium": 0, "hard": 0}
+    for p in problems:
+        if p["id"] in ratings:
+            d = p.get("difficulty", "medium")
+            diff_solved[d] = diff_solved.get(d, 0) + 1
+
+    # Due problems
+    due_problems = sr.get_due_concepts(profile, problems)
+    due_list = []
+    for dp in due_problems:
+        r = dp.get("rating", {})
+        due_list.append({
+            "id": dp["id"], "name": dp["name"],
+            "topic": dp.get("topic", "arrays-hashing"),
+            "difficulty": dp.get("difficulty", "medium"),
+            "confidence": r.get("confidence", 0),
+            "mastery": sr.compute_mastery(sr.migrate_rating(r)),
+            "overdue_hours": dp.get("overdue_hours", 0),
+        })
+
+    # Study stats for today
+    from datetime import timezone as tz, timedelta
+    today_str = datetime.now(tz.utc).strftime("%Y-%m-%d")
+    today_log = study_stats.get("study_log", {}).get(today_str, {"reviewed": 0, "new": 0})
+
+    # Study streak
+    study_log = study_stats.get("study_log", {})
+    study_streak = 0
+    check_date = datetime.now(tz.utc).date()
+    while True:
+        ds = check_date.strftime("%Y-%m-%d")
+        if study_log.get(ds, {}).get("reviewed", 0) > 0:
+            study_streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+
+    return {
+        "readiness_score": readiness,
+        "total_problems": total_problems,
+        "total_rated": total_rated,
+        "topics": topics,
+        "review_history": review_history,
+        "confidence_distribution": conf_dist,
+        "difficulty_solved": diff_solved,
+        "due_problems": due_list,
+        "study_stats": {
+            "daily_goal": study_stats.get("daily_goal", 3),
+            "today_reviewed": today_log.get("reviewed", 0),
+            "today_new": today_log.get("new", 0),
+            "study_streak": study_streak,
+        },
+    }
+
+
+def _load_neetcode_data():
+    """Load NeetCode profile + problems and compute per-mode evaluations."""
+    import profile_io
+
+    try:
+        with open(NEETCODE_PROBLEMS_FILE) as f:
+            problems = json.load(f).get("problems", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        problems = []
+
+    profile = profile_io.load_profile()
+    current_mode = profile_io.resolve_mode(profile)
+
+    study_eval = _evaluate_neetcode_mode(problems, profile, "study")
+    solve_eval = _evaluate_neetcode_mode(problems, profile, "solve")
+
+    return {
+        "modes": {"study": study_eval, "solve": solve_eval},
+        "current_mode": current_mode,
+    }
+
+
+GUIDED_TOPIC_ORDER = [
+    "arrays-hashing", "two-pointers", "stack", "binary-search",
+    "sliding-window", "linked-list", "trees", "tries",
+    "heap-priority-queue", "backtracking", "graphs", "advanced-graphs",
+    "1d-dp", "2d-dp", "greedy", "intervals", "math-geometry", "bit-manipulation",
+]
+
+GUIDED_UNLOCK_THRESHOLD = 0.75
+GUIDED_WINDOW_SIZE = 3
+
+
+def _sort_by_topic(problems):
+    """Group problems by topic and sort each: easy → medium → hard, then by name."""
+    diff_order = {"easy": 0, "medium": 1, "hard": 2}
+    by_topic = {}
+    for p in problems:
+        t = p.get("topic", "arrays-hashing")
+        by_topic.setdefault(t, []).append(p)
+    for t in by_topic:
+        by_topic[t].sort(key=lambda p: (diff_order.get(p.get("difficulty", "medium"), 1), p.get("name", "")))
+    return by_topic
+
+
+def _build_guided_ordering(problems):
+    """Return the flat deterministic guided-track ordering.
+
+    Structure::
+        [
+          {"topic": "arrays-hashing", "label": "Arrays & Hashing", "problems": [
+            {"id", "name", "difficulty", "number", "index_global", "index_topic"}
+          ]},
+          ...
+        ]
+    """
+    by_topic = _sort_by_topic(problems)
+    ordering = []
+    global_idx = 0
+    for topic_id in GUIDED_TOPIC_ORDER:
+        topic_problems = by_topic.get(topic_id, [])
+        entries = []
+        for topic_idx, p in enumerate(topic_problems):
+            entries.append({
+                "id": p["id"],
+                "name": p["name"],
+                "difficulty": p.get("difficulty", "medium"),
+                "number": p.get("number"),
+                "index_global": global_idx,
+                "index_topic": topic_idx,
+            })
+            global_idx += 1
+        ordering.append({
+            "topic": topic_id,
+            "label": NEETCODE_TOPIC_LABELS.get(topic_id, topic_id),
+            "problems": entries,
+        })
+    return ordering
+
+
+def _compute_guided_track(mode=None):
+    """Compute guided track state for a given mode (defaults to profile.current_mode)."""
+    import profile_io
+
+    try:
+        with open(NEETCODE_PROBLEMS_FILE) as f:
+            problems = json.load(f).get("problems", [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        problems = []
+
+    profile = profile_io.load_profile()
+    resolved = profile_io.resolve_mode(profile, mode)
+    mode_state = profile_io.get_mode_state(profile, resolved)
+    ratings = mode_state["ratings"]
+    review_history = mode_state["review_history"]
+
+    by_topic = _sort_by_topic(problems)
+
+    # Completion per topic
+    topic_completion = {}
+    for t in GUIDED_TOPIC_ORDER:
+        tp = by_topic.get(t, [])
+        total = len(tp)
+        rated = sum(1 for p in tp if p["id"] in ratings)
+        topic_completion[t] = rated / total if total > 0 else 1.0
+
+    # Determine unlocked topics (sequential gate)
+    unlocked = []
+    for i, t in enumerate(GUIDED_TOPIC_ORDER):
+        if i == 0:
+            unlocked.append(t)
+        elif topic_completion[GUIDED_TOPIC_ORDER[i - 1]] >= GUIDED_UNLOCK_THRESHOLD:
+            unlocked.append(t)
+        else:
+            break
+
+    active = [t for t in unlocked if topic_completion[t] < 1.0][:GUIDED_WINDOW_SIZE]
+
+    last_topic_time = {}
+    for entry in review_history:
+        pid = entry.get("problem_id", "")
+        for p in problems:
+            if p["id"] == pid:
+                last_topic_time[p.get("topic")] = entry.get("rated_at", "")
+                break
+
+    interleaved = sorted(active, key=lambda t: last_topic_time.get(t, ""))
+
+    next_problem = None
+    for t in interleaved:
+        for p in by_topic.get(t, []):
+            if p["id"] not in ratings:
+                next_problem = {
+                    "id": p["id"],
+                    "name": p["name"],
+                    "topic": t,
+                    "difficulty": p.get("difficulty", "medium"),
+                    "number": p.get("number"),
+                }
+                break
+        if next_problem:
+            break
+
+    total_rated = sum(1 for p in problems if p["id"] in ratings)
+    total_problems = len(problems)
+
+    next_unlock = None
+    unlock_gate_topic = None
+    next_unlock_pct = 0
+    if len(unlocked) < len(GUIDED_TOPIC_ORDER):
+        next_unlock = GUIDED_TOPIC_ORDER[len(unlocked)]
+        unlock_gate_topic = GUIDED_TOPIC_ORDER[len(unlocked) - 1]
+        next_unlock_pct = round(topic_completion[unlock_gate_topic] * 100)
+
+    return {
+        "mode": resolved,
+        "current_mode": profile.get("current_mode", "solve"),
+        "active_topics": active,
+        "unlocked_topics": unlocked,
+        "topic_completion": {t: round(topic_completion[t] * 100) for t in GUIDED_TOPIC_ORDER},
+        "overall_progress": round(total_rated / total_problems * 100) if total_problems else 0,
+        "total_rated": total_rated,
+        "total_problems": total_problems,
+        "next_problem": next_problem,
+        "next_unlock": next_unlock,
+        "unlock_gate_topic": unlock_gate_topic,
+        "next_unlock_pct": next_unlock_pct,
+        "all_done": next_problem is None and total_rated >= total_problems,
+    }
+
+
+def _compute_guided_cursors(problems, profile):
+    """For each mode, return the index_global of the first unrated problem."""
+    import profile_io
+    ordering = _build_guided_ordering(problems)
+    flat = [p for topic in ordering for p in topic["problems"]]
+    cursors = {}
+    for m in ("study", "solve"):
+        ratings = profile_io.get_mode_state(profile, m)["ratings"]
+        cursor = len(flat)
+        next_pid = None
+        for entry in flat:
+            if entry["id"] not in ratings:
+                cursor = entry["index_global"]
+                next_pid = entry["id"]
+                break
+        cursors[m] = {"index_global": cursor, "next_problem_id": next_pid}
+    return cursors
 
 
 def _load_learning_data():
@@ -339,6 +723,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._api_learning()
             elif parts == ["api", "learning", "draw"]:
                 self._api_learning_draw()
+            elif parts == ["api", "neetcode"]:
+                self._api_neetcode()
+            elif parts == ["api", "neetcode", "draw"]:
+                self._api_neetcode_draw()
+            elif parts == ["api", "neetcode", "guided"]:
+                self._api_neetcode_guided()
+            elif parts == ["api", "neetcode", "guided", "ordering"]:
+                self._api_neetcode_guided_ordering()
             else:
                 self._send_error(404, "Not found")
         except Exception as e:
@@ -384,6 +776,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._api_stack_add()
             elif parts == ["api", "learning", "rate"]:
                 self._api_learning_rate()
+            elif parts == ["api", "neetcode", "rate"]:
+                self._api_neetcode_rate()
+            elif parts == ["api", "neetcode", "mode"]:
+                self._api_neetcode_set_mode()
             else:
                 self._send_error(404, "Not found")
         except Exception as e:
@@ -1473,6 +1869,227 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self._send_json({"ok": True, "concept_id": concept_id, "confidence": confidence,
                          "next_review": sr_fields["next_review"], "mastery": sr.compute_mastery(ratings[concept_id])})
 
+    # --- API Handlers: NeetCode ---
+
+    def _api_neetcode(self):
+        self._send_json(_load_neetcode_data())
+
+    def _api_neetcode_draw(self):
+        """GET /api/neetcode/draw — draw an SR-weighted problem for study."""
+        from importlib import import_module
+        import profile_io
+        nc_draw = import_module("nc-draw")
+
+        query = self._parse_query()
+        topics_str = query.get("topics") or None
+        difficulty = query.get("difficulty") or None
+        blind = query.get("blind", "").lower() in ("true", "1", "yes")
+        mode_arg = query.get("mode") or None
+        if mode_arg and mode_arg not in ("study", "solve"):
+            self._send_error(400, "mode must be 'study' or 'solve'")
+            return
+
+        topics = [t.strip() for t in topics_str.split(",")] if topics_str else None
+
+        try:
+            with open(NEETCODE_PROBLEMS_FILE) as f:
+                problems_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            problems_data = {"problems": []}
+
+        if not problems_data.get("problems"):
+            self._send_error(404, "No problems found")
+            return
+
+        full_profile = profile_io.load_profile()
+        mode = profile_io.resolve_mode(full_profile, mode_arg)
+        mode_state = profile_io.get_mode_state(full_profile, mode)
+        # Project mode's ratings/review_history into the legacy shape nc-draw expects
+        profile = {
+            "ratings": mode_state["ratings"],
+            "review_history": mode_state["review_history"],
+        }
+
+        if topics:
+            for t in topics:
+                if t not in NEETCODE_TOPIC_LABELS:
+                    self._send_error(400, f"Unknown topic: {t}")
+                    return
+
+        problem = nc_draw.pick_problem(topics, difficulty, profile, problems_data)
+        if not problem:
+            self._send_error(404, "No problems available")
+            return
+
+        self._send_json({
+            "id": problem["id"],
+            "topic": problem.get("topic", "arrays-hashing"),
+            "difficulty": problem.get("difficulty", "medium"),
+            "blind": blind,
+        })
+
+    def _api_neetcode_rate(self):
+        """POST /api/neetcode/rate — rate a problem with spaced repetition (mode-aware)."""
+        from importlib import import_module
+        import profile_io
+        sr = import_module("spaced-repetition")
+
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        problem_id = data.get("problem_id", "").strip()
+        confidence = data.get("confidence")
+        notes = data.get("notes")
+        notes_only = data.get("notes_only", False)
+        mode_arg = data.get("mode")
+
+        if not problem_id:
+            self._send_error(400, "problem_id is required")
+            return
+        if mode_arg is not None and mode_arg not in ("study", "solve"):
+            self._send_error(400, "mode must be 'study' or 'solve'")
+            return
+
+        profile = profile_io.load_profile()
+        try:
+            mode = profile_io.resolve_mode(profile, mode_arg)
+        except ValueError as e:
+            self._send_error(400, str(e))
+            return
+        mode_state = profile_io.get_mode_state(profile, mode)
+        ratings = mode_state["ratings"]
+
+        from datetime import timezone
+        now = datetime.now(timezone.utc).isoformat()
+
+        # Notes-only update
+        if notes_only:
+            if not notes:
+                self._send_error(400, "notes is required with notes_only")
+                return
+            existing = ratings.get(problem_id)
+            if not existing:
+                self._send_error(400, f"problem '{problem_id}' has not been rated in {mode} yet")
+                return
+            prev = existing.get("notes")
+            if isinstance(prev, str):
+                existing["notes"] = [{"text": prev, "ts": now}]
+            elif not isinstance(prev, list):
+                existing["notes"] = []
+            existing["notes"].append({"text": notes, "ts": now})
+            profile_io.save_profile(profile)
+            self._send_json({"ok": True, "problem_id": problem_id, "mode": mode, "notes": existing["notes"]})
+            return
+
+        if not isinstance(confidence, int) or confidence < 1 or confidence > 5:
+            self._send_error(400, "confidence must be 1-5")
+            return
+
+        existing = ratings.get(problem_id, {})
+        is_new = problem_id not in ratings
+
+        sr_fields = sr.compute_next_review(confidence, existing if existing else None)
+
+        prev_notes = existing.get("notes")
+        ratings[problem_id] = {
+            "confidence": confidence,
+            "last_rated": now,
+            "times_seen": existing.get("times_seen", 0) + 1,
+            **sr_fields,
+        }
+        if notes is not None:
+            if isinstance(prev_notes, str):
+                ratings[problem_id]["notes"] = [{"text": prev_notes, "ts": now}]
+            elif isinstance(prev_notes, list):
+                ratings[problem_id]["notes"] = list(prev_notes)
+            else:
+                ratings[problem_id]["notes"] = []
+            ratings[problem_id]["notes"].append({"text": notes, "ts": now})
+        elif prev_notes is not None:
+            if isinstance(prev_notes, str):
+                ratings[problem_id]["notes"] = [{"text": prev_notes, "ts": now}]
+            else:
+                ratings[problem_id]["notes"] = prev_notes
+
+        mode_state["review_history"].append({
+            "problem_id": problem_id,
+            "rated_at": now,
+            "confidence": confidence,
+        })
+
+        study_stats = profile.setdefault("study_stats", {"daily_goal": 3, "study_log": {}})
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today_log = study_stats.setdefault("study_log", {}).setdefault(today_str, {"reviewed": 0, "new": 0})
+        today_log["reviewed"] = today_log.get("reviewed", 0) + 1
+        if is_new:
+            today_log["new"] = today_log.get("new", 0) + 1
+
+        profile_io.save_profile(profile)
+
+        self._send_json({"ok": True, "problem_id": problem_id, "mode": mode,
+                         "confidence": confidence,
+                         "next_review": sr_fields["next_review"],
+                         "mastery": sr.compute_mastery(ratings[problem_id])})
+
+    # --- API Handlers: Guided Track ---
+
+    def _api_neetcode_guided(self):
+        """GET /api/neetcode/guided?mode=study|solve&both=1 — compute guided track state."""
+        query = self._parse_query()
+        both = query.get("both", "").lower() in ("1", "true", "yes")
+        mode = query.get("mode") or None
+        if mode and mode not in ("study", "solve"):
+            self._send_error(400, "mode must be 'study' or 'solve'")
+            return
+        if both:
+            import profile_io
+            study = _compute_guided_track("study")
+            solve = _compute_guided_track("solve")
+            profile = profile_io.load_profile()
+            self._send_json({
+                "study": study,
+                "solve": solve,
+                "current_mode": profile.get("current_mode", "solve"),
+            })
+            return
+        self._send_json(_compute_guided_track(mode))
+
+    def _api_neetcode_guided_ordering(self):
+        """GET /api/neetcode/guided/ordering — return deterministic list + cursors."""
+        import profile_io
+        try:
+            with open(NEETCODE_PROBLEMS_FILE) as f:
+                problems = json.load(f).get("problems", [])
+        except (FileNotFoundError, json.JSONDecodeError):
+            problems = []
+        ordering = _build_guided_ordering(problems)
+        profile = profile_io.load_profile()
+        cursors = _compute_guided_cursors(problems, profile)
+        self._send_json({
+            "ordering": ordering,
+            "cursors": cursors,
+            "current_mode": profile.get("current_mode", "solve"),
+        })
+
+    def _api_neetcode_set_mode(self):
+        """POST /api/neetcode/mode — set the default mode (study | solve)."""
+        import profile_io
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        mode = (data.get("mode") or "").strip()
+        if mode not in ("study", "solve"):
+            self._send_error(400, "mode must be 'study' or 'solve'")
+            return
+        profile = profile_io.load_profile()
+        profile["current_mode"] = mode
+        profile_io.save_profile(profile)
+        self._send_json({"ok": True, "current_mode": mode})
+
     # --- API Handlers: Stack ---
 
     def _api_stack_list(self):
@@ -1518,10 +2135,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_error(400, "items array is required")
             return
         lanes = data.get("lanes")
+        stashed = data.get("stashedLanes")
+        save_data = {"items": items}
         if isinstance(lanes, list):
-            _save_stack({"lanes": lanes, "items": items})
+            save_data["lanes"] = lanes
         else:
-            _save_stack({"lanes": _load_stack().get("lanes", [{"id": "lane-1", "label": "Lane 1"}]), "items": items})
+            save_data["lanes"] = _load_stack().get("lanes", [{"id": "lane-1", "label": "Lane 1"}])
+        if isinstance(stashed, list) and stashed:
+            save_data["stashedLanes"] = stashed
+        _save_stack(save_data)
         self._send_json({"ok": True})
 
     def _api_stack_update(self, item_id):

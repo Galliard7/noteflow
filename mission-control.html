@@ -452,6 +452,7 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 /* ── Tab content ── */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+.tab-content.active#tab-stack { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* ═══════ Kid Learn Tab — Number Jungle 🌿 ═══════ */
 #tab-kidlearn {
@@ -1199,6 +1200,7 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 /* ── Stack Tab — Kanban Lanes ── */
 .stack-board-wrap {
   height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  position: relative;
 }
 .stack-toolbar {
   display: flex; gap: 0.5rem; align-items: center;
@@ -1278,16 +1280,40 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   display: flex; align-items: center; gap: 0.4rem;
   border-bottom: 1px solid #1e293b;
   flex-shrink: 0;
+  cursor: grab;
+}
+.stack-lane-header:active { cursor: grabbing; }
+.stack-lane.lane-dragging { opacity: 0.4; }
+.stack-lane.lane-drag-over-left { box-shadow: -3px 0 0 0 #3b82f6; }
+.stack-lane.lane-drag-over-right { box-shadow: 3px 0 0 0 #3b82f6; }
+.stack-lane-num {
+  font-size: 0.58rem; color: #334155; font-weight: 700;
+  min-width: 14px; text-align: center;
+  flex-shrink: 0;
 }
 .stack-lane-label {
   font-size: 0.68rem; color: #64748b; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.5px;
+  cursor: pointer; border-radius: 4px; padding: 0.1rem 0.25rem;
+  transition: background 0.15s;
 }
-.stack-lane-count {
-  font-size: 0.6rem; color: #475569; margin-left: 2px;
+.stack-lane-label:hover { background: rgba(255,255,255,0.05); color: #94a3b8; }
+.stack-lane-label-input {
+  font-size: 0.68rem; color: #e2e8f0; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  background: rgba(15,23,42,0.95); border: 1px solid #3b82f6;
+  border-radius: 4px; padding: 0.1rem 0.25rem;
+  font-family: inherit; outline: none; width: 100px;
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.25);
 }
-.stack-lane-close {
+.stack-lane-stash {
   margin-left: auto;
+  background: none; border: none; color: #334155; cursor: pointer;
+  font-size: 0.75rem; padding: 0.1rem 0.3rem; border-radius: 4px;
+  line-height: 1; transition: all 0.15s;
+}
+.stack-lane-stash:hover { color: #3b82f6; background: rgba(59,130,246,0.1); }
+.stack-lane-close {
   background: none; border: none; color: #334155; cursor: pointer;
   font-size: 0.85rem; padding: 0.1rem 0.3rem; border-radius: 4px;
   line-height: 1; transition: all 0.15s;
@@ -1315,6 +1341,130 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   transition: all 0.15s; flex-shrink: 0;
 }
 .stack-add-lane:hover { border-color: #3b82f644; color: #64748b; background: rgba(59,130,246,0.03); }
+
+/* ── Inbox tray ── */
+.stack-inbox {
+  flex-shrink: 0;
+  border-top: 1px solid #1e293b;
+  background: rgba(13,18,30,0.97);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  height: 36px;
+  transition: height 0.15s ease, margin-top 0.15s ease;
+}
+.stack-inbox.expanded {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 80;
+}
+.stack-inbox.drag-over { border-top-color: #3b82f644; }
+.stack-inbox-resize {
+  height: 5px; cursor: ns-resize;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.stack-inbox-resize::after {
+  content: ''; width: 32px; height: 3px;
+  background: #1e293b; border-radius: 2px;
+  transition: background 0.15s;
+}
+.stack-inbox-resize:hover::after { background: #334155; }
+.stack-inbox:not(.expanded) .stack-inbox-resize { display: none; }
+.stack-inbox:not(.expanded) .stack-inbox-cards { display: none; }
+.stack-inbox-header {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0 16px; height: 36px; flex-shrink: 0;
+  cursor: pointer; user-select: none;
+}
+.stack-inbox-toggle {
+  font-size: 0.55rem; color: #475569;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.stack-inbox:not(.expanded) .stack-inbox-toggle { transform: rotate(-90deg); }
+.stack-inbox-label {
+  font-size: 0.62rem; color: #475569; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.stack-inbox-count {
+  font-size: 0.55rem; color: #3b4f6b;
+}
+.stack-inbox-cards {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 0 16px 12px;
+  overflow-y: auto; flex: 1; min-height: 0;
+  align-items: flex-start; align-content: flex-start;
+}
+.stack-inbox-empty {
+  color: #334155; font-size: 0.65rem; font-style: italic;
+  padding: 6px 0;
+}
+.stack-inbox .stack-card {
+  width: 260px; flex-shrink: 0;
+}
+
+/* ── Stash tray ── */
+.stack-stash {
+  flex-shrink: 0;
+  border-top: 1px solid #1e293b;
+  background: rgba(13,18,30,0.97);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  height: 36px;
+  transition: height 0.15s ease;
+}
+.stack-stash.expanded { height: auto; }
+.stack-stash-header {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0 16px; height: 36px; flex-shrink: 0;
+  cursor: pointer; user-select: none;
+}
+.stack-stash-toggle {
+  font-size: 0.55rem; color: #475569;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.stack-stash:not(.expanded) .stack-stash-toggle { transform: rotate(-90deg); }
+.stack-stash-label {
+  font-size: 0.62rem; color: #475569; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.stack-stash-count {
+  font-size: 0.55rem; color: #3b4f6b;
+}
+.stack-stash:not(.expanded) .stack-stash-chips { display: none; }
+.stack-stash-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 4px 16px 12px;
+}
+.stack-stash-chip {
+  display: flex; align-items: center; gap: 0.35rem;
+  background: #1e293b; border: 1px solid #233048;
+  border-radius: 6px; padding: 0.35rem 0.6rem;
+  cursor: grab; user-select: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.stack-stash-chip:hover { border-color: #3b82f688; background: #243047; }
+.stack-stash-chip.dragging { opacity: 0.3; }
+.stack-stash-chip-name {
+  font-size: 0.68rem; color: #94a3b8; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.stack-stash-chip-count {
+  font-size: 0.55rem; color: #475569;
+}
+.stack-stash-chip-restore {
+  background: none; border: none; color: #475569; cursor: pointer;
+  font-size: 0.6rem; padding: 0; margin-left: 0.2rem;
+  transition: color 0.15s;
+}
+.stack-stash-chip-restore:hover { color: #3b82f6; }
+.stack-stash.drag-over { border-top-color: #f59e0b88; }
+.stack-board.stash-drop-target {
+  outline: 2px dashed #3b82f644; outline-offset: -4px;
+  border-radius: 8px;
+}
 
 /* Collapse animation */
 .stack-lane.collapsing {
@@ -1366,6 +1516,36 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 }
 .stack-pop-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
+/* Done card styling */
+.stack-card.done { opacity: 0.55; }
+.stack-card.done .stack-card-title { text-decoration: line-through; text-decoration-color: #475569; }
+
+/* Recently Completed sidebar — pinned right, outside lane flow */
+.stack-completed-sidebar {
+  position: absolute; top: 3.2rem; right: 0; bottom: 0;
+  width: 190px; padding: 0.75rem 0.5rem;
+  overflow-y: auto; opacity: 0.55;
+  border-left: 1px solid #1e293b22;
+}
+.stack-completed-sidebar:empty { display: none; }
+.stack-completed-sidebar .stack-completed-header {
+  font-size: 0.58rem; font-weight: 600; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 0.5rem; padding: 0 0.15rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.stack-completed-sidebar .stack-completed-count {
+  font-size: 0.52rem; color: #475569; font-weight: 400;
+}
+.stack-completed-sidebar .stack-card {
+  padding: 0.3rem 0.45rem; margin-bottom: 0.35rem;
+  background: #0f172a88; border-color: #1e293b44;
+}
+.stack-completed-sidebar .stack-card-title { font-size: 0.6rem; }
+.stack-completed-sidebar .stack-card-tags { display: none; }
+.stack-completed-sidebar .stack-kebab-wrap { display: none; }
+.stack-completed-sidebar .stack-pop-btn { right: 0.25rem; color: #475569aa; font-size: 0.55rem; top: 0.2rem; }
+
 /* Kebab menu on card */
 .stack-kebab-wrap { position: absolute; top: 0.35rem; right: 0.35rem; }
 .stack-kebab {
@@ -1403,6 +1583,8 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 }
 .stack-edit-title:focus { outline: none; border-color: #22d3ee; }
 .stack-card-meta { color: #64748b; font-size: 0.62rem; margin-top: 0.12rem; }
+.stack-push-link { color: #3b82f6; text-decoration: none; font-weight: 600; }
+.stack-push-link:hover { color: #60a5fa; text-decoration: underline; }
 .stack-notes-list {
   margin-top: 0.2rem; display: flex; flex-direction: column; gap: 0.12rem;
   max-height: 120px; overflow-y: auto;
@@ -1554,6 +1736,16 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-modal-prev-rating { font-size: 0.7rem; color: #64748b; }
 .learn-modal-seen { font-size: 0.7rem; color: #64748b; }
 
+/* Daily activity chart (shared between Learning & NeetCode) */
+.daily-chart { margin-bottom: 1.2rem; }
+.daily-chart-title { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+.daily-chart-bars { display: flex; align-items: flex-end; gap: 2px; height: 72px; padding: 0 0.2rem; }
+.daily-chart-bar { flex: 1; min-width: 0; border-radius: 3px 3px 0 0; transition: height 0.3s, opacity 0.15s; cursor: default; position: relative; }
+.daily-chart-bar:hover { opacity: 0.8; }
+.daily-chart-bar[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: #0f172a; color: #e2e8f0; font-size: 0.6rem; padding: 0.2rem 0.4rem; border-radius: 4px; white-space: nowrap; pointer-events: none; border: 1px solid #334155; z-index: 10; }
+.daily-chart-labels { display: flex; justify-content: space-between; padding: 0.2rem 0.2rem 0; }
+.daily-chart-label { font-size: 0.55rem; color: #475569; }
+
 /* Due for Review section */
 .learn-due-section { margin-bottom: 1.2rem; }
 .learn-due-row { display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.4rem 0; scrollbar-width: thin; scrollbar-color: #334155 transparent; }
@@ -1641,6 +1833,246 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .learn-focus-type { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.1rem 0.3rem; border-radius: 3px; font-weight: 600; }
 .learn-focus-type-concept { background: #1e3a5f; color: #60a5fa; }
 .learn-focus-type-category { background: #3b1f2b; color: #f472b6; }
+
+/* ── NeetCode Tab ── */
+.nc-shell { padding: 1.2rem; max-width: 960px; margin: 0 auto; }
+.nc-header { display: flex; align-items: center; gap: 2rem; margin-bottom: 1.5rem; padding: 1rem 1.2rem; background: #1e293b; border-radius: 10px; border: 1px solid #334155; flex-wrap: wrap; }
+.nc-readiness { display: flex; align-items: center; gap: 0.8rem; }
+.nc-readiness-score { font-size: 2.4rem; font-weight: 700; color: #e2e8f0; line-height: 1; }
+.nc-readiness-label { font-size: 0.75rem; color: #94a3b8; line-height: 1.4; }
+.nc-conf-dist { display: flex; gap: 0.4rem; align-items: flex-end; flex: 1; justify-content: flex-end; }
+.nc-conf-bar { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.nc-conf-bar-fill { width: 28px; border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }
+.nc-conf-bar-label { font-size: 0.65rem; color: #64748b; }
+.nc-conf-bar-count { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+.nc-study-btn { background: #8b5cf6; color: #fff; border: none; padding: 0.5rem 1.2rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.nc-study-btn:hover { background: #7c3aed; }
+.nc-study-btn:active { background: #6d28d9; }
+.nc-study-btn:disabled { background: #334155; color: #64748b; cursor: default; }
+
+.nc-stats-bar { display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; padding: 0.5rem 0.8rem; background: #162032; border-radius: 8px; font-size: 0.75rem; color: #94a3b8; flex-wrap: wrap; }
+.nc-stat-item { display: flex; align-items: center; gap: 0.3rem; }
+.nc-stat-value { color: #e2e8f0; font-weight: 600; }
+.nc-diff-pills { display: flex; gap: 0.4rem; }
+.nc-diff-pill { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 10px; }
+
+/* Filter bar */
+.nc-filter-bar { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.2rem; padding: 0.8rem 1rem; background: #1e293b; border-radius: 8px; border: 1px solid #334155; }
+.nc-filter-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.nc-filter-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; min-width: 60px; }
+.nc-topic-pill { font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: #64748b; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.nc-topic-pill.active { background: #334155; color: #e2e8f0; border-color: #475569; }
+.nc-topic-pill:hover { border-color: #475569; }
+.nc-diff-toggle { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 12px; border: 2px solid transparent; background: #0f172a; cursor: pointer; transition: all 0.15s; font-weight: 600; }
+.nc-diff-toggle.active { border-color: currentColor; }
+.nc-diff-toggle:hover { opacity: 0.8; }
+.nc-blind-toggle { display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; color: #94a3b8; cursor: pointer; margin-left: auto; }
+.nc-blind-switch { width: 32px; height: 18px; background: #334155; border-radius: 9px; position: relative; transition: background 0.2s; }
+.nc-blind-switch.on { background: #8b5cf6; }
+.nc-blind-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #e2e8f0; border-radius: 50%; transition: left 0.2s; }
+.nc-blind-switch.on::after { left: 16px; }
+.nc-filter-shortcut { font-size: 0.6rem; color: #3b82f6; cursor: pointer; text-decoration: underline; }
+.nc-filter-shortcut:hover { color: #60a5fa; }
+
+.nc-section-title { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.2rem 0 0.6rem; }
+
+/* Due for Review */
+.nc-due-section { margin-bottom: 1.2rem; }
+.nc-due-row { display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.4rem 0; scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+.nc-due-card { min-width: 180px; max-width: 220px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 0.6rem 0.8rem; cursor: pointer; transition: border-color 0.2s; flex-shrink: 0; }
+.nc-due-card:hover { border-color: #8b5cf6; }
+.nc-due-card-name { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; margin-bottom: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nc-due-card-topic { font-size: 0.6rem; color: #94a3b8; background: #334155; padding: 0.1rem 0.4rem; border-radius: 8px; display: inline-block; margin-bottom: 0.3rem; }
+.nc-due-card-diff { font-size: 0.6rem; margin-left: 0.3rem; }
+.nc-due-card-bar { height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; margin-bottom: 0.2rem; }
+.nc-due-card-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.nc-due-card-overdue { font-size: 0.6rem; color: #f97316; }
+.nc-all-caught-up { font-size: 0.8rem; color: #22c55e; padding: 0.6rem 0; }
+
+/* Topics */
+.nc-topics { display: flex; flex-direction: column; gap: 0.6rem; }
+.nc-topic { background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+.nc-topic-header { display: flex; align-items: center; padding: 0.7rem 1rem; cursor: pointer; gap: 0.8rem; }
+.nc-topic-header:hover { background: #253348; }
+.nc-topic-arrow { color: #64748b; font-size: 0.7rem; transition: transform 0.2s; width: 12px; }
+.nc-topic-arrow.open { transform: rotate(90deg); }
+.nc-topic-name { font-size: 0.85rem; font-weight: 600; color: #e2e8f0; flex: 1; }
+.nc-topic-stats { display: flex; gap: 1rem; align-items: center; font-size: 0.75rem; color: #94a3b8; }
+.nc-topic-bar-wrap { width: 120px; height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden; }
+.nc-topic-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.nc-topic-conf { min-width: 36px; text-align: right; }
+.nc-topic-body { display: none; padding: 0 1rem 0.8rem; }
+.nc-topic-body.open { display: block; }
+.nc-problem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.4rem; }
+.nc-problem { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+.nc-problem-rated { background: #1a2636; }
+.nc-problem-unrated { background: #0f172a; color: #475569; }
+.nc-problem-badge { min-width: 22px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 0.65rem; font-weight: 700; color: #0f172a; }
+.nc-problem-diff { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.nc-problem-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nc-problem-mastery { width: 32px; height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+.nc-problem-mastery-fill { height: 100%; border-radius: 2px; }
+.nc-problem-overdue-icon { font-size: 0.6rem; color: #f97316; margin-left: auto; flex-shrink: 0; }
+
+/* Timeline */
+.nc-timeline-section { margin-top: 1.2rem; }
+.nc-timeline { display: flex; flex-direction: column; gap: 0.3rem; max-height: 300px; overflow-y: auto; }
+.nc-tl-entry { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.6rem; background: #1e293b; border-radius: 6px; font-size: 0.75rem; }
+.nc-tl-date { color: #64748b; min-width: 110px; font-size: 0.7rem; }
+.nc-tl-problem { color: #e2e8f0; flex: 1; }
+.nc-tl-badge { min-width: 22px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 0.65rem; font-weight: 700; color: #0f172a; }
+.nc-tl-topic { font-size: 0.65rem; color: #64748b; min-width: 80px; text-align: right; }
+.nc-empty { text-align: center; color: #475569; padding: 2rem; font-size: 0.85rem; }
+
+/* Guided Track */
+.nc-guided { margin-bottom: 1.2rem; padding: 1rem 1.2rem; background: linear-gradient(135deg, #1e293b 0%, #1a2744 100%); border-radius: 10px; border: 1px solid #334155; }
+.nc-guided-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem; }
+.nc-guided-title { font-size: 0.8rem; font-weight: 700; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.04em; }
+.nc-guided-progress-text { font-size: 0.7rem; color: #94a3b8; margin-left: auto; }
+.nc-guided-bar { height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden; margin-bottom: 1rem; }
+.nc-guided-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8b5cf6, #3b82f6); transition: width 0.4s; }
+.nc-guided-window { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+.nc-guided-topic { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.7rem; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 0.75rem; flex: 1; min-width: 180px; }
+.nc-guided-topic.active { border-color: #8b5cf6; background: #1a1040; }
+.nc-guided-topic.locked { opacity: 0.4; border-style: dashed; }
+.nc-guided-topic-name { color: #e2e8f0; font-weight: 600; flex: 1; }
+.nc-guided-topic-pct { font-size: 0.7rem; color: #94a3b8; min-width: 32px; text-align: right; }
+.nc-guided-topic-bar { width: 60px; height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+.nc-guided-topic-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.nc-guided-bottom { display: flex; align-items: center; gap: 1rem; }
+.nc-guided-next-btn { background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: #fff; border: none; padding: 0.5rem 1.4rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+.nc-guided-next-btn:hover { opacity: 0.9; }
+.nc-guided-next-btn:disabled { opacity: 0.4; cursor: default; }
+.nc-guided-preview { flex: 1; font-size: 0.75rem; color: #94a3b8; }
+.nc-guided-preview-name { color: #e2e8f0; font-weight: 600; }
+.nc-guided-preview-topic { font-size: 0.65rem; color: #64748b; }
+.nc-guided-unlock-hint { font-size: 0.65rem; color: #64748b; margin-top: 0.5rem; }
+.nc-guided-done { text-align: center; padding: 1rem; color: #22c55e; font-weight: 600; font-size: 0.9rem; }
+
+/* Mode toggle */
+.nc-mode-toggle { display: inline-flex; gap: 0.25rem; align-items: center; background: #0f172a; border-radius: 999px; padding: 0.2rem; border: 1px solid #334155; margin: 0 0.6rem; }
+.nc-mode-pill { background: transparent; border: none; color: #94a3b8; padding: 0.25rem 0.8rem; font-size: 0.7rem; font-weight: 600; border-radius: 999px; cursor: pointer; letter-spacing: 0.03em; text-transform: uppercase; }
+.nc-mode-pill.active { background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: #fff; }
+.nc-mode-pill:hover:not(.active) { color: #e2e8f0; }
+.nc-guided-refresh { background: transparent; border: none; color: #64748b; font-size: 0.9rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
+.nc-guided-refresh:hover { color: #e2e8f0; background: #334155; }
+
+.nc-mode-other { display: flex; align-items: center; gap: 0.5rem; margin: 0.25rem 0 0.7rem; font-size: 0.65rem; color: #64748b; opacity: 0.75; }
+.nc-mode-other-label { min-width: 40px; text-transform: uppercase; letter-spacing: 0.04em; }
+.nc-mode-other-bar { flex: 1; height: 3px; background: #0f172a; border-radius: 2px; overflow: hidden; }
+.nc-mode-other-bar-fill { height: 100%; background: #475569; }
+.nc-mode-other-pct { white-space: nowrap; }
+
+/* Peek panel */
+.nc-guided-peek-btn { background: #0f172a; color: #cbd5e1; border: 1px solid #334155; padding: 0.4rem 0.9rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; white-space: nowrap; }
+.nc-guided-peek-btn:hover { background: #1e293b; border-color: #475569; }
+.nc-peek-panel { margin-top: 0.9rem; max-height: 460px; overflow-y: auto; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.7rem 0.9rem; }
+.nc-peek-empty { color: #64748b; font-size: 0.75rem; text-align: center; padding: 1rem; }
+.nc-peek-topic { margin-bottom: 0.8rem; }
+.nc-peek-topic.locked { opacity: 0.55; }
+.nc-peek-topic-header { font-size: 0.75rem; color: #e2e8f0; font-weight: 700; margin-bottom: 0.3rem; padding-bottom: 0.2rem; border-bottom: 1px solid #1e293b; }
+.nc-peek-locked { font-size: 0.6rem; color: #f97316; font-weight: 500; }
+.nc-peek-problem { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.5rem; border-radius: 4px; font-size: 0.72rem; color: #cbd5e1; cursor: pointer; }
+.nc-peek-problem:hover { background: #1e293b; }
+.nc-peek-problem.cursor-active { background: rgba(139, 92, 246, 0.15); border-left: 2px solid #8b5cf6; padding-left: calc(0.5rem - 2px); }
+.nc-peek-idx { color: #64748b; min-width: 1.8rem; text-align: right; font-variant-numeric: tabular-nums; }
+.nc-peek-name { flex: 1; color: #e2e8f0; }
+.nc-peek-diff { font-size: 0.6rem; }
+.nc-peek-markers { display: flex; gap: 0.3rem; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em; }
+.nc-peek-rated { padding: 0.1rem 0.35rem; border-radius: 3px; text-transform: uppercase; }
+.nc-peek-cursor { padding: 0.1rem 0.35rem; border-radius: 3px; text-transform: uppercase; }
+.nc-peek-marker-study { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.nc-peek-marker-solve { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.nc-peek-rated.nc-peek-marker-study { background: rgba(59, 130, 246, 0.35); }
+.nc-peek-rated.nc-peek-marker-solve { background: rgba(16, 185, 129, 0.35); }
+
+/* Modal mode pill */
+.nc-modal-mode-pill { font-size: 0.6rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 10px; letter-spacing: 0.05em; color: #fff; }
+.nc-modal-mode-pill.study { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+.nc-modal-mode-pill.solve { background: linear-gradient(135deg, #10b981, #34d399); }
+
+/* NeetCode problem detail modal */
+.nc-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1100; display: flex; align-items: center; justify-content: center; }
+.nc-modal { background: #1e293b; border: 1px solid #475569; border-radius: 12px; width: 620px; max-width: 92vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.nc-modal-header { display: flex; align-items: center; gap: 0.6rem; padding: 1rem 1.2rem; border-bottom: 1px solid #334155; }
+.nc-modal-topic { font-size: 0.65rem; color: #94a3b8; background: #334155; padding: 0.15rem 0.5rem; border-radius: 10px; }
+.nc-modal-diff { font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 10px; }
+.nc-modal-title { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; flex: 1; }
+.nc-modal-close { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
+.nc-modal-close:hover { color: #e2e8f0; background: #334155; }
+.nc-modal-body { padding: 1.2rem; }
+.nc-modal-section { margin-bottom: 1rem; }
+.nc-modal-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+.nc-modal-text { font-size: 0.85rem; color: #cbd5e1; line-height: 1.6; }
+.nc-modal-lc-link { font-size: 0.75rem; color: #8b5cf6; text-decoration: none; }
+.nc-modal-lc-link:hover { text-decoration: underline; }
+
+/* Approaches section */
+.nc-approaches-reveal { background: #8b5cf6; color: #fff; border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.nc-approaches-reveal:hover { background: #7c3aed; }
+.nc-approaches { display: none; }
+.nc-approaches.open { display: block; }
+.nc-approach-tabs { display: flex; gap: 0.3rem; margin-bottom: 0.5rem; }
+.nc-approach-tab { font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: #64748b; cursor: pointer; }
+.nc-approach-tab.active { background: #334155; color: #e2e8f0; border-color: #475569; }
+.nc-approach-panel { background: #0f172a; border-radius: 6px; padding: 0.7rem; }
+.nc-approach-thinking { font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.6rem; line-height: 1.6; padding: 0.5rem 0.7rem; background: #162032; border-radius: 6px; }
+.nc-approach-code { font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.75rem; color: #e2e8f0; white-space: pre-wrap; background: #1e1b4b; border-radius: 6px; padding: 0.7rem; margin: 0.4rem 0; overflow-x: auto; }
+.nc-approach-complexity { display: flex; gap: 0.6rem; font-size: 0.75rem; color: #94a3b8; margin: 0.6rem 0; flex-wrap: wrap; align-items: flex-start; flex-direction: column; }
+.nc-complexity-badge { display: inline-block; background: #1e293b; border: 1px solid #334155; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600; color: #e2e8f0; font-size: 0.75rem; }
+.nc-complexity-detail { font-size: 0.75rem; color: #94a3b8; line-height: 1.5; margin-top: 0.3rem; }
+.nc-approach-explanation { font-size: 0.8rem; color: #cbd5e1; line-height: 1.6; margin-top: 0.5rem; }
+.nc-approach-walkthrough { margin: 0.5rem 0; }
+.nc-approach-walkthrough div { font-size: 0.8rem; color: #cbd5e1; line-height: 1.6; margin-top: 0.4rem; padding: 0.5rem 0.7rem; background: #162032; border-radius: 6px; }
+.nc-approach-code-wrap { margin: 0.5rem 0; }
+.nc-reveal-btn { background: #334155; color: #94a3b8; border: 1px solid #475569; border-radius: 6px; padding: 0.3rem 0.8rem; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+.nc-reveal-btn:hover { background: #475569; color: #e2e8f0; }
+.nc-interview-tip { background: rgba(34,197,94,0.08); border-left: 3px solid #22c55e; padding: 0.5rem 0.8rem; border-radius: 0 6px 6px 0; margin-top: 0.6rem; font-size: 0.8rem; color: #86efac; line-height: 1.5; }
+.nc-key-insight { background: rgba(139,92,246,0.1); border-left: 3px solid #8b5cf6; padding: 0.5rem 0.8rem; border-radius: 0 6px 6px 0; margin-top: 0.6rem; font-size: 0.8rem; color: #c4b5fd; line-height: 1.5; }
+
+/* Patterns & Related */
+.nc-modal-patterns { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.nc-modal-pattern { font-size: 0.65rem; color: #94a3b8; background: #0f172a; padding: 0.15rem 0.5rem; border-radius: 8px; }
+.nc-modal-related { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.nc-modal-related-pill { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; padding: 0.2rem 0.6rem; background: #0f172a; border: 1px solid #334155; border-radius: 12px; cursor: pointer; color: #94a3b8; transition: border-color 0.2s; }
+.nc-modal-related-pill:hover { border-color: #8b5cf6; color: #e2e8f0; }
+.nc-modal-related-dots { display: flex; gap: 1px; }
+.nc-modal-related-dot { width: 5px; height: 5px; border-radius: 50%; background: #334155; }
+.nc-modal-related-dot.filled { background: #e2e8f0; }
+
+/* SR status & rating */
+.nc-modal-sr-status { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.7rem; color: #94a3b8; padding: 0.5rem 0.7rem; background: #0f172a; border-radius: 6px; margin-top: 0.5rem; }
+.nc-modal-sr-item { display: flex; gap: 0.25rem; }
+.nc-modal-sr-value { color: #e2e8f0; font-weight: 600; }
+.nc-modal-rating { display: flex; flex-direction: column; gap: 0.6rem; padding: 1rem 1.2rem; border-top: 1px solid #334155; background: #162032; border-radius: 0 0 12px 12px; }
+.nc-modal-rating-row { display: flex; align-items: center; gap: 0.6rem; }
+.nc-modal-rating-label { font-size: 0.75rem; color: #94a3b8; min-width: 90px; }
+.nc-rate-btns { display: flex; gap: 0.3rem; }
+.nc-rate-btn { width: 36px; height: 30px; border: 2px solid #334155; border-radius: 6px; background: #0f172a; color: #94a3b8; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+.nc-rate-btn:hover { border-color: #64748b; color: #e2e8f0; }
+.nc-rate-btn.active { color: #0f172a; border-color: transparent; }
+.nc-notes-input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-family: inherit; outline: none; }
+.nc-notes-input:focus { border-color: #8b5cf6; }
+.nc-rate-save { background: #8b5cf6; color: #fff; border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+.nc-rate-save:hover { background: #7c3aed; }
+.nc-rate-save:disabled { background: #334155; color: #64748b; cursor: default; }
+.nc-modal-prev-rating { font-size: 0.7rem; color: #64748b; }
+.nc-modal-seen { font-size: 0.7rem; color: #64748b; }
+
+/* Notes display */
+.nc-modal-notes-section { margin-top: 0.6rem; }
+.nc-modal-notes-toggle { cursor: pointer; font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; user-select: none; display: flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0; }
+.nc-modal-notes-toggle:hover { color: #e2e8f0; }
+.nc-modal-notes-arrow { font-size: 0.55rem; transition: transform 0.15s; display: inline-block; }
+.nc-modal-notes-section.open .nc-modal-notes-arrow { transform: rotate(90deg); }
+.nc-modal-notes-count { font-size: 0.6rem; background: rgba(139,92,246,0.2); color: #c4b5fd; padding: 0.05rem 0.4rem; border-radius: 8px; font-weight: 600; }
+.nc-modal-notes-collapsible { display: none; margin-top: 0.3rem; }
+.nc-modal-notes-section.open .nc-modal-notes-collapsible { display: block; }
+.nc-modal-notes-display { font-size: 0.8rem; padding: 0.4rem 0.6rem; background: rgba(139,92,246,0.08); border-radius: 6px; border-left: 2px solid #8b5cf6; max-height: 12rem; overflow-y: auto; }
+.nc-modal-note-entry { padding: 0.35rem 0; border-bottom: 1px solid rgba(139,92,246,0.1); }
+.nc-modal-note-entry:last-child { border-bottom: none; }
+.nc-modal-note-ts { font-size: 0.6rem; color: #64748b; margin-bottom: 0.15rem; }
+.nc-modal-note-text { color: #c4b5fd; font-style: italic; }
 </style>
 </head>
 <body>
@@ -1668,6 +2100,9 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       </button>
       <button class="tab-btn" onclick="switchTab('learning')" title="Learning">
         &#x1F9E0;<span class="tab-label">Learning</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('neetcode')" title="NeetCode">
+        &#x1F4BB;<span class="tab-label">NeetCode</span>
       </button>
       <button class="tab-btn" onclick="switchTab('kidlearn')" title="Number Jungle 🌿">
         &#x1F33F;<span class="tab-label">Jungle</span>
@@ -1766,9 +2201,20 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
               onkeydown="stackInputKey(event)">
             <div class="stack-suggest" id="stackSuggest"></div>
           </div>
-          <button class="stack-btn" onclick="stackAddLane()">+ Lane</button>
+          <button class="stack-btn" onclick="openStackTaskModal()">+ Task</button>
         </div>
-        <div class="stack-board" id="stackBoard"></div>
+        <div class="stack-board" id="stackBoard"
+          ondragover="stackBoardDragOver(event)" ondrop="stackBoardDrop(event)"></div>
+        <div class="stack-completed-sidebar" id="stackCompleted"></div>
+        <div class="stack-inbox" id="stackInbox"
+          ondragover="stackInboxDragOver(event)" ondrop="stackLaneDrop(event,'inbox')"
+          ondragleave="stackInboxDragLeave(event)">
+          <div class="stack-inbox-resize" onmousedown="stackInboxResizeStart(event)"></div>
+        </div>
+        <div class="stack-stash" id="stackStash"
+          ondragover="stackStashDragOver(event)" ondrop="stackStashDrop(event)"
+          ondragleave="stackStashDragLeave(event)">
+        </div>
       </div>
       <div id="stackCompletionModal"></div>
     </div>
@@ -1785,12 +2231,54 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
           <div class="learn-conf-dist" id="learnConfDist"></div>
         </div>
         <div class="learn-stats-bar" id="learnStatsBar"></div>
+        <div class="daily-chart" id="learnDailyChart"></div>
         <div class="learn-due-section" id="learnDueSection"></div>
         <div class="learn-categories" id="learnCategories"></div>
         <div class="learn-focus-section" id="learnFocusSection"></div>
         <div class="learn-timeline-section">
           <h3 class="learn-section-title">Review Timeline</h3>
           <div class="learn-timeline" id="learnTimeline"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ NeetCode Tab ═══════ -->
+    <div class="tab-content" id="tab-neetcode">
+      <div class="nc-shell">
+        <div class="nc-header">
+          <div class="nc-readiness">
+            <div class="nc-readiness-score" id="ncScore">&mdash;</div>
+            <div class="nc-readiness-label">Readiness<br><span id="ncRated">0</span>/<span id="ncTotal">0</span> solved</div>
+          </div>
+          <button class="nc-study-btn" id="ncStudyBtn" onclick="ncDrawCard()" title="Draw an SR-weighted problem">Draw Problem</button>
+          <div class="nc-conf-dist" id="ncConfDist"></div>
+        </div>
+        <div class="nc-guided" id="ncGuided"></div>
+        <div class="nc-stats-bar" id="ncStatsBar"></div>
+        <div class="daily-chart" id="ncDailyChart"></div>
+        <div class="nc-filter-bar" id="ncFilterBar">
+          <div class="nc-filter-row">
+            <span class="nc-filter-label">Topics</span>
+            <span class="nc-filter-shortcut" onclick="ncTopicFilterAll()">All</span>
+            <span class="nc-filter-shortcut" onclick="ncTopicFilterNone()">None</span>
+            <div id="ncTopicPills" style="display:flex;gap:0.3rem;flex-wrap:wrap"></div>
+          </div>
+          <div class="nc-filter-row">
+            <span class="nc-filter-label">Difficulty</span>
+            <span class="nc-diff-toggle active" style="color:#22c55e" data-diff="easy" onclick="toggleNcDiffFilter('easy')">Easy</span>
+            <span class="nc-diff-toggle active" style="color:#eab308" data-diff="medium" onclick="toggleNcDiffFilter('medium')">Medium</span>
+            <span class="nc-diff-toggle active" style="color:#ef4444" data-diff="hard" onclick="toggleNcDiffFilter('hard')">Hard</span>
+            <div class="nc-blind-toggle" onclick="toggleNcBlindMode()">
+              <div class="nc-blind-switch" id="ncBlindSwitch"></div>
+              <span>Blind Mode</span>
+            </div>
+          </div>
+        </div>
+        <div class="nc-due-section" id="ncDueSection"></div>
+        <div class="nc-topics" id="ncTopics"></div>
+        <div class="nc-timeline-section">
+          <h3 class="nc-section-title">Review Timeline</h3>
+          <div class="nc-timeline" id="ncTimeline"></div>
         </div>
       </div>
     </div>
@@ -2014,6 +2502,74 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   </div>
 </div>
 
+<!-- Stack Task Modal -->
+<div class="modal fade" id="stackTaskModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">New Stack Task</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="stackTaskTitle"></div>
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="stackTaskLinkBoard" onchange="toggleStackBoardFields()">
+            <label class="form-check-label" for="stackTaskLinkBoard">Also create a board card</label>
+          </div>
+        </div>
+        <div id="stackTaskBoardFields" style="display:none">
+          <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="stackTaskDesc" rows="3"></textarea></div>
+          <div class="mb-3"><label class="form-label">Project</label><div id="stackTaskProjectCombo"></div></div>
+          <div class="mb-3" id="stackTaskPhaseGroup" style="display:none">
+            <label class="form-label">Phase</label>
+            <select class="form-select form-select-sm" id="stackTaskPhase">
+              <option value="">— No phase —</option>
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label">Status</label>
+            <select class="form-select" id="stackTaskStatus"></select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="stackTaskSubmit()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Push to Board Modal (convert custom stack item to board card) -->
+<div class="modal fade" id="pushBoardModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Push to Task Board</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="pushBoardTitle"></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="pushBoardDesc" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Project</label><div id="pushBoardProjectCombo"></div></div>
+        <div class="mb-3" id="pushBoardPhaseGroup" style="display:none">
+          <label class="form-label">Phase</label>
+          <select class="form-select form-select-sm" id="pushBoardPhase">
+            <option value="">— No phase —</option>
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Status</label>
+          <select class="form-select" id="pushBoardStatus"></select>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="pushBoardSubmit()">Push</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Board Card Detail Modal -->
 <div class="modal fade" id="cardDetailModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
@@ -2123,6 +2679,7 @@ const BUILTIN_STATUSES = new Set(); // all statuses are user-editable
 const STACK_STORAGE_KEY = 'mc-stack-v1';
 let stackItems = [];
 let stackLanes = [];
+let stashedLanes = [];
 let poolSource = localStorage.getItem('mc-pool-source') || 'board';
 let poolNfItems = [];
 let poolNfColumns = [];
@@ -2283,6 +2840,7 @@ function switchTab(tab) {
   else if (tab === 'calendar') loadCronCalendar();
   else if (tab === 'stack') loadStackTab();
   else if (tab === 'learning') loadLearning();
+  else if (tab === 'neetcode') loadNeetCode();
   else if (tab === 'kidlearn') klInit();
 }
 
@@ -2917,13 +3475,15 @@ function normalizeStackItem(item) {
     source: item.source === 'board' ? 'board' : 'custom',
     boardSlug: item.boardSlug || null,
     notes: Array.isArray(item.notes) ? item.notes.filter(n => typeof n === 'string') : [],
-    lane: item.lane || (stackLanes.length ? stackLanes[0].id : 'lane-1'),
+    lane: item.lane || 'inbox',
     createdAt: item.createdAt || new Date().toISOString(),
   };
 }
 
 function saveStackState() {
-  api('PUT', '/api/stack', { lanes: stackLanes, items: stackItems });
+  const payload = { lanes: stackLanes, items: stackItems };
+  if (stashedLanes.length) payload.stashedLanes = stashedLanes;
+  api('PUT', '/api/stack', payload);
 }
 
 async function loadStackState() {
@@ -2934,6 +3494,7 @@ async function loadStackState() {
     } else {
       stackLanes = [{ id: 'lane-1', label: 'Lane 1' }];
     }
+    stashedLanes = (res && Array.isArray(res.stashedLanes)) ? res.stashedLanes : [];
     if (res && Array.isArray(res.items) && res.items.length) {
       stackItems = res.items.map(normalizeStackItem);
     } else {
@@ -2976,35 +3537,115 @@ function stackAddLane() {
 }
 
 function stackCollapseLane(laneId) {
-  if (stackLanes.length <= 1) return;
-  const otherLanes = stackLanes.filter(l => l.id !== laneId);
-  // Distribute cards to remaining lanes
-  stackItems.forEach(item => {
-    if (item.lane === laneId) {
-      const target = otherLanes[Math.floor(Math.random() * otherLanes.length)];
-      item.lane = target.id;
-    }
-  });
-  // Animate then remove
+  const lane = stackLanes.find(l => l.id === laneId);
+  if (!lane) return;
+  // Stash the lane — cards stay assigned to it
+  stashedLanes.push({ id: lane.id, label: lane.label });
+  stackLanes = stackLanes.filter(l => l.id !== laneId);
+  // Animate then update
   const el = document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`);
   if (el) {
     el.classList.add('collapsing');
     setTimeout(() => {
-      stackLanes = otherLanes;
       renumberLanes();
       saveStackState();
       renderStackBoard();
     }, 250);
   } else {
-    stackLanes = otherLanes;
     renumberLanes();
     saveStackState();
     renderStackBoard();
   }
 }
 
+function stackDeleteLane(laneId) {
+  const lane = stackLanes.find(l => l.id === laneId);
+  if (!lane) return;
+  const itemCount = stackItems.filter(i => i.lane === laneId && !isStackItemDone(i)).length;
+  const msg = itemCount
+    ? `Delete lane "${lane.label}"? ${itemCount} task(s) will be moved to the inbox.`
+    : `Delete lane "${lane.label}"?`;
+  if (!confirm(msg)) return;
+  // Move items to inbox (unassign lane)
+  stackItems.forEach(i => { if (i.lane === laneId) i.lane = null; });
+  stackLanes = stackLanes.filter(l => l.id !== laneId);
+  const el = document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`);
+  if (el) {
+    el.classList.add('collapsing');
+    setTimeout(() => { renumberLanes(); saveStackState(); renderStackBoard(); }, 250);
+  } else {
+    renumberLanes(); saveStackState(); renderStackBoard();
+  }
+}
+
+function stackUnstashLane(laneId) {
+  const idx = stashedLanes.findIndex(l => l.id === laneId);
+  if (idx === -1) return;
+  const [lane] = stashedLanes.splice(idx, 1);
+  stackLanes.push(lane);
+  renumberLanes();
+  saveStackState();
+  renderStackBoard();
+}
+
 function renumberLanes() {
-  stackLanes.forEach((l, i) => { l.label = 'Lane ' + (i + 1); });
+  // Only renumber lanes that still have default "Lane N" names
+  stackLanes.forEach((l, i) => {
+    if (/^Lane \d+$/i.test(l.label)) l.label = 'Lane ' + (i + 1);
+  });
+}
+
+function stackStartRenameLane(laneId, spanEl) {
+  const lane = stackLanes.find(l => l.id === laneId);
+  if (!lane) return;
+  const input = document.createElement('input');
+  input.className = 'stack-lane-label-input';
+  input.value = lane.label;
+  input.setAttribute('data-lane-id', laneId);
+  // Disable drag on the header while renaming
+  const header = spanEl.closest('.stack-lane-header');
+  if (header) header.setAttribute('draggable', 'false');
+  spanEl.replaceWith(input);
+  input.setAttribute('draggable', 'false');
+  input.focus();
+  input.select();
+  input.addEventListener('blur', () => stackFinishRenameLane(input));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { input.value = lane.label; input.blur(); }
+  });
+}
+
+function stackFinishRenameLane(input) {
+  const laneId = input.getAttribute('data-lane-id');
+  const lane = stackLanes.find(l => l.id === laneId);
+  if (!lane) return;
+  const newLabel = input.value.trim();
+  if (newLabel && newLabel !== lane.label) {
+    lane.label = newLabel;
+    saveStackState();
+  }
+  renderStackBoard();
+}
+
+// ── Lane reorder via drag ──
+let _laneDragId = null;
+
+function laneDragStart(e, laneId) {
+  // Don't start lane drag if we're clicking the label or rename input
+  if (e.target.closest('.stack-lane-label') || e.target.closest('.stack-lane-label-input')) { e.preventDefault(); return; }
+  _laneDragId = laneId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'lane:' + laneId);
+  const laneEl = e.target.closest('.stack-lane');
+  if (laneEl) setTimeout(() => laneEl.classList.add('lane-dragging'), 0);
+}
+
+function laneDragEnd(e) {
+  _laneDragId = null;
+  document.querySelectorAll('.stack-lane').forEach(el => {
+    el.classList.remove('lane-dragging', 'lane-drag-over-left', 'lane-drag-over-right');
+  });
 }
 
 // ── Unified input with suggestions ──
@@ -3081,11 +3722,10 @@ function stackInputKey(e) {
 function stackPickBoard(slug) {
   const card = (board.cards || []).find(c => c.slug === slug);
   if (!card) return;
-  const firstLane = stackLanes.length ? stackLanes[0].id : 'lane-1';
   const item = normalizeStackItem({
     id: makeId('stk'), title: card.title,
     source: 'board', boardSlug: card.slug,
-    notes: [], lane: firstLane, createdAt: new Date().toISOString(),
+    notes: [], lane: 'inbox', createdAt: new Date().toISOString(),
   });
   stackItems.unshift(item);
   const input = document.getElementById('stackInput');
@@ -3163,10 +3803,11 @@ function stackSelect(id) {
 }
 
 // ── Render card HTML ──
-function renderStackCard(item) {
+function renderStackCard(item, isDone) {
   const isSelected = item.id === stackSelectedId;
   const cls = ['stack-card'];
   if (isSelected) cls.push('selected');
+  if (isDone) cls.push('done');
 
   let html = `<div class="${cls.join(' ')}" data-stack-id="${item.id}" draggable="true"
     onclick="stackSelect('${item.id}')"
@@ -3210,7 +3851,11 @@ function renderStackCard(item) {
     html += `<div class="stack-card-body" onclick="event.stopPropagation()">`;
     html += `<input class="stack-edit-title" value="${escapeHtml(item.title)}"
       onchange="stackRename('${item.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
-    html += `<div class="stack-card-meta">${item.boardSlug ? 'Linked: ' + escapeHtml(item.boardSlug) : 'Stack-only'} &middot; ${noteCount} comment${noteCount !== 1 ? 's' : ''}</div>`;
+    html += `<div class="stack-card-meta">${item.boardSlug ? 'Linked: ' + escapeHtml(item.boardSlug) : 'Stack-only'} &middot; ${noteCount} comment${noteCount !== 1 ? 's' : ''}`;
+    if (!item.boardSlug) {
+      html += ` &middot; <a href="#" class="stack-push-link" onclick="event.preventDefault();event.stopPropagation();stackPushToBoard('${item.id}')">Push to Board</a>`;
+    }
+    html += `</div>`;
     html += `<div class="stack-notes-list">`;
     if (boardCard) {
       if (!comments.length) {
@@ -3248,21 +3893,38 @@ function renderStackCard(item) {
   return html;
 }
 
+// ── Check if a stack item's board card is done ──
+function isStackItemDone(item) {
+  if (!item.boardSlug) return false;
+  const boardCard = (board.cards || []).find(c => c.slug === item.boardSlug);
+  return boardCard && boardCard.status === 'done';
+}
+
 // ── Render full board ──
 function renderStackBoard() {
   const boardEl = document.getElementById('stackBoard');
   if (!boardEl) return;
 
+  // Partition: active items stay in lanes, done items go to completed lane
+  const doneItems = [];
+  const activeItems = [];
+  stackItems.forEach(item => {
+    if (isStackItemDone(item)) doneItems.push(item);
+    else activeItems.push(item);
+  });
+
   let html = '';
-  stackLanes.forEach(lane => {
-    const laneItems = stackItems.filter(i => i.lane === lane.id);
-    html += `<div class="stack-lane" data-lane-id="${lane.id}"
+  stackLanes.forEach((lane, idx) => {
+    const laneItems = activeItems.filter(i => i.lane === lane.id);
+    html += `<div class="stack-lane" data-lane-id="${lane.id}" data-lane-idx="${idx}"
       ondragover="stackLaneDragOver(event)" ondrop="stackLaneDrop(event,'${lane.id}')"
       ondragleave="stackLaneDragLeave(event)">`;
-    html += `<div class="stack-lane-header">`;
-    html += `<span class="stack-lane-label">${escapeHtml(lane.label)}</span>`;
-    html += `<span class="stack-lane-count">${laneItems.length}</span>`;
-    html += `<button class="stack-lane-close" onclick="stackCollapseLane('${lane.id}')" title="Collapse lane">&times;</button>`;
+    html += `<div class="stack-lane-header" draggable="true"
+      ondragstart="laneDragStart(event,'${lane.id}')" ondragend="laneDragEnd(event)">`;
+    html += `<span class="stack-lane-num">${idx + 1}</span>`;
+    html += `<span class="stack-lane-label" onclick="stackStartRenameLane('${lane.id}', this)" title="Click to rename">${escapeHtml(lane.label)}</span>`;
+    html += `<button class="stack-lane-stash" onclick="event.stopPropagation();stackCollapseLane('${lane.id}')" title="Stash lane">&#8595;</button>`;
+    html += `<button class="stack-lane-close" onclick="event.stopPropagation();stackDeleteLane('${lane.id}')" title="Delete lane">&times;</button>`;
     html += `</div>`;
     html += `<div class="stack-lane-cards">`;
     if (!laneItems.length) {
@@ -3275,6 +3937,76 @@ function renderStackBoard() {
 
   html += `<div class="stack-add-lane" onclick="stackAddLane()" title="Add a new lane">+</div>`;
   boardEl.innerHTML = html;
+
+  // Inbox tray — preserve resize handle, rebuild header + cards
+  const inboxEl = document.getElementById('stackInbox');
+  if (inboxEl) {
+    const inboxItems = activeItems.filter(i => i.lane === 'inbox');
+    // Remove old header/cards but keep resize handle
+    inboxEl.querySelectorAll('.stack-inbox-header, .stack-inbox-cards').forEach(el => el.remove());
+    let ih = `<div class="stack-inbox-header" onclick="stackInboxToggle()">`;
+    ih += `<span class="stack-inbox-toggle">&#9660;</span>`;
+    ih += `<span class="stack-inbox-label">Inbox</span>`;
+    ih += `<span class="stack-inbox-count">${inboxItems.length}</span>`;
+    ih += `</div>`;
+    ih += `<div class="stack-inbox-cards">`;
+    if (!inboxItems.length) {
+      ih += `<div class="stack-inbox-empty">new tasks land here — drag them into lanes</div>`;
+    } else {
+      inboxItems.forEach(item => { ih += renderStackCard(item); });
+    }
+    ih += `</div>`;
+    inboxEl.insertAdjacentHTML('beforeend', ih);
+  }
+
+  // Stash tray — render stashed lane chips
+  const stashEl = document.getElementById('stackStash');
+  if (stashEl) {
+    stashEl.querySelectorAll('.stack-stash-header, .stack-stash-chips').forEach(el => el.remove());
+    if (stashedLanes.length) {
+      stashEl.style.display = '';
+      let sh = `<div class="stack-stash-header" onclick="stackStashToggle()">`;
+      sh += `<span class="stack-stash-toggle">&#9660;</span>`;
+      sh += `<span class="stack-stash-label">Stash</span>`;
+      sh += `<span class="stack-stash-count">${stashedLanes.length}</span>`;
+      sh += `</div>`;
+      sh += `<div class="stack-stash-chips">`;
+      stashedLanes.forEach(lane => {
+        const count = activeItems.filter(i => i.lane === lane.id).length;
+        sh += `<div class="stack-stash-chip" draggable="true"
+          data-stash-lane-id="${lane.id}"
+          ondragstart="stashChipDragStart(event,'${lane.id}')"
+          ondragend="stashChipDragEnd(event)">`;
+        sh += `<span class="stack-stash-chip-name">${escapeHtml(lane.label)}</span>`;
+        sh += `<span class="stack-stash-chip-count">${count}</span>`;
+        sh += `<button class="stack-stash-chip-restore" onclick="event.stopPropagation();stackUnstashLane('${lane.id}')" title="Restore lane">&#8593;</button>`;
+        sh += `</div>`;
+      });
+      sh += `</div>`;
+      stashEl.insertAdjacentHTML('beforeend', sh);
+    } else {
+      stashEl.style.display = 'none';
+    }
+  }
+
+  // Recently Completed sidebar (separate container, pinned right)
+  const sidebarEl = document.getElementById('stackCompleted');
+  if (sidebarEl) {
+    if (doneItems.length) {
+      doneItems.sort((a, b) => {
+        const ca = (board.cards || []).find(c => c.slug === a.boardSlug);
+        const cb = (board.cards || []).find(c => c.slug === b.boardSlug);
+        const da = ca && ca.updated ? new Date(ca.updated) : new Date(0);
+        const db = cb && cb.updated ? new Date(cb.updated) : new Date(0);
+        return db - da;
+      });
+      let sh = `<div class="stack-completed-header">Recently Completed <span class="stack-completed-count">${doneItems.length}</span></div>`;
+      doneItems.forEach(item => { sh += renderStackCard(item, true); });
+      sidebarEl.innerHTML = sh;
+    } else {
+      sidebarEl.innerHTML = '';
+    }
+  }
 }
 
 // Keep old name as alias for backward compat within this file
@@ -3293,8 +4025,21 @@ async function loadStackTab() {
       } else {
         stackLanes = [{ id: 'lane-1', label: 'Lane 1' }];
       }
+      stashedLanes = Array.isArray(stackRes.stashedLanes) ? stackRes.stashedLanes : [];
       const items = stackRes.items || [];
       stackItems = (Array.isArray(items) ? items : []).map(normalizeStackItem);
+
+      // Auto-purge: remove stack items whose board card has been done > 7 days
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const before = stackItems.length;
+      stackItems = stackItems.filter(item => {
+        if (!item.boardSlug) return true;
+        const boardCard = (board.cards || []).find(c => c.slug === item.boardSlug);
+        if (!boardCard || boardCard.status !== 'done') return true;
+        const doneDate = boardCard.updated ? new Date(boardCard.updated).getTime() : 0;
+        return doneDate > sevenDaysAgo;
+      });
+      if (stackItems.length < before) saveStackState();
     }
     renderStackBoard();
   } catch (e) { console.warn('loadStackTab failed:', e.message); }
@@ -3312,11 +4057,10 @@ function stackAddCustom() {
   if (!input) return;
   const title = input.value.trim();
   if (!title) return;
-  const firstLane = stackLanes.length ? stackLanes[0].id : 'lane-1';
   const item = normalizeStackItem({
     id: makeId('stk'), title,
     source: 'custom', boardSlug: null,
-    notes: [], lane: firstLane, createdAt: new Date().toISOString(),
+    notes: [], lane: 'inbox', createdAt: new Date().toISOString(),
   });
   stackItems.unshift(item);
   input.value = '';
@@ -3324,6 +4068,92 @@ function stackAddCustom() {
   if (dd) dd.classList.remove('open');
   saveStackState();
   renderStackBoard();
+}
+
+// --- Stack Task Modal ---
+let _stackTaskProjectSelection = { projectId: '', projectName: '' };
+
+function openStackTaskModal() {
+  document.getElementById('stackTaskTitle').value = '';
+  document.getElementById('stackTaskLinkBoard').checked = false;
+  document.getElementById('stackTaskBoardFields').style.display = 'none';
+  // Reset board fields
+  document.getElementById('stackTaskDesc').value = '';
+  _stackTaskProjectSelection = { projectId: '', projectName: '' };
+  document.getElementById('stackTaskProjectCombo').innerHTML = renderProjectCombo('stackTaskProject', null);
+  const comboInput = document.getElementById('stackTaskProject');
+  comboInput.addEventListener('projectSelected', (e) => {
+    _stackTaskProjectSelection = e.detail;
+    _updateStackTaskPhaseDropdown(e.detail.projectId);
+  });
+  _updateStackTaskPhaseDropdown('');
+  // Populate status dropdown
+  const statusSel = document.getElementById('stackTaskStatus');
+  statusSel.innerHTML = '';
+  for (const s of (board.statuses || [])) {
+    const sid = s.id || s;
+    const slabel = s.label || (sid.charAt(0).toUpperCase() + sid.slice(1));
+    statusSel.innerHTML += `<option value="${sid}" ${sid === 'pending' ? 'selected' : ''}>${escapeHtml(slabel)}</option>`;
+  }
+  new bootstrap.Modal(document.getElementById('stackTaskModal')).show();
+}
+
+function toggleStackBoardFields() {
+  const checked = document.getElementById('stackTaskLinkBoard').checked;
+  document.getElementById('stackTaskBoardFields').style.display = checked ? '' : 'none';
+}
+
+function _updateStackTaskPhaseDropdown(projectId) {
+  const group = document.getElementById('stackTaskPhaseGroup');
+  const sel = document.getElementById('stackTaskPhase');
+  const proj = board.projects.find(p => p.id === projectId);
+  if (proj && proj.phases && proj.phases.length > 0) {
+    const active = proj.phases.find(ph => ph.status === 'active');
+    const pending = proj.phases.find(ph => ph.status === 'pending');
+    const defaultPhase = active ? active.name : (pending ? pending.name : '');
+    sel.innerHTML = '<option value="">— No phase —</option>' +
+      proj.phases.map(ph => `<option value="${ph.name}"${ph.name === defaultPhase ? ' selected' : ''}>${ph.name}${ph.status === 'done' ? ' ✓' : ''}</option>`).join('');
+    group.style.display = '';
+  } else {
+    sel.innerHTML = '<option value="">— No phase —</option>';
+    group.style.display = 'none';
+  }
+}
+
+async function stackTaskSubmit() {
+  const title = document.getElementById('stackTaskTitle').value.trim();
+  if (!title) return;
+  const linkBoard = document.getElementById('stackTaskLinkBoard').checked;
+  let boardSlug = null;
+  let source = 'custom';
+
+  if (linkBoard) {
+    // Create the board card first
+    const desc = document.getElementById('stackTaskDesc').value;
+    const status = document.getElementById('stackTaskStatus').value;
+    const project = await ensureProject(_stackTaskProjectSelection.projectId, _stackTaskProjectSelection.projectName);
+    const phase = document.getElementById('stackTaskPhase').value || null;
+    const payload = { title, description: desc, project, status };
+    if (phase) payload.phase = phase;
+    const result = await api('POST', '/api/board/cards', payload);
+    if (result && result.card && result.card.slug) {
+      boardSlug = result.card.slug;
+      source = 'board';
+    }
+    await loadBoard();
+  }
+
+  // Create the stack item
+  const item = normalizeStackItem({
+    id: makeId('stk'), title,
+    source, boardSlug,
+    notes: [], lane: 'inbox', createdAt: new Date().toISOString(),
+  });
+  stackItems.unshift(item);
+  saveStackState();
+  renderStackBoard();
+
+  bootstrap.Modal.getInstance(document.getElementById('stackTaskModal')).hide();
 }
 
 function stackRename(id, value) {
@@ -3370,59 +4200,84 @@ function stackDeleteNote(id, noteIdx) {
   renderStackBoard();
 }
 
-function showPushToBoardModal(title) {
-  return new Promise((resolve) => {
-    const projects = board.projects || [];
-    let options = '<option value="">— No project —</option>';
-    projects.forEach(p => {
-      options += `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`;
-    });
-    const container = document.getElementById('stackCompletionModal');
-    container.innerHTML = `
-      <div class="stack-modal-overlay" onclick="if(event.target===this)stackResolvePush(null)">
-        <div class="stack-modal">
-          <h4>Push to Task Board</h4>
-          <p><span class="stack-modal-task">${escapeHtml(title)}</span> will be added as <strong style="color:#3b82f6">Active</strong>.</p>
-          <label>Assign to project</label>
-          <select id="stackPushProject">${options}</select>
-          <div class="stack-modal-actions">
-            <button class="stack-modal-btn cancel-btn" onclick="stackResolvePush(null)">Cancel</button>
-            <button class="stack-modal-btn push-btn" onclick="stackResolvePush(document.getElementById('stackPushProject').value)">Push</button>
-          </div>
-        </div>
-      </div>`;
-    window._stackPushResolve = resolve;
-  });
-}
+let _pushToBoardItemId = null;
+let _pushToBoardProjectSelection = { projectId: '', projectName: '' };
 
-function stackResolvePush(projectId) {
-  const container = document.getElementById('stackCompletionModal');
-  if (container) container.innerHTML = '';
-  if (window._stackPushResolve) {
-    window._stackPushResolve(projectId);
-    window._stackPushResolve = null;
-  }
-}
-
-async function stackPushToBoard(id) {
+function stackPushToBoard(id) {
   const idx = getStackIndex(id);
   if (idx < 0) return;
   const item = stackItems[idx];
   if (item.boardSlug) return;
-  const projectId = await showPushToBoardModal(item.title);
-  if (projectId === null) return;
-  const payload = {
-    title: item.title,
-    description: item.notes && item.notes.length ? item.notes.join('\n') : 'Created from Stack tab',
-    status: 'active',
-    project: projectId || null,
-  };
+  _pushToBoardItemId = id;
+
+  // Pre-fill title from the stack item
+  document.getElementById('pushBoardTitle').value = item.title;
+  // Pre-fill description from notes if any
+  document.getElementById('pushBoardDesc').value =
+    item.notes && item.notes.length ? item.notes.join('\n') : '';
+
+  // Reset project combobox
+  _pushToBoardProjectSelection = { projectId: '', projectName: '' };
+  document.getElementById('pushBoardProjectCombo').innerHTML = renderProjectCombo('pushBoardProject', null);
+  const comboInput = document.getElementById('pushBoardProject');
+  comboInput.addEventListener('projectSelected', (e) => {
+    _pushToBoardProjectSelection = e.detail;
+    _updatePushBoardPhaseDropdown(e.detail.projectId);
+  });
+  _updatePushBoardPhaseDropdown('');
+
+  // Populate status dropdown
+  const statusSel = document.getElementById('pushBoardStatus');
+  statusSel.innerHTML = '';
+  for (const s of (board.statuses || [])) {
+    const sid = s.id || s;
+    const slabel = s.label || (sid.charAt(0).toUpperCase() + sid.slice(1));
+    statusSel.innerHTML += `<option value="${sid}" ${sid === 'pending' ? 'selected' : ''}>${escapeHtml(slabel)}</option>`;
+  }
+
+  new bootstrap.Modal(document.getElementById('pushBoardModal')).show();
+}
+
+function _updatePushBoardPhaseDropdown(projectId) {
+  const group = document.getElementById('pushBoardPhaseGroup');
+  const sel = document.getElementById('pushBoardPhase');
+  const proj = board.projects.find(p => p.id === projectId);
+  if (proj && proj.phases && proj.phases.length > 0) {
+    const active = proj.phases.find(ph => ph.status === 'active');
+    const pending = proj.phases.find(ph => ph.status === 'pending');
+    const defaultPhase = active ? active.name : (pending ? pending.name : '');
+    sel.innerHTML = '<option value="">— No phase —</option>' +
+      proj.phases.map(ph => `<option value="${ph.name}"${ph.name === defaultPhase ? ' selected' : ''}>${ph.name}${ph.status === 'done' ? ' ✓' : ''}</option>`).join('');
+    group.style.display = '';
+  } else {
+    sel.innerHTML = '<option value="">— No phase —</option>';
+    group.style.display = 'none';
+  }
+}
+
+async function pushBoardSubmit() {
+  const idx = getStackIndex(_pushToBoardItemId);
+  if (idx < 0) return;
+  const item = stackItems[idx];
+
+  const title = document.getElementById('pushBoardTitle').value.trim();
+  if (!title) return;
+  const desc = document.getElementById('pushBoardDesc').value;
+  const status = document.getElementById('pushBoardStatus').value;
+  const project = await ensureProject(_pushToBoardProjectSelection.projectId, _pushToBoardProjectSelection.projectName);
+  const phase = document.getElementById('pushBoardPhase').value || null;
+  const payload = { title, description: desc, project, status };
+  if (phase) payload.phase = phase;
+
   const res = await api('POST', '/api/board/cards', payload);
   if (res && res.card && res.card.slug) {
+    item.title = title;
     item.boardSlug = res.card.slug;
     item.source = 'board';
   }
   saveStackState();
+
+  bootstrap.Modal.getInstance(document.getElementById('pushBoardModal')).hide();
   await loadStackTab();
 }
 
@@ -3443,9 +4298,12 @@ async function stackDeleteItem(id) {
   const idx = getStackIndex(id);
   if (idx < 0) return;
   const item = stackItems[idx];
-  const action = await showCompletionModal(item.title);
-  if (action === 'cancel') return;
-  if (action === 'done') await stackFinalizeBoardCompletion(item);
+  // If the board card is already done, skip the modal — just remove silently
+  if (!isStackItemDone(item)) {
+    const action = await showCompletionModal(item.title);
+    if (action === 'cancel') return;
+    if (action === 'done') await stackFinalizeBoardCompletion(item);
+  }
   stackItems.splice(idx, 1);
   if (stackSelectedId === id) stackSelectedId = null;
   saveStackState();
@@ -3465,18 +4323,154 @@ function stackDragStart(e, id) {
 
 function stackDragEnd(e) {
   stackDragId = null;
-  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over-card, .stack-lane.drag-over').forEach(el => {
+  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over-card, .stack-lane.drag-over, .stack-inbox.drag-over').forEach(el => {
     el.classList.remove('dragging', 'drag-over-card', 'drag-over');
   });
+}
+
+function stackInboxDragOver(e) {
+  e.preventDefault();
+  const inbox = document.getElementById('stackInbox');
+  if (!inbox) return;
+  // Auto-expand if collapsed and dragging over
+  if (!inbox.classList.contains('expanded')) {
+    stackInboxToggle();
+  }
+  inbox.classList.add('drag-over');
+}
+
+function stackInboxDragLeave(e) {
+  const inbox = e.target.closest('.stack-inbox');
+  if (inbox && !inbox.contains(e.relatedTarget)) inbox.classList.remove('drag-over');
+}
+
+let _inboxHeight = 220; // remembered expanded height
+function stackInboxToggle() {
+  const el = document.getElementById('stackInbox');
+  if (!el) return;
+  if (el.classList.contains('expanded')) {
+    el.classList.remove('expanded');
+    el.style.height = '36px';
+  } else {
+    el.classList.add('expanded');
+    el.style.height = _inboxHeight + 'px';
+  }
+}
+
+function stackInboxResizeStart(e) {
+  e.preventDefault();
+  const el = document.getElementById('stackInbox');
+  if (!el || el.classList.contains('collapsed')) return;
+  const startY = e.clientY;
+  const startH = el.offsetHeight;
+  const wrap = el.closest('.stack-board-wrap');
+  const maxH = wrap ? wrap.offsetHeight - 50 : 600;
+
+  function onMove(ev) {
+    const delta = startY - ev.clientY;
+    const newH = Math.max(100, Math.min(maxH, startH + delta));
+    el.style.height = newH + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    _inboxHeight = el.offsetHeight;
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// ── Stash tray toggle + drag ──
+function stackStashToggle() {
+  const el = document.getElementById('stackStash');
+  if (!el) return;
+  el.classList.toggle('expanded');
+}
+
+let _stashDragLaneId = null;
+
+function stashChipDragStart(e, laneId) {
+  _stashDragLaneId = laneId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'stash:' + laneId);
+  const chip = e.target.closest('.stack-stash-chip');
+  if (chip) setTimeout(() => chip.classList.add('dragging'), 0);
+}
+
+function stashChipDragEnd(e) {
+  _stashDragLaneId = null;
+  document.querySelectorAll('.stack-stash-chip.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.stack-board.stash-drop-target').forEach(el => el.classList.remove('stash-drop-target'));
+}
+
+function stackStashDragOver(e) {
+  // Only accept lane drags (stashing a lane)
+  if (!_laneDragId) return;
+  e.preventDefault();
+  const stash = document.getElementById('stackStash');
+  if (stash) stash.classList.add('drag-over');
+}
+
+function stackStashDragLeave(e) {
+  const stash = e.target.closest('.stack-stash');
+  if (stash && !stash.contains(e.relatedTarget)) stash.classList.remove('drag-over');
+}
+
+function stackStashDrop(e) {
+  e.preventDefault();
+  const stash = document.getElementById('stackStash');
+  if (stash) stash.classList.remove('drag-over');
+  // Accept lane drag → stash that lane
+  if (_laneDragId) {
+    stackCollapseLane(_laneDragId);
+    _laneDragId = null;
+    return;
+  }
+}
+
+function stackBoardDragOver(e) {
+  if (_stashDragLaneId) {
+    e.preventDefault();
+    const boardEl = document.getElementById('stackBoard');
+    if (boardEl) boardEl.classList.add('stash-drop-target');
+  }
+}
+
+function stackBoardDrop(e) {
+  if (_stashDragLaneId) {
+    e.preventDefault();
+    document.querySelectorAll('.stack-board.stash-drop-target').forEach(el => el.classList.remove('stash-drop-target'));
+    stackUnstashLane(_stashDragLaneId);
+    _stashDragLaneId = null;
+  }
 }
 
 function stackLaneDragOver(e) {
   e.preventDefault();
   const lane = e.target.closest('.stack-lane');
-  if (!lane) return;
-  lane.classList.add('drag-over');
 
-  // Reorder within lane: find insertion point
+  // Stash chip being dragged onto the board → accept it
+  if (_stashDragLaneId) {
+    const boardEl = document.getElementById('stackBoard');
+    if (boardEl) boardEl.classList.add('stash-drop-target');
+    return;
+  }
+
+  if (!lane) return;
+
+  // Lane reorder drag
+  if (_laneDragId) {
+    if (lane.dataset.laneId === _laneDragId) return;
+    // Show left/right indicator based on mouse position
+    const box = lane.getBoundingClientRect();
+    const mid = box.left + box.width / 2;
+    document.querySelectorAll('.stack-lane').forEach(el => el.classList.remove('lane-drag-over-left', 'lane-drag-over-right'));
+    lane.classList.add(e.clientX < mid ? 'lane-drag-over-left' : 'lane-drag-over-right');
+    return;
+  }
+
+  // Card drag
+  lane.classList.add('drag-over');
   if (stackDragId) {
     const cards = lane.querySelector('.stack-lane-cards');
     const siblings = [...cards.querySelectorAll('.stack-card:not(.dragging)')];
@@ -3488,7 +4482,6 @@ function stackLaneDragOver(e) {
     if (draggedEl) {
       if (next) cards.insertBefore(draggedEl, next);
       else cards.appendChild(draggedEl);
-      // Remove empty placeholder if it exists
       const empty = cards.querySelector('.stack-lane-empty');
       if (empty) empty.remove();
     }
@@ -3497,26 +4490,54 @@ function stackLaneDragOver(e) {
 
 function stackLaneDragLeave(e) {
   const lane = e.target.closest('.stack-lane');
-  if (lane && !lane.contains(e.relatedTarget)) lane.classList.remove('drag-over');
+  if (lane && !lane.contains(e.relatedTarget)) {
+    lane.classList.remove('drag-over', 'lane-drag-over-left', 'lane-drag-over-right');
+  }
 }
 
 function stackLaneDrop(e, laneId) {
   e.preventDefault();
-  document.querySelectorAll('.stack-lane.drag-over').forEach(l => l.classList.remove('drag-over'));
+  document.querySelectorAll('.stack-lane.drag-over, .stack-inbox.drag-over, .lane-drag-over-left, .lane-drag-over-right, .stack-board.stash-drop-target').forEach(l => {
+    l.classList.remove('drag-over', 'lane-drag-over-left', 'lane-drag-over-right', 'stash-drop-target');
+  });
 
+  // Stash chip drop → unstash lane
+  if (_stashDragLaneId) {
+    stackUnstashLane(_stashDragLaneId);
+    _stashDragLaneId = null;
+    return;
+  }
+
+  // Lane reorder drop
+  if (_laneDragId && laneId !== 'inbox') {
+    const fromIdx = stackLanes.findIndex(l => l.id === _laneDragId);
+    const toIdx = stackLanes.findIndex(l => l.id === laneId);
+    if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+      const targetEl = document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`);
+      const box = targetEl ? targetEl.getBoundingClientRect() : null;
+      let insertIdx = toIdx;
+      if (box && e.clientX >= box.left + box.width / 2) insertIdx = toIdx + (fromIdx < toIdx ? 0 : 1);
+      else insertIdx = toIdx - (fromIdx < toIdx ? 1 : 0);
+      const [moved] = stackLanes.splice(fromIdx, 1);
+      stackLanes.splice(insertIdx < 0 ? 0 : insertIdx, 0, moved);
+      saveStackState();
+    }
+    _laneDragId = null;
+    renderStackBoard();
+    return;
+  }
+
+  // Card drop
   if (!stackDragId) return;
   const item = stackItems.find(i => i.id === stackDragId);
   if (!item) return;
 
-  // Update lane assignment
   item.lane = laneId;
 
-  // Rebuild order from DOM for this lane
-  const laneEl = document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`);
+  const laneEl = laneId !== 'inbox' ? document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`) : null;
   if (laneEl) {
     const cardEls = laneEl.querySelectorAll('.stack-card');
     const laneOrder = [...cardEls].map(el => el.dataset.stackId).filter(Boolean);
-    // Reorder stackItems: remove all items in this lane, reinsert in DOM order
     const otherItems = stackItems.filter(i => i.lane !== laneId);
     const laneItems = laneOrder.map(id => stackItems.find(i => i.id === id)).filter(Boolean);
     stackItems = [...otherItems, ...laneItems];
@@ -6209,6 +7230,36 @@ function masteryColor(m) {
   return '#ef4444';
 }
 
+function renderDailyChart(containerId, reviewHistory, accentColor) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const days = 30;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const counts = new Array(days).fill(0);
+  for (const entry of (reviewHistory || [])) {
+    const d = new Date(entry.rated_at);
+    d.setHours(0, 0, 0, 0);
+    const diff = Math.floor((today - d) / 86400000);
+    if (diff >= 0 && diff < days) counts[days - 1 - diff]++;
+  }
+  const maxCount = Math.max(1, ...counts);
+  let barsHtml = '';
+  for (let i = 0; i < days; i++) {
+    const dt = new Date(today.getTime() - (days - 1 - i) * 86400000);
+    const label = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const h = counts[i] === 0 ? 2 : Math.max(4, (counts[i] / maxCount) * 64);
+    const bg = counts[i] === 0 ? '#1e293b' : accentColor;
+    barsHtml += `<div class="daily-chart-bar" style="height:${h}px;background:${bg}" data-tip="${label}: ${counts[i]}"></div>`;
+  }
+  const startDate = new Date(today.getTime() - (days - 1) * 86400000);
+  const startLabel = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endLabel = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  el.innerHTML = `<div class="daily-chart-title">Daily Activity (last 30 days)</div>
+    <div class="daily-chart-bars">${barsHtml}</div>
+    <div class="daily-chart-labels"><span class="daily-chart-label">${startLabel}</span><span class="daily-chart-label">${endLabel}</span></div>`;
+}
+
 function renderLearning() {
   const d = learningData;
   if (!d) return;
@@ -6253,6 +7304,9 @@ function renderLearning() {
       </div>
     </div>`;
   document.getElementById('learnStatsBar').innerHTML = statsHtml;
+
+  // Daily activity chart
+  renderDailyChart('learnDailyChart', d.review_history, '#3b82f6');
 
   // Due for Review section
   const due = d.due_concepts || [];
@@ -6524,7 +7578,7 @@ function openLearnConcept(conceptId, catId) {
         const tsLine = n.ts ? `<div class="learn-modal-note-ts">${new Date(n.ts).toLocaleString()}</div>` : '';
         return `<div class="learn-modal-note-entry">${tsLine}<div class="learn-modal-note-text">"${escapeHtml(n.text)}"</div></div>`;
       }).join('');
-      notesDisplayHtml = `<div class="learn-modal-section learn-modal-notes-section">
+      notesDisplayHtml = `<div class="learn-modal-section learn-modal-notes-section open">
         <div class="learn-modal-notes-toggle" onclick="this.parentElement.classList.toggle('open')">
           <span class="learn-modal-notes-arrow">\u25B6</span>
           Your Notes <span class="learn-modal-notes-count">${notesList.length}</span>
@@ -6592,7 +7646,7 @@ function openLearnConcept(conceptId, catId) {
       </div>
       <div class="learn-modal-rating-row">
         <span class="learn-modal-rating-label">Add note:</span>
-        <input class="learn-notes-input" id="learnNotesInput" placeholder="Optional — what tripped you up?">
+        <input class="learn-notes-input" id="learnNotesInput" placeholder="Optional — what tripped you up?" onkeydown="if(event.key==='Enter'){event.preventDefault();saveLearnRating()}">
       </div>
       <div class="learn-modal-rating-row" style="justify-content:flex-end">
         <button class="learn-rate-save" id="learnSaveBtn" onclick="saveLearnRating()" ${learnModalRating ? '' : 'disabled'}>Save Rating</button>
@@ -6645,6 +7699,942 @@ function closeLearnModal() {
   if (overlay) overlay.remove();
   learnModalConceptId = null;
   learnModalRating = null;
+}
+
+// ══════════════════════════════════════════════
+//  NEETCODE TAB
+// ══════════════════════════════════════════════
+let neetcodeData = null;           // view for the active mode
+let neetcodeDataFull = null;       // full {modes: {study, solve}, current_mode}
+let ncGuidedData = null;           // guided track for the active mode
+let ncGuidedDataStudy = null;
+let ncGuidedDataSolve = null;
+let ncOrderingData = null;         // cached ordering + cursors
+let ncCurrentMode = 'solve';
+let ncOrderingExpanded = false;
+let ncExpandedTopic = null;
+let ncModalProblemId = null;
+let ncModalRating = null;
+let ncModalMode = null;            // mode captured when modal opens
+
+// Filter state — persisted in localStorage
+let ncTopicFilters = JSON.parse(localStorage.getItem('nc-topic-filters') || 'null');
+let ncDiffFilters = JSON.parse(localStorage.getItem('nc-diff-filters') || '{"easy":true,"medium":true,"hard":true}');
+let ncBlindMode = localStorage.getItem('nc-blind-mode') === 'true';
+
+const NEETCODE_TOPIC_LABELS = {
+  'arrays-hashing': 'Arrays & Hashing',
+  'two-pointers': 'Two Pointers',
+  'stack': 'Stack',
+  'binary-search': 'Binary Search',
+  'sliding-window': 'Sliding Window',
+  'linked-list': 'Linked List',
+  'trees': 'Trees',
+  'tries': 'Tries',
+  'heap-priority-queue': 'Heap / Priority Queue',
+  'backtracking': 'Backtracking',
+  'graphs': 'Graphs',
+  'advanced-graphs': 'Advanced Graphs',
+  '1d-dp': '1-D Dynamic Programming',
+  '2d-dp': '2-D Dynamic Programming',
+  'greedy': 'Greedy',
+  'intervals': 'Intervals',
+  'math-geometry': 'Math & Geometry',
+  'bit-manipulation': 'Bit Manipulation',
+};
+
+const NC_DIFF_COLORS = { easy: '#22c55e', medium: '#eab308', hard: '#ef4444' };
+
+// Map our problem IDs (LeetCode-style) to NeetCode slugs (only where they differ)
+const NC_SLUG_MAP = {
+  'two-sum': 'two-integer-sum',
+  'contains-duplicate': 'duplicate-integer',
+  'valid-anagram': 'is-anagram',
+  'group-anagrams': 'anagram-groups',
+  'top-k-frequent-elements': 'top-k-elements-in-list',
+  'encode-and-decode-strings': 'string-encode-and-decode',
+  'product-of-array-except-self': 'products-of-array-discluding-self',
+  'valid-palindrome': 'is-palindrome',
+  'two-sum-ii': 'two-integer-sum-ii',
+  'three-sum': 'three-integer-sum',
+  'container-with-most-water': 'max-water-container',
+  'valid-parentheses': 'validate-parentheses',
+  'min-stack': 'minimum-stack',
+  'search-a-2d-matrix': 'search-2d-matrix',
+  'koko-eating-bananas': 'eating-bananas',
+  'search-in-rotated-sorted-array': 'find-target-in-rotated-sorted-array',
+  'best-time-to-buy-and-sell-stock': 'buy-and-sell-crypto',
+  'longest-substring-without-repeating-characters': 'longest-substring-without-duplicates',
+  'longest-repeating-character-replacement': 'longest-repeating-substring-with-replacement',
+  'permutation-in-string': 'permutation-string',
+  'minimum-window-substring': 'minimum-window-with-characters',
+  'reverse-linked-list': 'reverse-a-linked-list',
+  'merge-two-sorted-lists': 'merge-two-sorted-linked-lists',
+  'reorder-list': 'reorder-linked-list',
+  'remove-nth-node-from-end-of-list': 'remove-node-from-end-of-linked-list',
+  'copy-list-with-random-pointer': 'copy-linked-list-with-random-pointer',
+  'linked-list-cycle': 'linked-list-cycle-detection',
+  'find-the-duplicate-number': 'find-duplicate-integer',
+  'merge-k-sorted-lists': 'merge-k-sorted-linked-lists',
+  'invert-binary-tree': 'invert-a-binary-tree',
+  'maximum-depth-of-binary-tree': 'depth-of-binary-tree',
+  'diameter-of-binary-tree': 'binary-tree-diameter',
+  'same-tree': 'same-binary-tree',
+  'subtree-of-another-tree': 'subtree-of-a-binary-tree',
+  'lowest-common-ancestor-of-bst': 'lowest-common-ancestor-in-binary-search-tree',
+  'binary-tree-level-order-traversal': 'level-order-traversal-of-binary-tree',
+  'validate-binary-search-tree': 'valid-binary-search-tree',
+  'kth-smallest-element-in-a-bst': 'kth-smallest-integer-in-bst',
+  'construct-binary-tree-from-preorder-and-inorder': 'binary-tree-from-preorder-and-inorder-traversal',
+  'implement-trie': 'implement-prefix-tree',
+  'design-add-and-search-words': 'design-word-search-data-structure',
+  'word-search-ii': 'search-for-word-ii',
+  'kth-largest-element-in-a-stream': 'kth-largest-integer-in-a-stream',
+  'task-scheduler': 'task-scheduling',
+  'design-twitter': 'design-twitter-feed',
+  'find-median-from-data-stream': 'find-median-in-a-data-stream',
+  'combination-sum': 'combination-target-sum',
+  'combination-sum-ii': 'combination-target-sum-ii',
+  'word-search': 'search-for-word',
+  'letter-combinations-of-a-phone-number': 'combinations-of-a-phone-number',
+  'number-of-islands': 'count-number-of-islands',
+  'rotting-oranges': 'rotting-fruit',
+  'walls-and-gates': 'islands-and-treasure',
+  'number-of-connected-components': 'count-connected-components',
+  'graph-valid-tree': 'valid-tree',
+  'reconstruct-itinerary': 'reconstruct-flight-path',
+  'min-cost-to-connect-all-points': 'min-cost-to-connect-points',
+  'cheapest-flights-within-k-stops': 'cheapest-flight-path',
+  'unique-paths': 'count-paths',
+  'best-time-to-buy-and-sell-stock-with-cooldown': 'buy-and-sell-crypto-with-cooldown',
+  'longest-increasing-path-in-a-matrix': 'longest-increasing-path-in-matrix',
+  'distinct-subsequences': 'count-subsequences',
+  'merge-triplets-to-form-target-triplet': 'merge-triplets-to-form-target',
+  'insert-interval': 'insert-new-interval',
+  'meeting-rooms': 'meeting-schedule',
+  'meeting-rooms-ii': 'meeting-schedule-ii',
+  'minimum-interval-to-include-each-query': 'minimum-interval-including-query',
+  'rotate-image': 'rotate-matrix',
+  'set-matrix-zeroes': 'set-zeroes-in-matrix',
+  'happy-number': 'non-cyclical-number',
+  'powx-n': 'pow-x-n',
+  'detect-squares': 'count-squares',
+  'number-of-1-bits': 'number-of-one-bits',
+};
+
+async function loadNeetCode() {
+  try {
+    const [res, guidedRes] = await Promise.all([
+      api('GET', '/api/neetcode'),
+      api('GET', '/api/neetcode/guided?both=1'),
+    ]);
+    if (!res.error) {
+      neetcodeDataFull = res;
+      ncCurrentMode = res.current_mode || 'solve';
+      neetcodeData = res.modes ? res.modes[ncCurrentMode] : res;
+      // Initialize topic filters to all if never set
+      if (ncTopicFilters === null) {
+        ncTopicFilters = {};
+        Object.keys(NEETCODE_TOPIC_LABELS).forEach(t => ncTopicFilters[t] = true);
+        localStorage.setItem('nc-topic-filters', JSON.stringify(ncTopicFilters));
+      }
+      renderNeetCode();
+    }
+    if (!guidedRes.error) {
+      ncGuidedDataStudy = guidedRes.study || null;
+      ncGuidedDataSolve = guidedRes.solve || null;
+      if (guidedRes.current_mode) ncCurrentMode = guidedRes.current_mode;
+      ncGuidedData = ncCurrentMode === 'study' ? ncGuidedDataStudy : ncGuidedDataSolve;
+      renderNcGuided();
+    }
+  } catch(e) {}
+}
+
+async function ncDrawCard() {
+  const btn = document.getElementById('ncStudyBtn');
+  btn.disabled = true;
+  btn.textContent = 'Drawing...';
+  try {
+    const activeTopics = Object.entries(ncTopicFilters || {}).filter(([,v]) => v).map(([k]) => k);
+    const activeDiffs = Object.entries(ncDiffFilters).filter(([,v]) => v).map(([k]) => k);
+    let qs = '';
+    if (activeTopics.length > 0 && activeTopics.length < 18) qs += `topics=${activeTopics.join(',')}`;
+    if (activeDiffs.length > 0 && activeDiffs.length < 3) qs += `${qs ? '&' : ''}difficulty=${activeDiffs[0]}`;
+    if (ncBlindMode) qs += `${qs ? '&' : ''}blind=true`;
+    const res = await api('GET', `/api/neetcode/draw${qs ? '?' + qs : ''}`);
+    if (res.error) { btn.textContent = 'No problems'; setTimeout(() => { btn.textContent = 'Draw Problem'; btn.disabled = false; }, 1500); return; }
+    if (!neetcodeData) await loadNeetCode();
+    openNcProblem(res.id, res.topic);
+  } catch(e) {
+    console.error('NC draw failed:', e);
+  }
+  btn.textContent = 'Draw Problem';
+  btn.disabled = false;
+}
+
+function renderNeetCode() {
+  const d = neetcodeData;
+  if (!d) return;
+
+  // Readiness score
+  document.getElementById('ncScore').textContent = d.total_rated > 0 ? (d.readiness_score + '/5') : '\u2014';
+  document.getElementById('ncRated').textContent = d.total_rated;
+  document.getElementById('ncTotal').textContent = d.total_problems || 150;
+
+  // Confidence distribution bars
+  const dist = d.confidence_distribution || {};
+  const maxCount = Math.max(1, ...Object.values(dist));
+  let distHtml = '';
+  for (let i = 1; i <= 5; i++) {
+    const count = dist[i] || 0;
+    const h = Math.max(2, (count / maxCount) * 60);
+    distHtml += `<div class="nc-conf-bar">
+      <div class="nc-conf-bar-count">${count}</div>
+      <div class="nc-conf-bar-fill" style="height:${h}px; background:${confColor(i)}"></div>
+      <div class="nc-conf-bar-label">${i}</div>
+    </div>`;
+  }
+  document.getElementById('ncConfDist').innerHTML = distHtml;
+
+  // Stats bar
+  const ss = d.study_stats || {};
+  const ds = d.difficulty_solved || {};
+  let statsHtml = `
+    <div class="nc-stat-item">Today <span class="nc-stat-value">${ss.today_reviewed || 0}/${ss.daily_goal || 3}</span> reviewed</div>
+    <div class="nc-stat-item">Study streak: <span class="nc-stat-value">${ss.study_streak || 0} days</span></div>
+    <div class="nc-diff-pills">
+      <span class="nc-diff-pill" style="background:rgba(34,197,94,0.15);color:#22c55e">${ds.easy || 0} Easy</span>
+      <span class="nc-diff-pill" style="background:rgba(234,179,8,0.15);color:#eab308">${ds.medium || 0} Med</span>
+      <span class="nc-diff-pill" style="background:rgba(239,68,68,0.15);color:#ef4444">${ds.hard || 0} Hard</span>
+    </div>`;
+  document.getElementById('ncStatsBar').innerHTML = statsHtml;
+
+  // Daily activity chart
+  renderDailyChart('ncDailyChart', d.review_history, '#8b5cf6');
+
+  // Topic filter pills
+  let pillsHtml = '';
+  for (const [tid, label] of Object.entries(NEETCODE_TOPIC_LABELS)) {
+    const active = ncTopicFilters && ncTopicFilters[tid];
+    pillsHtml += `<span class="nc-topic-pill ${active ? 'active' : ''}" onclick="toggleNcTopicFilter('${tid}')">${label}</span>`;
+  }
+  document.getElementById('ncTopicPills').innerHTML = pillsHtml;
+
+  // Diff toggles
+  document.querySelectorAll('.nc-diff-toggle[data-diff]').forEach(el => {
+    el.classList.toggle('active', ncDiffFilters[el.dataset.diff]);
+  });
+
+  // Blind mode switch
+  document.getElementById('ncBlindSwitch').classList.toggle('on', ncBlindMode);
+
+  // Due for Review
+  const due = d.due_problems || [];
+  let dueHtml = '<h3 class="nc-section-title">Due for Review</h3>';
+  if (due.length === 0) {
+    dueHtml += '<div class="nc-all-caught-up">All caught up! Check back later.</div>';
+  } else {
+    dueHtml += '<div class="nc-due-row">';
+    for (const dp of due) {
+      const topicLabel = NEETCODE_TOPIC_LABELS[dp.topic] || dp.topic;
+      const overdueLabel = dp.overdue_hours >= 24
+        ? Math.round(dp.overdue_hours / 24) + 'd overdue'
+        : Math.round(dp.overdue_hours) + 'h overdue';
+      const diffColor = NC_DIFF_COLORS[dp.difficulty] || '#94a3b8';
+      dueHtml += `<div class="nc-due-card" onclick="openNcProblem('${dp.id}','${dp.topic}')">
+        <div>
+          <span class="nc-due-card-topic">${escapeHtml(topicLabel)}</span>
+          <span class="nc-due-card-diff" style="color:${diffColor}">\u25CF</span>
+        </div>
+        <div class="nc-due-card-name">${escapeHtml(dp.name)}</div>
+        <div class="nc-due-card-bar">
+          <div class="nc-due-card-bar-fill" style="width:${dp.mastery}%;background:${masteryColor(dp.mastery)}"></div>
+        </div>
+        <div class="nc-due-card-overdue">${overdueLabel}</div>
+      </div>`;
+    }
+    dueHtml += '</div>';
+  }
+  document.getElementById('ncDueSection').innerHTML = dueHtml;
+
+  // Topics
+  let topicsHtml = '';
+  for (const t of d.topics) {
+    if (t.total === 0) continue;
+    const isOpen = ncExpandedTopic === t.id;
+    const barColor = t.avg_confidence >= 4 ? '#22c55e' : t.avg_confidence >= 3 ? '#eab308' : t.avg_confidence >= 2 ? '#f97316' : t.rated > 0 ? '#ef4444' : '#334155';
+
+    // Difficulty breakdown
+    const dd = t.difficulty_distribution || {};
+    let diffBadges = '';
+    for (const d of ['easy', 'medium', 'hard']) {
+      if (dd[d] && dd[d].total > 0) {
+        diffBadges += `<span style="font-size:0.6rem;color:${NC_DIFF_COLORS[d]}">${dd[d].solved}/${dd[d].total}</span>`;
+      }
+    }
+
+    topicsHtml += `<div class="nc-topic">
+      <div class="nc-topic-header" onclick="toggleNcTopic('${t.id}')">
+        <span class="nc-topic-arrow ${isOpen ? 'open' : ''}">&#9654;</span>
+        <span class="nc-topic-name">${escapeHtml(t.label)}</span>
+        <div class="nc-topic-stats">
+          <span>${t.rated}/${t.total}</span>
+          <div class="nc-topic-bar-wrap">
+            <div class="nc-topic-bar-fill" style="width:${t.coverage_pct}%; background:${barColor}"></div>
+          </div>
+          <span class="nc-topic-conf">${t.rated > 0 ? t.avg_confidence + '/5' : '\u2014'}</span>
+          <span style="display:flex;gap:0.3rem">${diffBadges}</span>
+        </div>
+      </div>
+      <div class="nc-topic-body ${isOpen ? 'open' : ''}" id="nc-topic-${t.id}">
+        ${renderNcProblems(t)}
+      </div>
+    </div>`;
+  }
+  document.getElementById('ncTopics').innerHTML = topicsHtml;
+
+  // Timeline
+  const history = (d.review_history || []).slice().reverse();
+  let tlHtml = '';
+  if (history.length === 0) {
+    tlHtml = '<div class="nc-empty">No ratings yet. Draw a problem to start practicing!</div>';
+  } else {
+    const nameMap = {};
+    for (const t of d.topics) {
+      for (const p of t.rated_problems) nameMap[p.id] = { name: p.name, topic: t.label };
+      for (const p of t.unrated_problems) nameMap[p.id] = { name: p.name, topic: t.label };
+    }
+    for (const entry of history.slice(0, 50)) {
+      const info = nameMap[entry.problem_id] || { name: entry.problem_id, topic: '' };
+      const dt = new Date(entry.rated_at);
+      const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+                      dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      tlHtml += `<div class="nc-tl-entry">
+        <span class="nc-tl-date">${dateStr}</span>
+        <span class="nc-tl-problem">${escapeHtml(info.name)}</span>
+        <span class="nc-tl-badge" style="background:${confColor(entry.confidence)}">${entry.confidence}</span>
+        <span class="nc-tl-topic">${escapeHtml(info.topic)}</span>
+      </div>`;
+    }
+  }
+  document.getElementById('ncTimeline').innerHTML = tlHtml;
+}
+
+// ── Guided Track ──
+const GUIDED_TOPIC_ORDER = [
+  'arrays-hashing','two-pointers','stack','binary-search','sliding-window',
+  'linked-list','trees','tries','heap-priority-queue','backtracking',
+  'graphs','advanced-graphs','1d-dp','2d-dp','greedy','intervals',
+  'math-geometry','bit-manipulation'
+];
+
+function renderNcGuided() {
+  const el = document.getElementById('ncGuided');
+  const g = ncGuidedData;
+  if (!g) { el.innerHTML = ''; return; }
+
+  const otherMode = ncCurrentMode === 'study' ? 'solve' : 'study';
+  const other = ncCurrentMode === 'study' ? ncGuidedDataSolve : ncGuidedDataStudy;
+  const overall = g.overall_progress || 0;
+  const otherOverall = other ? (other.overall_progress || 0) : 0;
+  const active = g.active_topics || [];
+  const completion = g.topic_completion || {};
+  const next = g.next_problem;
+
+  // Mode toggle
+  const toggleHtml = `<div class="nc-mode-toggle">
+    <button class="nc-mode-pill ${ncCurrentMode === 'study' ? 'active' : ''}" onclick="ncSetMode('study')">Study</button>
+    <button class="nc-mode-pill ${ncCurrentMode === 'solve' ? 'active' : ''}" onclick="ncSetMode('solve')">Solve</button>
+    <button class="nc-guided-refresh" onclick="loadNeetCode()" title="Refresh">\u21bb</button>
+  </div>`;
+
+  // Other-mode mini bar
+  const otherLabel = otherMode === 'study' ? 'Study' : 'Solve';
+  const otherBar = other ? `<div class="nc-mode-other">
+    <span class="nc-mode-other-label">${otherLabel}</span>
+    <div class="nc-mode-other-bar"><div class="nc-mode-other-bar-fill" style="width:${otherOverall}%"></div></div>
+    <span class="nc-mode-other-pct">${otherOverall}% &middot; ${other.total_rated || 0}/${other.total_problems || 150}</span>
+  </div>` : '';
+
+  if (g.all_done) {
+    el.innerHTML = `${toggleHtml}
+      <div class="nc-guided-done">All 150 problems completed in ${ncCurrentMode.toUpperCase()}!</div>
+      ${otherBar}
+      <div class="nc-guided-bottom">
+        <button class="nc-guided-peek-btn" onclick="ncTogglePeek()">${ncOrderingExpanded ? 'Hide' : '\u{1F441}'} ordering</button>
+      </div>
+      <div id="ncOrderingPanel" class="nc-peek-panel" style="${ncOrderingExpanded ? '' : 'display:none'}"></div>`;
+    if (ncOrderingExpanded) renderNcOrdering();
+    return;
+  }
+
+  // Topic window cards
+  let windowHtml = '';
+  for (const t of GUIDED_TOPIC_ORDER) {
+    const pct = completion[t] || 0;
+    const isActive = active.includes(t);
+    const isUnlocked = (g.unlocked_topics || []).includes(t);
+    if (!isActive && !isUnlocked) continue;
+    if (pct >= 100 && !isActive) continue;
+    const cls = isActive ? 'active' : (isUnlocked ? '' : 'locked');
+    const barColor = isActive ? '#8b5cf6' : '#475569';
+    windowHtml += `<div class="nc-guided-topic ${cls}">
+      <span class="nc-guided-topic-name">${NEETCODE_TOPIC_LABELS[t] || t}</span>
+      <div class="nc-guided-topic-bar">
+        <div class="nc-guided-topic-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+      <span class="nc-guided-topic-pct">${pct}%</span>
+    </div>`;
+  }
+
+  // Next problem preview
+  let previewHtml = '';
+  if (next) {
+    const diffColor = NC_DIFF_COLORS[next.difficulty] || '#94a3b8';
+    previewHtml = `<div class="nc-guided-preview">
+      <span class="nc-guided-preview-name">${escapeHtml(next.name)}</span>
+      <span style="color:${diffColor};font-size:0.7rem;margin-left:0.4rem">${next.difficulty}</span>
+      <div class="nc-guided-preview-topic">${NEETCODE_TOPIC_LABELS[next.topic] || next.topic}</div>
+    </div>`;
+  }
+
+  // Unlock hint
+  let unlockHint = '';
+  if (g.next_unlock) {
+    const unlockLabel = NEETCODE_TOPIC_LABELS[g.next_unlock] || g.next_unlock;
+    const unlockPct = g.next_unlock_pct || 0;
+    unlockHint = `<div class="nc-guided-unlock-hint">${unlockLabel} unlocks at 75% &mdash; currently ${unlockPct}% on ${NEETCODE_TOPIC_LABELS[g.unlock_gate_topic] || ''}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="nc-guided-top">
+      <span class="nc-guided-title">Guided Track</span>
+      ${toggleHtml}
+      <span class="nc-guided-progress-text">${g.total_rated || 0} / ${g.total_problems || 150} completed (${overall}%)</span>
+    </div>
+    <div class="nc-guided-bar"><div class="nc-guided-bar-fill" style="width:${overall}%"></div></div>
+    ${otherBar}
+    <div class="nc-guided-window">${windowHtml}</div>
+    <div class="nc-guided-bottom">
+      <button class="nc-guided-next-btn" id="ncGuidedBtn" onclick="ncGuidedNext()" ${next ? '' : 'disabled'}>Next Problem</button>
+      <button class="nc-guided-peek-btn" onclick="ncTogglePeek()">${ncOrderingExpanded ? 'Hide' : '\u{1F441}'} Peek ordering</button>
+      ${previewHtml}
+    </div>
+    ${unlockHint}
+    <div id="ncOrderingPanel" class="nc-peek-panel" style="${ncOrderingExpanded ? '' : 'display:none'}"></div>`;
+
+  if (ncOrderingExpanded) renderNcOrdering();
+}
+
+async function ncSetMode(mode) {
+  if (mode !== 'study' && mode !== 'solve') return;
+  if (mode === ncCurrentMode) return;
+
+  // Optimistic update — swap cached state
+  ncCurrentMode = mode;
+  if (neetcodeDataFull && neetcodeDataFull.modes) {
+    neetcodeData = neetcodeDataFull.modes[mode];
+  }
+  ncGuidedData = mode === 'study' ? ncGuidedDataStudy : ncGuidedDataSolve;
+  renderNcGuided();
+  if (neetcodeData) renderNeetCode();
+
+  try {
+    const res = await api('POST', '/api/neetcode/mode', { mode });
+    if (res.error) {
+      console.error('Failed to set mode:', res.error);
+    } else if (neetcodeDataFull) {
+      neetcodeDataFull.current_mode = mode;
+    }
+  } catch (e) {
+    console.error('ncSetMode error:', e);
+  }
+}
+
+async function ncTogglePeek() {
+  ncOrderingExpanded = !ncOrderingExpanded;
+  const panel = document.getElementById('ncOrderingPanel');
+  if (!ncOrderingExpanded) {
+    if (panel) panel.style.display = 'none';
+    // Re-render top to update button label
+    renderNcGuided();
+    return;
+  }
+  if (!ncOrderingData) {
+    try {
+      const res = await api('GET', '/api/neetcode/guided/ordering');
+      if (!res.error) ncOrderingData = res;
+    } catch (e) {
+      console.error('Failed to fetch ordering:', e);
+    }
+  }
+  renderNcGuided();
+}
+
+function renderNcOrdering() {
+  const panel = document.getElementById('ncOrderingPanel');
+  if (!panel) return;
+  if (!ncOrderingData) {
+    panel.innerHTML = '<div class="nc-peek-empty">Loading ordering\u2026</div>';
+    return;
+  }
+  const cursors = ncOrderingData.cursors || {};
+  const studyCursor = cursors.study ? cursors.study.next_problem_id : null;
+  const solveCursor = cursors.solve ? cursors.solve.next_problem_id : null;
+  const studyRatings = (neetcodeDataFull && neetcodeDataFull.modes && neetcodeDataFull.modes.study) ? _ncRatingIdSet(neetcodeDataFull.modes.study) : new Set();
+  const solveRatings = (neetcodeDataFull && neetcodeDataFull.modes && neetcodeDataFull.modes.solve) ? _ncRatingIdSet(neetcodeDataFull.modes.solve) : new Set();
+
+  let html = '';
+  for (const topic of ncOrderingData.ordering) {
+    // Compute unlock for active mode: topic is locked if the gating topic is <75% rated in active mode
+    const activeCompletion = (ncGuidedData && ncGuidedData.topic_completion) || {};
+    const gateIdx = GUIDED_TOPIC_ORDER.indexOf(topic.topic);
+    let lockedInActive = false;
+    if (gateIdx > 0) {
+      const gate = GUIDED_TOPIC_ORDER[gateIdx - 1];
+      const gatePct = activeCompletion[gate] || 0;
+      lockedInActive = gatePct < 75;
+    }
+    const topicClass = lockedInActive ? 'nc-peek-topic locked' : 'nc-peek-topic';
+    html += `<div class="${topicClass}"><div class="nc-peek-topic-header">${lockedInActive ? '\u25B6' : '\u25BC'} ${escapeHtml(topic.label)}${lockedInActive ? ' <span class="nc-peek-locked">(locked in '+ncCurrentMode+')</span>' : ''}</div>`;
+    for (const p of topic.problems) {
+      const diffColor = NC_DIFF_COLORS[p.difficulty] || '#94a3b8';
+      const ratedStudy = studyRatings.has(p.id);
+      const ratedSolve = solveRatings.has(p.id);
+      const isStudyCursor = p.id === studyCursor;
+      const isSolveCursor = p.id === solveCursor;
+      let markers = '';
+      if (ratedStudy) markers += '<span class="nc-peek-rated nc-peek-marker-study">\u2713 study</span>';
+      if (ratedSolve) markers += '<span class="nc-peek-rated nc-peek-marker-solve">\u2713 solve</span>';
+      if (isStudyCursor) markers += '<span class="nc-peek-cursor nc-peek-marker-study">\u2b05 study</span>';
+      if (isSolveCursor) markers += '<span class="nc-peek-cursor nc-peek-marker-solve">\u2b05 solve</span>';
+      const highlightCls = (ncCurrentMode === 'study' && isStudyCursor) || (ncCurrentMode === 'solve' && isSolveCursor) ? ' cursor-active' : '';
+      html += `<div class="nc-peek-problem${highlightCls}" onclick="openNcProblem('${p.id}','${topic.topic}')" data-pid="${p.id}">
+        <span class="nc-peek-idx">${p.index_topic + 1}.</span>
+        <span class="nc-peek-name">${escapeHtml(p.name)}</span>
+        <span class="nc-peek-diff" style="color:${diffColor}">\u25CF</span>
+        <span class="nc-peek-markers">${markers}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  panel.innerHTML = html;
+  panel.style.display = '';
+
+  // Auto-scroll to the active mode's cursor
+  const activeCursor = ncCurrentMode === 'study' ? studyCursor : solveCursor;
+  if (activeCursor) {
+    const target = panel.querySelector(`[data-pid="${activeCursor}"]`);
+    if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
+function _ncRatingIdSet(modeView) {
+  const out = new Set();
+  if (!modeView || !modeView.topics) return out;
+  for (const t of modeView.topics) {
+    for (const rp of (t.rated_problems || [])) out.add(rp.id);
+  }
+  return out;
+}
+
+async function ncGuidedNext() {
+  const btn = document.getElementById('ncGuidedBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  try {
+    const res = await api('GET', `/api/neetcode/guided?mode=${encodeURIComponent(ncCurrentMode)}`);
+    if (!res.error && res.next_problem) {
+      // Update only the active mode's cached guided data
+      if (ncCurrentMode === 'study') ncGuidedDataStudy = res;
+      else ncGuidedDataSolve = res;
+      ncGuidedData = res;
+      if (!neetcodeData) await loadNeetCode();
+      openNcProblem(res.next_problem.id, res.next_problem.topic);
+      renderNcGuided();
+    }
+  } catch(e) {
+    console.error('Guided track error:', e);
+  }
+  btn.textContent = 'Next Problem';
+  btn.disabled = false;
+}
+
+function renderNcProblems(topic) {
+  const all = [...topic.rated_problems.map(p => ({...p, isRated: true})),
+               ...topic.unrated_problems.map(p => ({...p, isRated: false}))];
+  if (all.length === 0) return '<div class="nc-empty">No problems</div>';
+
+  let html = '<div class="nc-problem-grid">';
+  for (const p of all) {
+    const diffColor = NC_DIFF_COLORS[p.difficulty] || '#94a3b8';
+    if (p.isRated) {
+      const mastery = p.mastery || 0;
+      const overdue = p.next_review && new Date(p.next_review) <= new Date();
+      html += `<div class="nc-problem nc-problem-rated"
+        onclick="openNcProblem('${p.id}','${topic.id}')">
+        <span class="nc-problem-badge" style="background:${confColor(p.confidence)};font-size:0.55rem">${p.confidence}</span>
+        <div class="nc-problem-diff" style="background:${diffColor}"></div>
+        <div class="nc-problem-mastery"><div class="nc-problem-mastery-fill" style="width:${mastery}%;background:${masteryColor(mastery)}"></div></div>
+        <span class="nc-problem-name">${escapeHtml(p.name)}</span>
+        ${overdue ? '<span class="nc-problem-overdue-icon" title="Due for review">\u23F0</span>' : ''}
+      </div>`;
+    } else {
+      html += `<div class="nc-problem nc-problem-unrated"
+        onclick="openNcProblem('${p.id}','${topic.id}')">
+        <span class="nc-problem-badge" style="background:#334155; color:#64748b">-</span>
+        <div class="nc-problem-diff" style="background:${diffColor}"></div>
+        <span class="nc-problem-name">${escapeHtml(p.name)}</span>
+      </div>`;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function toggleNcTopic(topicId) {
+  ncExpandedTopic = ncExpandedTopic === topicId ? null : topicId;
+  renderNeetCode();
+}
+
+// Filter functions
+function toggleNcTopicFilter(topicId) {
+  if (!ncTopicFilters) ncTopicFilters = {};
+  ncTopicFilters[topicId] = !ncTopicFilters[topicId];
+  localStorage.setItem('nc-topic-filters', JSON.stringify(ncTopicFilters));
+  renderNeetCode();
+}
+
+function ncTopicFilterAll() {
+  ncTopicFilters = {};
+  Object.keys(NEETCODE_TOPIC_LABELS).forEach(t => ncTopicFilters[t] = true);
+  localStorage.setItem('nc-topic-filters', JSON.stringify(ncTopicFilters));
+  renderNeetCode();
+}
+
+function ncTopicFilterNone() {
+  ncTopicFilters = {};
+  Object.keys(NEETCODE_TOPIC_LABELS).forEach(t => ncTopicFilters[t] = false);
+  localStorage.setItem('nc-topic-filters', JSON.stringify(ncTopicFilters));
+  renderNeetCode();
+}
+
+function toggleNcDiffFilter(diff) {
+  ncDiffFilters[diff] = !ncDiffFilters[diff];
+  localStorage.setItem('nc-diff-filters', JSON.stringify(ncDiffFilters));
+  renderNeetCode();
+}
+
+function toggleNcBlindMode() {
+  ncBlindMode = !ncBlindMode;
+  localStorage.setItem('nc-blind-mode', ncBlindMode);
+  renderNeetCode();
+}
+
+// Find a problem in loaded data for a given mode view (default: active mode)
+function findNcProblem(problemId, topicId, modeView) {
+  const data = modeView || neetcodeData;
+  if (!data) return null;
+  for (const t of data.topics) {
+    if (topicId && t.id !== topicId) continue;
+    for (const p of t.rated_problems) { if (p.id === problemId) return {...p, topicLabel: t.label, topicId: t.id, isRated: true}; }
+    for (const p of t.unrated_problems) { if (p.id === problemId) return {...p, topicLabel: t.label, topicId: t.id, isRated: false}; }
+  }
+  if (topicId) return findNcProblem(problemId, null, modeView);
+  return null;
+}
+
+// Get this problem's rating (confidence + times_seen) from a specific mode
+function _ncGetProblemInMode(problemId, mode) {
+  if (!neetcodeDataFull || !neetcodeDataFull.modes || !neetcodeDataFull.modes[mode]) return null;
+  return findNcProblem(problemId, null, neetcodeDataFull.modes[mode]);
+}
+
+function openNcProblem(problemId, topicId) {
+  const p = findNcProblem(problemId, topicId);
+  if (!p) return;
+  ncModalProblemId = problemId;
+  ncModalMode = ncCurrentMode;  // capture at open — does not change if user switches mode mid-modal
+  ncModalRating = p.isRated ? p.confidence : null;
+
+  let existing = document.getElementById('ncModalOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'ncModalOverlay';
+  overlay.className = 'nc-modal-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) closeNcModal(); };
+
+  const diffColor = NC_DIFF_COLORS[p.difficulty] || '#94a3b8';
+
+  // Show BOTH modes' current rating state for this problem
+  const studyView = _ncGetProblemInMode(problemId, 'study');
+  const solveView = _ncGetProblemInMode(problemId, 'solve');
+  const studyText = (studyView && studyView.isRated)
+    ? `${studyView.confidence}/5 &middot; streak ${studyView.streak || 0}`
+    : 'not rated';
+  const solveText = (solveView && solveView.isRated)
+    ? `${solveView.confidence}/5 &middot; streak ${solveView.streak || 0}`
+    : 'not rated';
+
+  const prevInfo = `<span class="nc-modal-prev-rating">
+      Study: <strong>${studyText}</strong> &nbsp;|&nbsp; Solve: <strong>${solveText}</strong>
+    </span>
+    <span class="nc-modal-seen">Seen ${p.times_seen || 1}x</span>`;
+
+  // Statement
+  const statementHtml = p.statement
+    ? `<div class="nc-modal-section">
+        <div class="nc-modal-label">Problem Statement</div>
+        <div class="nc-modal-text">${formatBody(p.statement)}</div>
+      </div>` : '';
+
+  // Problem links — LeetCode + NeetCode + YouTube
+  const lcUrl = p.url || `https://leetcode.com/problems/${problemId}/`;
+  const ncSlug = NC_SLUG_MAP[problemId] || problemId;
+  const ncUrl = `https://neetcode.io/problems/${ncSlug}`;
+  const ytUrl = p.youtube_url || null;
+  const lcLinkHtml = `<div class="nc-modal-section" style="display:flex;gap:1rem;flex-wrap:wrap">
+        <a class="nc-modal-lc-link" href="${escapeHtml(lcUrl)}" target="_blank" rel="noopener">\u{1F517} LeetCode${p.number ? ' #' + p.number : ''}</a>
+        <a class="nc-modal-lc-link" href="${escapeHtml(ncUrl)}" target="_blank" rel="noopener">\u{1F517} NeetCode</a>
+        ${ytUrl ? `<a class="nc-modal-lc-link" href="${escapeHtml(ytUrl)}" target="_blank" rel="noopener" style="color:#ef4444">\u{25B6} NeetCode Video</a>` : ''}
+      </div>`;
+
+  // Approaches (progressive reveal — interview prep structure)
+  const approaches = p.approaches || [];
+  let approachesHtml = '';
+  if (approaches.length > 0) {
+    const tabs = approaches.map((a, i) => `<span class="nc-approach-tab ${i === 0 ? 'active' : ''}"
+      onclick="switchNcApproach(this, ${i})">${escapeHtml(a.name)}</span>`).join('');
+    const panels = approaches.map((a, i) => {
+      // Build progressive sections — each toggleable
+      let sections = '';
+
+      // 1. Intuition — how to think about it (always visible when tab open)
+      if (a.thinking) {
+        sections += `<div class="nc-approach-thinking"><strong>Intuition</strong><br>${formatBody(a.thinking)}</div>`;
+      }
+
+      // 2. Walkthrough — step-by-step with example
+      if (a.walkthrough) {
+        sections += `<div class="nc-approach-walkthrough">
+          <button class="nc-reveal-btn" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.textContent=this.nextElementSibling.style.display==='none'?'Show Walkthrough':'Hide Walkthrough'">Show Walkthrough</button>
+          <div style="display:none"><strong>Step-by-step</strong><br>${formatBody(a.walkthrough)}</div>
+        </div>`;
+      }
+
+      // 3. Code
+      if (a.code) {
+        sections += `<div class="nc-approach-code-wrap">
+          <button class="nc-reveal-btn" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.textContent=this.nextElementSibling.style.display==='none'?'Show Code':'Hide Code'">Show Code</button>
+          <pre class="nc-approach-code" style="display:none">${escapeHtml(a.code)}</pre>
+        </div>`;
+      }
+
+      // 4. Complexity analysis — always visible
+      if (a.time || a.space) {
+        let complexityDetail = '';
+        if (a.time_explanation) complexityDetail += `<div class="nc-complexity-detail">${formatBody(a.time_explanation)}</div>`;
+        if (a.space_explanation) complexityDetail += `<div class="nc-complexity-detail">${formatBody(a.space_explanation)}</div>`;
+        sections += `<div class="nc-approach-complexity">
+          ${a.time ? `<span class="nc-complexity-badge">Time: ${escapeHtml(a.time)}</span>` : ''}
+          ${a.space ? `<span class="nc-complexity-badge">Space: ${escapeHtml(a.space)}</span>` : ''}
+          ${complexityDetail}
+        </div>`;
+      }
+
+      // 5. Explanation — deeper reasoning
+      if (a.explanation) {
+        sections += `<div class="nc-approach-explanation">${formatBody(a.explanation)}</div>`;
+      }
+
+      // 6. Interview tip
+      if (a.interview_tip) {
+        sections += `<div class="nc-interview-tip"><strong>Interview Tip:</strong> ${escapeHtml(a.interview_tip)}</div>`;
+      }
+
+      return `<div class="nc-approach-panel nc-approach-pane" data-idx="${i}" style="${i > 0 ? 'display:none' : ''}">${sections}</div>`;
+    }).join('');
+
+    approachesHtml = `<div class="nc-modal-section">
+      <button class="nc-approaches-reveal" onclick="revealNcApproaches(this)">Show Solution Guide</button>
+      <div class="nc-approaches" id="ncApproachesSection">
+        <div class="nc-modal-label" style="margin-top:0.6rem">Approaches (${approaches.length})</div>
+        <div class="nc-approach-tabs">${tabs}</div>
+        ${panels}
+        ${p.key_insight ? `<div class="nc-key-insight"><strong>Key Insight:</strong> ${escapeHtml(p.key_insight)}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Patterns
+  const patterns = p.patterns || [];
+  let patternsHtml = '';
+  if (patterns.length > 0) {
+    patternsHtml = `<div class="nc-modal-section">
+      <div class="nc-modal-label">Patterns</div>
+      <div class="nc-modal-patterns">
+        ${patterns.map(pt => `<span class="nc-modal-pattern">#${escapeHtml(pt)}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Related problems
+  const related = p.related || [];
+  let relatedHtml = '';
+  if (related.length > 0) {
+    relatedHtml = `<div class="nc-modal-section">
+      <div class="nc-modal-label">Related Problems</div>
+      <div class="nc-modal-related">
+        ${related.map(r => {
+          const conf = r.confidence || 0;
+          const dots = [1,2,3,4,5].map(i => `<div class="nc-modal-related-dot ${i <= conf ? 'filled' : ''}"></div>`).join('');
+          return `<span class="nc-modal-related-pill" onclick="closeNcModal();setTimeout(()=>openNcProblem('${r.id}'),100)">
+            ${escapeHtml(r.name)} <span class="nc-modal-related-dots">${dots}</span>
+          </span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // SR status
+  let srHtml = '';
+  if (p.isRated) {
+    const mastery = p.mastery || 0;
+    const streak = p.streak || 0;
+    const nextReview = p.next_review ? new Date(p.next_review) : null;
+    let nrLabel = '\u2014';
+    if (nextReview) {
+      const diffH = (nextReview - new Date()) / 3600000;
+      if (diffH < 0) nrLabel = 'Now';
+      else if (diffH < 24) nrLabel = Math.round(diffH) + 'h';
+      else nrLabel = Math.round(diffH / 24) + 'd';
+    }
+    srHtml = `<div class="nc-modal-sr-status">
+      <div class="nc-modal-sr-item">Mastery: <span class="nc-modal-sr-value" style="color:${masteryColor(mastery)}">${mastery}/100</span></div>
+      <div class="nc-modal-sr-item">Streak: <span class="nc-modal-sr-value">${streak}</span></div>
+      <div class="nc-modal-sr-item">Next review: <span class="nc-modal-sr-value">${nrLabel}</span></div>
+      <div class="nc-modal-sr-item">Seen: <span class="nc-modal-sr-value">${p.times_seen || 1}x</span></div>
+    </div>`;
+  }
+
+  // Notes display
+  let notesDisplayHtml = '';
+  if (p.notes) {
+    const notesList = typeof p.notes === 'string'
+      ? [{text: p.notes, ts: null}]
+      : (Array.isArray(p.notes) ? p.notes : []);
+    if (notesList.length) {
+      const entriesHtml = notesList.slice().reverse().map(n => {
+        const tsLine = n.ts ? `<div class="nc-modal-note-ts">${new Date(n.ts).toLocaleString()}</div>` : '';
+        return `<div class="nc-modal-note-entry">${tsLine}<div class="nc-modal-note-text">"${escapeHtml(n.text)}"</div></div>`;
+      }).join('');
+      notesDisplayHtml = `<div class="nc-modal-section nc-modal-notes-section open">
+        <div class="nc-modal-notes-toggle" onclick="this.parentElement.classList.toggle('open')">
+          <span class="nc-modal-notes-arrow">\u25B6</span>
+          Your Notes <span class="nc-modal-notes-count">${notesList.length}</span>
+        </div>
+        <div class="nc-modal-notes-collapsible">
+          <div class="nc-modal-notes-display">${entriesHtml}</div>
+        </div>
+      </div>`;
+    }
+  }
+
+  overlay.innerHTML = `<div class="nc-modal">
+    <div class="nc-modal-header">
+      <span class="nc-modal-mode-pill ${ncModalMode}">${ncModalMode.toUpperCase()}</span>
+      ${!ncBlindMode ? `<span class="nc-modal-topic">${escapeHtml(p.topicLabel)}</span>` : '<span class="nc-modal-topic">\u{1F648} Blind</span>'}
+      <span class="nc-modal-diff" style="background:${diffColor}20;color:${diffColor}">${(p.difficulty || 'medium').charAt(0).toUpperCase() + (p.difficulty || 'medium').slice(1)}</span>
+      <span class="nc-modal-title">${escapeHtml(p.name)}</span>
+      <button class="nc-modal-close" onclick="closeNcModal()">&times;</button>
+    </div>
+    <div class="nc-modal-body">
+      ${statementHtml}
+      ${lcLinkHtml}
+      ${approachesHtml}
+      ${patternsHtml}
+      ${relatedHtml}
+      ${srHtml}
+      ${notesDisplayHtml}
+    </div>
+    <div class="nc-modal-rating">
+      <div class="nc-modal-rating-row">
+        ${prevInfo}
+      </div>
+      <div class="nc-modal-rating-row">
+        <span class="nc-modal-rating-label">Rate yourself:</span>
+        <div class="nc-rate-btns">
+          ${[1,2,3,4,5].map(n => `<button class="nc-rate-btn ${ncModalRating === n ? 'active' : ''}"
+            style="${ncModalRating === n ? 'background:'+confColor(n) : ''}"
+            onclick="selectNcRating(${n})" title="${['','No clue','Shaky','Decent','Solid','Could nail it'][n]}">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="nc-modal-rating-row">
+        <span class="nc-modal-rating-label">Add note:</span>
+        <input class="nc-notes-input" id="ncNotesInput" placeholder="Optional — what tripped you up?" onkeydown="if(event.key==='Enter'){event.preventDefault();saveNcRating()}">
+      </div>
+      <div class="nc-modal-rating-row" style="justify-content:flex-end">
+        <button class="nc-rate-save" id="ncSaveBtn" onclick="saveNcRating()" ${ncModalRating ? '' : 'disabled'}>Save Rating</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+function revealNcApproaches(btn) {
+  btn.style.display = 'none';
+  document.getElementById('ncApproachesSection').classList.add('open');
+}
+
+function switchNcApproach(el, idx) {
+  el.parentElement.querySelectorAll('.nc-approach-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const section = el.closest('.nc-modal-section');
+  section.querySelectorAll('.nc-approach-pane').forEach(p => p.style.display = p.dataset.idx == idx ? '' : 'none');
+}
+
+function selectNcRating(n) {
+  ncModalRating = n;
+  document.querySelectorAll('.nc-rate-btn').forEach((btn, i) => {
+    const val = i + 1;
+    btn.classList.toggle('active', val === n);
+    btn.style.background = val === n ? confColor(n) : '';
+  });
+  document.getElementById('ncSaveBtn').disabled = false;
+}
+
+async function saveNcRating() {
+  if (!ncModalProblemId || !ncModalRating) return;
+  const btn = document.getElementById('ncSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const notes = document.getElementById('ncNotesInput').value.trim() || null;
+  try {
+    await api('POST', '/api/neetcode/rate', {
+      problem_id: ncModalProblemId,
+      confidence: ncModalRating,
+      notes: notes,
+      mode: ncModalMode,  // mode captured at open — switching mode mid-modal does not reroute
+    });
+    closeNcModal();
+    // Invalidate ordering cache so cursors update
+    ncOrderingData = null;
+    await loadNeetCode();
+  } catch(e) {
+    btn.textContent = 'Error';
+    setTimeout(() => { btn.textContent = 'Save Rating'; btn.disabled = false; }, 1500);
+  }
+}
+
+function closeNcModal() {
+  const overlay = document.getElementById('ncModalOverlay');
+  if (overlay) overlay.remove();
+  ncModalProblemId = null;
+  ncModalRating = null;
+  ncModalMode = null;
 }
 
 // ══════════════════════════════════════════════
@@ -7010,10 +9000,13 @@ setInterval(async () => {
     }
     else if (currentTab === 'calendar') await loadCronCalendar();
     else if (currentTab === 'stack') {
-      // Skip refresh if user has a card expanded (may be typing in note input)
-      if (!stackSelectedId) await loadStackTab();
+      // Skip refresh if user has a card expanded or is renaming a lane
+      if (!stackSelectedId && !document.querySelector('.stack-lane-label-input')) await loadStackTab();
     }
     else if (currentTab === 'learning') await loadLearning();
+    else if (currentTab === 'neetcode') {
+      if (!document.getElementById('ncModalOverlay')) await loadNeetCode();
+    }
   } catch (e) { console.warn('Auto-refresh error:', e.message); }
 }, 3000);
 </script>
