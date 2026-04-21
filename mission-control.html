@@ -7712,6 +7712,7 @@ let ncGuidedDataSolve = null;
 let ncOrderingData = null;         // cached ordering + cursors
 let ncCurrentMode = 'solve';
 let ncOrderingExpanded = false;
+let ncOrderingPendingScroll = false;
 let ncExpandedTopic = null;
 let ncModalProblemId = null;
 let ncModalRating = null;
@@ -8168,6 +8169,8 @@ async function ncTogglePeek() {
       console.error('Failed to fetch ordering:', e);
     }
   }
+  // Only auto-scroll on the open action, not on subsequent re-renders
+  ncOrderingPendingScroll = true;
   renderNcGuided();
 }
 
@@ -8221,11 +8224,14 @@ function renderNcOrdering() {
   panel.innerHTML = html;
   panel.style.display = '';
 
-  // Auto-scroll to the active mode's cursor
-  const activeCursor = ncCurrentMode === 'study' ? studyCursor : solveCursor;
-  if (activeCursor) {
-    const target = panel.querySelector(`[data-pid="${activeCursor}"]`);
-    if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  // Auto-scroll to the active mode's cursor — only on explicit open, not on every re-render
+  if (ncOrderingPendingScroll) {
+    ncOrderingPendingScroll = false;
+    const activeCursor = ncCurrentMode === 'study' ? studyCursor : solveCursor;
+    if (activeCursor) {
+      const target = panel.querySelector(`[data-pid="${activeCursor}"]`);
+      if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
   }
 }
 
@@ -8765,6 +8771,12 @@ function klNextCard() {
   document.getElementById('klFeedback').textContent = '';
   // Hide tip
   document.getElementById('klTipContent').style.display = 'none';
+  // Hide and erase scratch pad so each question starts fresh
+  const pad = document.getElementById('klScratch');
+  if (pad && pad.style.display !== 'none') {
+    klScratchClear();
+    pad.style.display = 'none';
+  }
 
   const q = klGenerateQuestion();
   klAnswer = q.answer;

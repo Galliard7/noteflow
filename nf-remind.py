@@ -138,19 +138,20 @@ def cancel_reminder(item_id):
         success, stdout, stderr = run_openclaw_cron(["rm", job_uuid])
         if success:
             print(f"Reminder cancelled ✓ [{item_id}]")
+            # Update store only on successful cancellation
+            store = load_store()
+            for item in store["items"]:
+                if item["id"] == item_id:
+                    item["cron_installed"] = False
+                    item["history"].append({"ts": now_iso(), "action": "cron cancelled"})
+                    break
+            save_store(store)
         else:
             print(f"Error cancelling cron job: {stderr}")
+            sys.exit(1)
     else:
         print(f"No active cron job found for {item_id}.")
-
-    # Update store
-    store = load_store()
-    for item in store["items"]:
-        if item["id"] == item_id:
-            item["cron_installed"] = False
-            item["history"].append({"ts": now_iso(), "action": "cron cancelled"})
-            break
-    save_store(store)
+        sys.exit(1)
 
 
 def list_reminders():

@@ -1,14 +1,31 @@
 """NoteFlow shared library — store operations and utilities."""
 
+import fcntl
 import json
 import os
+import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
 STORE_DIR = os.path.join(WORKSPACE, "data", "noteflow")
 STORE_PATH = os.path.join(STORE_DIR, "store.json")
+STORE_LOCK = os.path.join(STORE_DIR, "store.lock")
 ARCHIVE_PATH = os.path.join(STORE_DIR, "archive.json")
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+@contextmanager
+def store_lock():
+    """Acquire an exclusive file lock around store reads+writes."""
+    os.makedirs(STORE_DIR, exist_ok=True)
+    fd = os.open(STORE_LOCK, os.O_CREAT | os.O_RDWR)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
 def _resolve_telegram_chat_id():
     """Resolve Telegram chat ID from env var or cc-remote state."""
     env_val = os.environ.get("TELEGRAM_CHAT_ID")
@@ -71,11 +88,15 @@ def load_store():
 def save_store(store):
     """Write the NoteFlow store to disk (pretty-printed JSON)."""
     os.makedirs(STORE_DIR, exist_ok=True)
-    tmp = STORE_PATH + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(store, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    os.replace(tmp, STORE_PATH)
+    fd, tmp = tempfile.mkstemp(dir=STORE_DIR, prefix="store-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(store, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        os.replace(tmp, STORE_PATH)
+    except BaseException:
+        os.unlink(tmp)
+        raise
 
 
 def now_iso():

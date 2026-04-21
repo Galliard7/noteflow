@@ -1,6 +1,6 @@
 ---
 name: noteflow
-description: "Frictionless capture system for tasks, ideas, notes, and reminders from natural conversation. Evaluate user messages for capture-worthy content: things they need to do, want to remember, ideas they express, deadlines, or reminder requests. Also use when user asks to see their tasks, notes, dashboard, what's on their plate, wants to mark items done or complete, undo a capture, or adjust a captured item. Also handles the Mission Control stack — view stack, add to stack, pop, remove items. NOT for: questions directed at the agent, conversational replies, greetings, or meta-discussion about NoteFlow."
+description: "Frictionless capture system for tasks, ideas, and notes from natural conversation. Evaluate user messages for capture-worthy content: things they need to do, want to remember, ideas they express, or deadlines. Also use when user asks to see their tasks, notes, dashboard, what's on their plate, wants to mark items done or complete, undo a capture, or adjust a captured item. Also handles the Mission Control stack — view stack, add to stack, pop, remove items. NOT for: reminders (use the remind skill), questions directed at the agent, conversational replies, greetings, or meta-discussion about NoteFlow."
 ---
 
 # NoteFlow
@@ -20,7 +20,7 @@ Capture when the user expresses:
 - Something they need to do → **task** ("I need to call the dentist", "should pick up groceries")
 - An idea or possibility → **idea** ("maybe I should write a blog post about...", "what if we tried...")
 - Something worth remembering → **note** ("Jake mentioned the deadline is March 15", "the API key format is...")
-- A time-triggered reminder → **reminder** ("remind me tomorrow at 2pm to...", "don't forget to submit taxes by March 15")
+- A time-triggered reminder → **handled by the remind skill, not NoteFlow** ("remind me tomorrow at 2pm to...", "don't forget to submit taxes by March 15")
 
 ## What NOT to Capture
 
@@ -40,7 +40,7 @@ When uncertain whether something is capture-worthy, lean toward capturing and no
 | **task** | Actionable item with a clear outcome | "need to", "should", "have to", "must", action verbs |
 | **idea** | Potential action, not yet committed | "maybe", "what if", "could", "might be cool to" |
 | **note** | Reference information worth remembering | Facts, names, dates, decisions, observations |
-| **reminder** | Primary intent is "notify me at time X" | "remind me", "don't forget", explicit time with action |
+| **reminder** | **Redirect to remind skill** — do not capture as NoteFlow item | "remind me", "don't forget", explicit time with action |
 
 If a message has both a task AND a time reference, classify as **task** with a `due` date. Use **reminder** only when the primary intent is time-triggered notification.
 
@@ -144,21 +144,9 @@ python3 ~/skill-backends/noteflow/nf-list.py
 python3 ~/skill-backends/noteflow/nf-done.py --id <nf-XXX>
 ```
 
-### Manage reminders
+### Reminders
 
-```bash
-# Set/install a cron reminder for an existing item
-python3 ~/skill-backends/noteflow/nf-remind.py \
-  --set <nf-XXX> --recurrence <daily|weekdays|weekly|monthly>
-
-# Cancel a cron reminder
-python3 ~/skill-backends/noteflow/nf-remind.py --cancel <nf-XXX>
-
-# List active cron reminders
-python3 ~/skill-backends/noteflow/nf-remind.py --list
-```
-
-Use `--set` when the user wants to add or change a recurring reminder on an existing item. Use `--cancel` when they say "stop reminding me about X" or "turn off that reminder".
+**Reminders are managed by the dedicated `remind` skill.** Do not use `nf-remind.py` for new reminders. If the user says "remind me to..." or "set a reminder", let the remind skill handle it.
 
 ### Undo last capture
 

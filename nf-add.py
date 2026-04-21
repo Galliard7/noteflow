@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from nf_lib import load_store, save_store, now_iso, format_id, SCRIPTS_DIR
+from nf_lib import load_store, save_store, now_iso, format_id, store_lock, SCRIPTS_DIR
 from mc_lib import load_board, add_card
 
 
@@ -42,45 +42,46 @@ def main():
     )
     args = parser.parse_args()
 
-    store = load_store()
-    item_id = format_id(store["next_id"])
-    now = now_iso()
+    with store_lock():
+        store = load_store()
+        item_id = format_id(store["next_id"])
+        now = now_iso()
 
-    tags = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else []
+        tags = [t.strip() for t in args.tags.split(",") if t.strip()] if args.tags else []
 
-    item = {
-        "id": item_id,
-        "type": args.item_type,
-        "status": "open",
-        "title": args.title,
-        "body": args.body,
-        "tags": tags,
-        "created": now,
-        "due": args.due,
-        "remind": args.remind,
-        "recurrence": args.recurrence,
-        "linked_cards": [args.linked_card] if args.linked_card else [],
-        "project": args.project,
-        "cron_installed": False,
-        "snoozed_until": None,
-        "history": [{"ts": now, "action": "created"}],
-    }
+        item = {
+            "id": item_id,
+            "type": args.item_type,
+            "status": "open",
+            "title": args.title,
+            "body": args.body,
+            "tags": tags,
+            "created": now,
+            "due": args.due,
+            "remind": args.remind,
+            "recurrence": args.recurrence,
+            "linked_cards": [args.linked_card] if args.linked_card else [],
+            "project": args.project,
+            "cron_installed": False,
+            "snoozed_until": None,
+            "history": [{"ts": now, "action": "created"}],
+        }
 
-    # Auto-create MC card for tasks without a linked card
-    mc_slug = None
-    if args.item_type == "task" and not args.linked_card:
-        try:
-            board = load_board()
-            card = add_card(board, title=args.title, description=args.body or "", status="pending")
-            mc_slug = card["slug"]
-            item["linked_cards"] = [mc_slug]
-            item["history"].append({"ts": now_iso(), "action": f"linked to MC card {mc_slug}"})
-        except Exception:
-            pass  # non-fatal — card can be linked later via msync
+        # Auto-create MC card for tasks without a linked card
+        mc_slug = None
+        if args.item_type == "task" and not args.linked_card:
+            try:
+                board = load_board()
+                card = add_card(board, title=args.title, description=args.body or "", status="pending")
+                mc_slug = card["slug"]
+                item["linked_cards"] = [mc_slug]
+                item["history"].append({"ts": now_iso(), "action": f"linked to MC card {mc_slug}"})
+            except Exception:
+                pass  # non-fatal — card can be linked later via msync
 
-    store["items"].append(item)
-    store["next_id"] += 1
-    save_store(store)
+        store["items"].append(item)
+        store["next_id"] += 1
+        save_store(store)
 
     # Auto-install cron job if remind time is set
     if args.remind:
