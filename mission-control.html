@@ -1257,7 +1257,7 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 /* ── Lanes board ── */
 .stack-board {
   flex: 1; display: flex; gap: 16px;
-  padding: 16px; overflow-x: auto; min-height: 0;
+  padding: 16px; overflow-x: auto; min-height: 180px;
   justify-content: center;
 }
 
@@ -1332,6 +1332,24 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
   flex: 1; color: #334155; font-size: 0.7rem; font-style: italic;
   min-height: 80px;
 }
+
+/* ── Inline add-task button (per lane) ── */
+.stack-lane-add {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 8px; margin: 2px 8px 6px;
+  color: #334155; font-size: 0.72rem; cursor: pointer;
+  border-radius: 6px; transition: all 0.15s;
+}
+.stack-lane-add:hover { color: #64748b; background: rgba(59,130,246,0.04); }
+.stack-lane-add .plus { font-size: 0.85rem; line-height: 1; }
+.stack-lane-add-input {
+  width: calc(100% - 16px); margin: 2px 8px 8px;
+  padding: 5px 8px; font-size: 0.75rem;
+  background: #0c1322; border: 1px solid #334155; border-radius: 6px;
+  color: #e2e8f0; outline: none; font-family: inherit;
+}
+.stack-lane-add-input:focus { border-color: #3b82f6; }
+.stack-lane-add-input::placeholder { color: #475569; }
 
 /* ── Add-lane button ── */
 .stack-add-lane {
@@ -1461,6 +1479,127 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 }
 .stack-stash-chip-restore:hover { color: #3b82f6; }
 .stack-stash.drag-over { border-top-color: #f59e0b88; }
+
+/* ── Time Box Planner ── */
+.stack-timebox {
+  flex-shrink: 0; border-top: 1px solid #1e293b;
+  background: rgba(13,18,30,0.97); backdrop-filter: blur(12px);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: height 0.15s ease;
+}
+.stack-timebox.collapsed { height: 36px !important; }
+.stack-timebox-resize {
+  height: 5px; cursor: ns-resize;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.stack-timebox-resize::after {
+  content: ''; width: 32px; height: 3px;
+  background: #1e293b; border-radius: 2px; transition: background 0.15s;
+}
+.stack-timebox-resize:hover::after { background: #334155; }
+.stack-timebox.collapsed .stack-timebox-resize { display: none; }
+.stack-timebox.collapsed .stack-timebox-body { display: none; }
+.stack-timebox-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0 16px; height: 36px; flex-shrink: 0;
+  cursor: pointer; user-select: none;
+}
+.stack-timebox-toggle {
+  font-size: 0.55rem; color: #475569;
+  transition: transform 0.2s; display: inline-block;
+}
+.stack-timebox.collapsed .stack-timebox-toggle { transform: rotate(-90deg); }
+.stack-timebox-label {
+  font-size: 0.62rem; color: #475569; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.stack-timebox-clock {
+  color: #3b82f6; font-size: 0.65rem; font-family: monospace; margin-left: auto;
+}
+.stack-timebox-clear {
+  background: none; border: 1px solid #233048; border-radius: 4px;
+  color: #475569; font-size: 0.55rem; padding: 2px 8px; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.stack-timebox-clear:hover { color: #e2e8f0; border-color: #3b82f688; }
+.stack-timebox-body {
+  flex: 1; overflow-y: auto; min-height: 0;
+  padding: 0 0 8px 0;
+}
+/* Timeslot rows */
+.timebox-slot {
+  display: flex; align-items: stretch; min-height: 32px;
+  border-bottom: 1px solid rgba(30,41,59,0.3);
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.timebox-slot.current {
+  background: rgba(59,130,246,0.06); border-left-color: #3b82f6;
+}
+.timebox-slot.past { opacity: 0.45; }
+.timebox-slot.drag-over {
+  background: rgba(245,158,11,0.06); border-left-color: #f59e0b;
+}
+.timebox-time {
+  width: 56px; flex-shrink: 0;
+  font-size: 0.6rem; color: #475569; font-family: monospace;
+  padding: 6px 8px; text-align: right; user-select: none;
+  display: flex; align-items: center; justify-content: flex-end;
+}
+.timebox-slot.current .timebox-time { color: #3b82f6; font-weight: 700; }
+.timebox-cards {
+  flex: 1; display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 4px 8px; min-height: 28px; align-items: flex-start;
+}
+.timebox-cards .stack-card.timebox-card {
+  width: 220px; flex-shrink: 0; padding: 0.35rem 0.5rem;
+  font-size: 0.72rem; cursor: grab;
+}
+.timebox-cards .stack-card.timebox-card.tb-done {
+  border-color: #22c55e44; background: rgba(34,197,94,0.08); opacity: 0.7;
+  margin-left: auto;
+}
+.timebox-cards .stack-card.timebox-card.tb-done .timebox-card-title {
+  text-decoration: line-through; text-decoration-color: #22c55e;
+}
+.timebox-card-row {
+  display: flex; align-items: center; gap: 0.35rem;
+}
+.timebox-card-done {
+  background: none; border: 1px solid #334155; border-radius: 3px;
+  width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem; color: transparent; transition: all 0.15s;
+  padding: 0;
+}
+.timebox-card-done:hover { border-color: #22c55e; color: #22c55e; }
+.tb-done .timebox-card-done { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.15); }
+.timebox-card-title {
+  flex: 1; font-size: 0.72rem; font-weight: 500; color: #e2e8f0;
+  line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.timebox-card-remove {
+  background: none; border: none; color: #475569; cursor: pointer;
+  font-size: 0.65rem; padding: 0 2px; flex-shrink: 0; transition: color 0.15s;
+}
+.timebox-card-remove:hover { color: #ef4444; }
+.timebox-card-badge {
+  font-size: 0.5rem; font-weight: 500; padding: 1px 4px;
+  border-radius: 3px; margin-left: 4px;
+}
+.timebox-card-badge.brd { color: #22c55e; background: rgba(34,197,94,0.08); }
+.timebox-card-badge.cst { color: #64748b; background: rgba(30,41,59,0.5); }
+/* Ghost cards — history trail in past slots */
+.timebox-card.tb-ghost {
+  opacity: 0.35; border-style: dashed; border-color: #334155;
+  cursor: default; pointer-events: none;
+}
+.timebox-card.tb-ghost.tb-ghost-done {
+  border-color: #22c55e33;
+}
+.timebox-card.tb-ghost.tb-ghost-done .timebox-card-title {
+  text-decoration: line-through; text-decoration-color: #22c55e55;
+}
 .stack-board.stash-drop-target {
   outline: 2px dashed #3b82f644; outline-offset: -4px;
   border-radius: 8px;
@@ -2206,6 +2345,16 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
         <div class="stack-board" id="stackBoard"
           ondragover="stackBoardDragOver(event)" ondrop="stackBoardDrop(event)"></div>
         <div class="stack-completed-sidebar" id="stackCompleted"></div>
+        <div class="stack-timebox" id="stackTimebox">
+          <div class="stack-timebox-resize" onmousedown="timeboxResizeStart(event)"></div>
+          <div class="stack-timebox-header" onclick="timeboxToggle()">
+            <span class="stack-timebox-toggle">&#9660;</span>
+            <span class="stack-timebox-label">Time Box</span>
+            <span class="stack-timebox-clock" id="timeboxClock"></span>
+            <button class="stack-timebox-clear" onclick="event.stopPropagation();timeboxClearAll()" title="Clear all timebox assignments">Clear</button>
+          </div>
+          <div class="stack-timebox-body" id="timeboxBody"></div>
+        </div>
         <div class="stack-inbox" id="stackInbox"
           ondragover="stackInboxDragOver(event)" ondrop="stackLaneDrop(event,'inbox')"
           ondragleave="stackInboxDragLeave(event)">
@@ -2684,6 +2833,14 @@ let poolSource = localStorage.getItem('mc-pool-source') || 'board';
 let poolNfItems = [];
 let poolNfColumns = [];
 
+// Timebox planner state
+let timeboxSlots = {};      // { "YYYY-MM-DDTHH:MM": ["stk-id", ...] }
+let timeboxDone = {};       // { "stk-id": true }
+let timeboxHistory = {};    // { "YYYY-MM-DDTHH:MM": ["stk-id", ...] } — ghost trail of rolled-forward cards
+let _timeboxInterval = null;
+let _timeboxHeight = parseInt(localStorage.getItem('mc-timebox-height') || '320', 10);
+let _lastTimeboxSlotKey = '';
+
 // Calendar tab state
 let cronJobs = [];
 let cronOccurrencesByDay = {};
@@ -2833,6 +2990,10 @@ function switchTab(tab) {
     panel.style.display = 'none';
     expandBtn.classList.remove('visible');
   }
+
+  // Timebox timer management
+  if (tab === 'stack') timeboxStartTimer();
+  else timeboxStopTimer();
 
   if (tab === 'noteflow') loadNoteFlow();
   else if (tab === 'tasks') loadBoard();
@@ -3483,6 +3644,9 @@ function normalizeStackItem(item) {
 function saveStackState() {
   const payload = { lanes: stackLanes, items: stackItems };
   if (stashedLanes.length) payload.stashedLanes = stashedLanes;
+  if (Object.keys(timeboxSlots).length) payload.timeboxSlots = timeboxSlots;
+  if (Object.keys(timeboxDone).length) payload.timeboxDone = timeboxDone;
+  if (Object.keys(timeboxHistory).length) payload.timeboxHistory = timeboxHistory;
   api('PUT', '/api/stack', payload);
 }
 
@@ -3495,6 +3659,11 @@ async function loadStackState() {
       stackLanes = [{ id: 'lane-1', label: 'Lane 1' }];
     }
     stashedLanes = (res && Array.isArray(res.stashedLanes)) ? res.stashedLanes : [];
+    timeboxSlots = (res && typeof res.timeboxSlots === 'object' && res.timeboxSlots) ? res.timeboxSlots : {};
+    timeboxDone = (res && typeof res.timeboxDone === 'object' && res.timeboxDone) ? res.timeboxDone : {};
+    timeboxHistory = (res && typeof res.timeboxHistory === 'object' && res.timeboxHistory) ? res.timeboxHistory : {};
+    timeboxPruneOld();
+    timeboxAutoRoll();
     if (res && Array.isArray(res.items) && res.items.length) {
       stackItems = res.items.map(normalizeStackItem);
     } else {
@@ -3932,7 +4101,9 @@ function renderStackBoard() {
     } else {
       laneItems.forEach(item => { html += renderStackCard(item); });
     }
-    html += `</div></div>`;
+    html += `</div>`;
+    html += `<div class="stack-lane-add" onclick="stackInlineAddStart('${lane.id}', this)" title="Add task"><span class="plus">+</span> Add task</div>`;
+    html += `</div>`;
   });
 
   html += `<div class="stack-add-lane" onclick="stackAddLane()" title="Add a new lane">+</div>`;
@@ -4007,6 +4178,9 @@ function renderStackBoard() {
       sidebarEl.innerHTML = '';
     }
   }
+
+  // Render timebox planner
+  renderTimebox();
 }
 
 // Keep old name as alias for backward compat within this file
@@ -4154,6 +4328,65 @@ async function stackTaskSubmit() {
   renderStackBoard();
 
   bootstrap.Modal.getInstance(document.getElementById('stackTaskModal')).hide();
+}
+
+let _inlineAddActive = null; // track active inline input to survive re-renders
+
+function stackInlineAddStart(laneId, btnEl) {
+  // Prevent duplicate inputs
+  if (_inlineAddActive) stackInlineAddCancel();
+
+  const container = btnEl.parentElement;
+  btnEl.style.display = 'none';
+  const input = document.createElement('input');
+  input.className = 'stack-lane-add-input';
+  input.placeholder = 'Task title…';
+  input.setAttribute('data-lane-id', laneId);
+  // Stop clicks on the input from bubbling to lane drag handlers
+  input.addEventListener('mousedown', e => e.stopPropagation());
+  input.addEventListener('click', e => e.stopPropagation());
+  container.appendChild(input);
+
+  _inlineAddActive = { laneId, btnEl, input };
+
+  // Defer focus to next frame so the click event fully settles first
+  requestAnimationFrame(() => input.focus());
+
+  function commit() {
+    const title = input.value.trim();
+    if (title) {
+      const item = normalizeStackItem({
+        id: makeId('stk'), title,
+        source: 'custom', boardSlug: null,
+        notes: [], lane: laneId, createdAt: new Date().toISOString(),
+      });
+      stackItems.push(item);
+      saveStackState();
+    }
+    stackInlineAddCancel();
+    renderStackBoard();
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    else if (e.key === 'Escape') { stackInlineAddCancel(); }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (_inlineAddActive && _inlineAddActive.input === input) {
+        stackInlineAddCancel();
+      }
+    }, 150);
+  });
+}
+
+function stackInlineAddCancel() {
+  if (!_inlineAddActive) return;
+  const { btnEl, input } = _inlineAddActive;
+  _inlineAddActive = null;
+  if (input.parentElement) input.remove();
+  if (btnEl) btnEl.style.display = '';
 }
 
 function stackRename(id, value) {
@@ -4306,6 +4539,8 @@ async function stackDeleteItem(id) {
   }
   stackItems.splice(idx, 1);
   if (stackSelectedId === id) stackSelectedId = null;
+  timeboxRemoveCard(id);
+  delete timeboxDone[id];
   saveStackState();
   await loadStackTab();
 }
@@ -4323,7 +4558,7 @@ function stackDragStart(e, id) {
 
 function stackDragEnd(e) {
   stackDragId = null;
-  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over-card, .stack-lane.drag-over, .stack-inbox.drag-over').forEach(el => {
+  document.querySelectorAll('.stack-card.dragging, .stack-card.drag-over-card, .stack-lane.drag-over, .stack-inbox.drag-over, .timebox-slot.drag-over').forEach(el => {
     el.classList.remove('dragging', 'drag-over-card', 'drag-over');
   });
 }
@@ -4533,6 +4768,8 @@ function stackLaneDrop(e, laneId) {
   if (!item) return;
 
   item.lane = laneId;
+  timeboxRemoveCard(stackDragId);
+  delete timeboxDone[stackDragId];
 
   const laneEl = laneId !== 'inbox' ? document.querySelector(`.stack-lane[data-lane-id="${laneId}"]`) : null;
   if (laneEl) {
@@ -4546,6 +4783,304 @@ function stackLaneDrop(e, laneId) {
   saveStackState();
   stackDragId = null;
   renderStackBoard();
+}
+
+// ══════════════════════════════════════════════
+//  TIME BOX PLANNER
+// ══════════════════════════════════════════════
+
+function timeboxGetSlotKey(date) {
+  const d = new Date(date);
+  d.setMinutes(Math.floor(d.getMinutes() / 15) * 15, 0, 0);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function timeboxSlotToDate(key) {
+  const [datePart, timePart] = key.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [h, min] = timePart.split(':').map(Number);
+  return new Date(y, m - 1, d, h, min);
+}
+
+function timeboxFormatTime(key) {
+  const d = timeboxSlotToDate(key);
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function timeboxPruneOld() {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  Object.keys(timeboxSlots).forEach(key => {
+    if (timeboxSlotToDate(key) < cutoff) {
+      (timeboxSlots[key] || []).forEach(id => delete timeboxDone[id]);
+      delete timeboxSlots[key];
+    }
+  });
+  Object.keys(timeboxHistory).forEach(key => {
+    if (timeboxSlotToDate(key) < cutoff) delete timeboxHistory[key];
+  });
+}
+
+function timeboxAutoRoll() {
+  const nowKey = timeboxGetSlotKey(new Date());
+  const nowDate = timeboxSlotToDate(nowKey);
+  let changed = false;
+  const rollIds = [];
+
+  Object.keys(timeboxSlots).forEach(key => {
+    if (timeboxSlotToDate(key) >= nowDate) return; // not past
+    const ids = timeboxSlots[key] || [];
+    const keepIds = []; // done cards stay in their slot
+    ids.forEach(id => {
+      if (timeboxDone[id]) {
+        // Done — keep in this slot, no rolling
+        keepIds.push(id);
+      } else {
+        // Not done — leave ghost in old slot, roll to current
+        if (!timeboxHistory[key]) timeboxHistory[key] = [];
+        if (!timeboxHistory[key].includes(id)) timeboxHistory[key].push(id);
+        rollIds.push(id);
+        changed = true;
+      }
+    });
+    if (keepIds.length) {
+      timeboxSlots[key] = keepIds;
+    } else {
+      delete timeboxSlots[key];
+    }
+  });
+
+  if (rollIds.length) {
+    if (!timeboxSlots[nowKey]) timeboxSlots[nowKey] = [];
+    rollIds.forEach(id => {
+      if (!timeboxSlots[nowKey].includes(id)) timeboxSlots[nowKey].push(id);
+    });
+  }
+
+  if (changed) saveStackState();
+  return changed;
+}
+
+function renderTimeboxCard(item, slotKey) {
+  const isDone = !!timeboxDone[item.id];
+  const doneClass = isDone ? ' tb-done' : '';
+  const srcBadge = item.source === 'board'
+    ? `<span class="timebox-card-badge brd">Board</span>`
+    : `<span class="timebox-card-badge cst">Custom</span>`;
+  const checkmark = isDone ? '&#10003;' : '';
+  return `<div class="stack-card timebox-card${doneClass}" data-stack-id="${item.id}"
+    draggable="true" ondragstart="stackDragStart(event,'${item.id}')" ondragend="stackDragEnd(event)">
+    <div class="timebox-card-row">
+      <button class="timebox-card-done" onclick="event.stopPropagation();timeboxToggleDone('${item.id}')" title="Toggle done">${checkmark}</button>
+      <span class="timebox-card-title">${escapeHtml(item.title)}</span>${srcBadge}
+      <button class="timebox-card-remove" onclick="event.stopPropagation();timeboxUnassignCard('${item.id}')" title="Remove from timebox">&#x2715;</button>
+    </div>
+  </div>`;
+}
+
+function renderTimebox() {
+  const bodyEl = document.getElementById('timeboxBody');
+  const clockEl = document.getElementById('timeboxClock');
+  const tbEl = document.getElementById('stackTimebox');
+  if (!bodyEl || !tbEl) return;
+
+  // Set height if not collapsed
+  if (!tbEl.classList.contains('collapsed')) {
+    tbEl.style.height = _timeboxHeight + 'px';
+  }
+
+  const now = new Date();
+  const nowKey = timeboxGetSlotKey(now);
+  if (clockEl) clockEl.textContent = timeboxFormatTime(nowKey);
+
+  // Build 96 slots: 48 past + current + 47 future
+  const slots = [];
+  const baseDate = new Date(now);
+  baseDate.setMinutes(Math.floor(baseDate.getMinutes() / 15) * 15, 0, 0);
+  baseDate.setMinutes(baseDate.getMinutes() - 48 * 15); // 12 hours back
+
+  for (let i = 0; i < 96; i++) {
+    const slotDate = new Date(baseDate);
+    slotDate.setMinutes(slotDate.getMinutes() + i * 15);
+    slots.push(timeboxGetSlotKey(slotDate));
+  }
+
+  let html = '';
+  slots.forEach(key => {
+    const isPast = key < nowKey;
+    const isCurrent = key === nowKey;
+    const cardIds = (timeboxSlots[key] || []).filter(id => stackItems.find(i => i.id === id));
+    const hasCards = cardIds.length > 0;
+
+    let cls = 'timebox-slot';
+    if (isCurrent) cls += ' current';
+    else if (isPast) cls += ' past';
+
+    html += `<div class="${cls}" data-slot-key="${key}">`;
+    html += `<div class="timebox-time">${timeboxFormatTime(key)}</div>`;
+    html += `<div class="timebox-cards" data-slot-key="${key}"
+      ondragover="timeboxSlotDragOver(event)" ondragleave="timeboxSlotDragLeave(event)"
+      ondrop="timeboxSlotDrop(event)">`;
+    cardIds.forEach(id => {
+      const item = stackItems.find(i => i.id === id);
+      if (item) html += renderTimeboxCard(item, key);
+    });
+    // Render ghost cards from history (past slots only)
+    const ghostIds = (timeboxHistory[key] || []).filter(id => !cardIds.includes(id));
+    ghostIds.forEach(id => {
+      const item = stackItems.find(i => i.id === id);
+      if (item) {
+        const wasDone = !!timeboxDone[id];
+        const ghostDoneClass = wasDone ? ' tb-ghost-done' : '';
+        html += `<div class="stack-card timebox-card tb-ghost${ghostDoneClass}">
+          <div class="timebox-card-row">
+            <span class="timebox-card-title">${escapeHtml(item.title)}</span>
+          </div></div>`;
+      }
+    });
+    html += `</div></div>`;
+  });
+
+  bodyEl.innerHTML = html;
+
+  // Scroll to center the current slot
+  const currentEl = bodyEl.querySelector('.timebox-slot.current');
+  if (currentEl) {
+    requestAnimationFrame(() => {
+      currentEl.scrollIntoView({ block: 'center', behavior: 'instant' });
+    });
+  }
+}
+
+function timeboxRemoveCard(cardId) {
+  Object.keys(timeboxSlots).forEach(key => {
+    const arr = timeboxSlots[key];
+    if (!arr) return;
+    const idx = arr.indexOf(cardId);
+    if (idx !== -1) {
+      arr.splice(idx, 1);
+      if (!arr.length) delete timeboxSlots[key];
+    }
+  });
+}
+
+function timeboxUnassignCard(cardId) {
+  timeboxRemoveCard(cardId);
+  delete timeboxDone[cardId];
+  saveStackState();
+  renderTimebox();
+}
+
+function timeboxToggleDone(cardId) {
+  if (timeboxDone[cardId]) delete timeboxDone[cardId];
+  else timeboxDone[cardId] = true;
+  saveStackState();
+  renderTimebox();
+}
+
+function timeboxToggle() {
+  const el = document.getElementById('stackTimebox');
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  if (!el.classList.contains('collapsed')) {
+    el.style.height = _timeboxHeight + 'px';
+    renderTimebox();
+  }
+}
+
+function timeboxResizeStart(e) {
+  e.preventDefault(); e.stopPropagation();
+  const el = document.getElementById('stackTimebox');
+  if (!el || el.classList.contains('collapsed')) return;
+  const startY = e.clientY;
+  const startH = el.offsetHeight;
+  const wrap = el.closest('.stack-board-wrap');
+  const maxH = wrap ? wrap.offsetHeight - 150 : 600;
+
+  function onMove(ev) {
+    const delta = startY - ev.clientY;
+    const newH = Math.max(120, Math.min(maxH, startH + delta));
+    el.style.height = newH + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    _timeboxHeight = el.offsetHeight;
+    localStorage.setItem('mc-timebox-height', String(_timeboxHeight));
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function timeboxClearAll() {
+  timeboxSlots = {};
+  timeboxDone = {};
+  timeboxHistory = {};
+  saveStackState();
+  renderTimebox();
+}
+
+// Drag-and-drop into timebox slots
+function timeboxSlotDragOver(e) {
+  e.preventDefault();
+  const slot = e.target.closest('.timebox-slot');
+  if (slot) slot.classList.add('drag-over');
+}
+
+function timeboxSlotDragLeave(e) {
+  const slot = e.target.closest('.timebox-slot');
+  if (slot && !slot.contains(e.relatedTarget)) slot.classList.remove('drag-over');
+}
+
+function timeboxSlotDrop(e) {
+  e.preventDefault(); e.stopPropagation();
+  document.querySelectorAll('.timebox-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+  if (!stackDragId) return;
+  const cardsEl = e.target.closest('.timebox-cards');
+  if (!cardsEl) return;
+  const slotKey = cardsEl.dataset.slotKey;
+  if (!slotKey) return;
+
+  // Remove from any existing timebox slot
+  timeboxRemoveCard(stackDragId);
+  // Add to the target slot
+  if (!timeboxSlots[slotKey]) timeboxSlots[slotKey] = [];
+  if (!timeboxSlots[slotKey].includes(stackDragId)) {
+    timeboxSlots[slotKey].push(stackDragId);
+  }
+
+  stackDragId = null;
+  saveStackState();
+  renderTimebox();
+}
+
+// Timer for auto-roll
+function timeboxTick() {
+  const nowKey = timeboxGetSlotKey(new Date());
+  if (nowKey === _lastTimeboxSlotKey) {
+    // Just update clock
+    const clockEl = document.getElementById('timeboxClock');
+    if (clockEl) clockEl.textContent = timeboxFormatTime(nowKey);
+    return;
+  }
+  _lastTimeboxSlotKey = nowKey;
+  timeboxAutoRoll();
+  renderTimebox();
+}
+
+function timeboxStartTimer() {
+  if (_timeboxInterval) return;
+  _lastTimeboxSlotKey = timeboxGetSlotKey(new Date());
+  _timeboxInterval = setInterval(timeboxTick, 15000);
+}
+
+function timeboxStopTimer() {
+  if (_timeboxInterval) { clearInterval(_timeboxInterval); _timeboxInterval = null; }
 }
 
 // ══════════════════════════════════════════════
@@ -9012,8 +9547,8 @@ setInterval(async () => {
     }
     else if (currentTab === 'calendar') await loadCronCalendar();
     else if (currentTab === 'stack') {
-      // Skip refresh if user has a card expanded or is renaming a lane
-      if (!stackSelectedId && !document.querySelector('.stack-lane-label-input')) await loadStackTab();
+      // Skip refresh if user has a card expanded, is renaming a lane, or is adding a task inline
+      if (!stackSelectedId && !document.querySelector('.stack-lane-label-input') && !_inlineAddActive) await loadStackTab();
     }
     else if (currentTab === 'learning') await loadLearning();
     else if (currentTab === 'neetcode') {
