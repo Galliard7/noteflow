@@ -10,6 +10,29 @@
 <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+<!-- Excalidraw 0.18.1 (ESM) -->
+<link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.1/dist/prod/index.css">
+<script>window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.1/dist/prod/";</script>
+<script type="importmap">
+{
+  "imports": {
+    "react":             "https://esm.sh/react@18.3.1",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+    "react-dom":         "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client":  "https://esm.sh/react-dom@18.3.1/client"
+  }
+}
+</script>
+<script type="module">
+import React from "react";
+import { createRoot } from "react-dom/client";
+import * as ExcalidrawLib from "https://esm.sh/@excalidraw/excalidraw@0.18.1/dist/prod/index.js?external=react,react-dom";
+window.React = React;
+window.ReactDOM = { createRoot };
+window.ExcalidrawLib = ExcalidrawLib;
+window._excalidrawReady = true;
+window.dispatchEvent(new Event('excalidraw-ready'));
+</script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@3.6.0/cytoscape-edgehandles.js"></script>
 <script>if (typeof cytoscapeEdgehandles !== 'undefined') cytoscape.use(cytoscapeEdgehandles);</script>
 <style>
@@ -1257,7 +1280,8 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 /* ── Lanes board ── */
 .stack-board {
   flex: 1; display: flex; gap: 16px;
-  padding: 16px; overflow-x: auto; min-height: 180px;
+  padding: 16px; padding-left: 206px; padding-right: 206px;
+  overflow-x: auto; min-height: 180px;
   justify-content: center;
 }
 
@@ -1360,66 +1384,48 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 }
 .stack-add-lane:hover { border-color: #3b82f644; color: #64748b; background: rgba(59,130,246,0.03); }
 
-/* ── Inbox tray ── */
+/* ── Inbox sidebar — pinned left, outside lane flow ── */
 .stack-inbox {
-  flex-shrink: 0;
-  border-top: 1px solid #1e293b;
-  background: rgba(13,18,30,0.97);
-  backdrop-filter: blur(12px);
+  position: absolute; top: 3.2rem; left: 0; bottom: 0;
+  width: 190px; padding: 0.75rem 0.5rem;
+  overflow-y: auto; opacity: 0.72;
+  border-right: 1px solid #1e293b22;
   display: flex; flex-direction: column;
-  overflow: hidden;
-  height: 36px;
-  transition: height 0.15s ease, margin-top 0.15s ease;
+  transition: opacity 0.15s;
 }
-.stack-inbox.expanded {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  z-index: 80;
-}
-.stack-inbox.drag-over { border-top-color: #3b82f644; }
-.stack-inbox-resize {
-  height: 5px; cursor: ns-resize;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.stack-inbox-resize::after {
-  content: ''; width: 32px; height: 3px;
-  background: #1e293b; border-radius: 2px;
-  transition: background 0.15s;
-}
-.stack-inbox-resize:hover::after { background: #334155; }
-.stack-inbox:not(.expanded) .stack-inbox-resize { display: none; }
-.stack-inbox:not(.expanded) .stack-inbox-cards { display: none; }
+.stack-inbox:hover { opacity: 0.92; }
+.stack-inbox:empty { display: none; }
+.stack-inbox.drag-over { border-right-color: #3b82f644; opacity: 0.92; }
+.stack-inbox-resize { display: none; }
 .stack-inbox-header {
   display: flex; align-items: center; gap: 0.4rem;
-  padding: 0 16px; height: 36px; flex-shrink: 0;
-  cursor: pointer; user-select: none;
+  margin-bottom: 0.5rem; padding: 0 0.15rem;
+  user-select: none;
 }
-.stack-inbox-toggle {
-  font-size: 0.55rem; color: #475569;
-  transition: transform 0.2s;
-  display: inline-block;
-}
-.stack-inbox:not(.expanded) .stack-inbox-toggle { transform: rotate(-90deg); }
+.stack-inbox-toggle { display: none; }
 .stack-inbox-label {
-  font-size: 0.62rem; color: #475569; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.5px;
+  font-size: 0.58rem; color: #94a3b8; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
 }
 .stack-inbox-count {
-  font-size: 0.55rem; color: #3b4f6b;
+  font-size: 0.52rem; color: #64748b; font-weight: 400;
 }
 .stack-inbox-cards {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  padding: 0 16px 12px;
+  display: flex; flex-direction: column; gap: 6px;
   overflow-y: auto; flex: 1; min-height: 0;
-  align-items: flex-start; align-content: flex-start;
 }
 .stack-inbox-empty {
-  color: #334155; font-size: 0.65rem; font-style: italic;
-  padding: 6px 0;
+  color: #475569; font-size: 0.6rem; font-style: italic;
+  padding: 4px 0;
 }
 .stack-inbox .stack-card {
-  width: 260px; flex-shrink: 0;
+  padding: 0.3rem 0.45rem; margin-bottom: 0;
+  background: #0f172acc; border-color: #1e293b66;
 }
+.stack-inbox .stack-card-title { font-size: 0.6rem; }
+.stack-inbox .stack-card-tags { display: none; }
+.stack-inbox .stack-kebab-wrap { display: none; }
+.stack-inbox .stack-pop-btn { right: 0.25rem; color: #64748baa; font-size: 0.55rem; top: 0.2rem; }
 
 /* ── Stash tray ── */
 .stack-stash {
@@ -2212,6 +2218,95 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 .nc-modal-note-entry:last-child { border-bottom: none; }
 .nc-modal-note-ts { font-size: 0.6rem; color: #64748b; margin-bottom: 0.15rem; }
 .nc-modal-note-text { color: #c4b5fd; font-style: italic; }
+
+/* ═══════ Arrows Tab — Diagram Canvas ═══════ */
+#tab-arrows { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+#tab-arrows.active { display: flex !important; }
+
+/* Catalog view */
+.arrows-catalog { flex: 1; overflow-y: auto; padding: 1.2rem; }
+.arrows-catalog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.arrows-catalog-header h3 { margin: 0; font-size: 1.1rem; font-weight: 600; color: #e2e8f0; }
+.arrows-new-btn { background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+.arrows-new-btn:hover { background: #2563eb; }
+
+.arrows-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.arrows-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; cursor: pointer; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+.arrows-card:hover { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+.arrows-card-thumb { width: 100%; height: 140px; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.arrows-card-thumb svg { max-width: 100%; max-height: 100%; }
+.arrows-card-thumb .arrows-empty-thumb { color: #475569; font-size: 2rem; }
+.arrows-card-info { padding: 0.6rem 0.8rem; }
+.arrows-card-name { font-size: 0.85rem; font-weight: 500; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arrows-card-date { font-size: 0.65rem; color: #64748b; margin-top: 0.2rem; }
+
+/* Context menu */
+.arrows-ctx-menu { position: fixed; z-index: 9999; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 0.3rem 0; min-width: 140px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.arrows-ctx-item { padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #e2e8f0; cursor: pointer; }
+.arrows-ctx-item:hover { background: #334155; }
+.arrows-ctx-item.danger { color: #ef4444; }
+.arrows-ctx-item.danger:hover { background: rgba(239,68,68,0.15); }
+
+/* Editor view */
+.arrows-editor { display: none; flex-direction: column; height: 100%; }
+.arrows-editor.active { display: flex; }
+.arrows-editor-toolbar { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.8rem; background: #0f172a; border-bottom: 1px solid #1e293b; min-height: 40px; }
+.arrows-back-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0.2rem 0.4rem; border-radius: 4px; }
+.arrows-back-btn:hover { color: #e2e8f0; background: #1e293b; }
+.arrows-format-painter-btn { background: none; border: none; color: var(--color-on-surface, #ced4da); cursor: pointer; padding: 4px 6px; border-radius: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: inherit; white-space: nowrap; height: 32px; box-sizing: border-box; }
+.arrows-format-painter-btn:hover { background: var(--color-surface-mid, rgba(255,255,255,0.08)); }
+.arrows-format-painter-btn.active { background: var(--color-primary, #4dabf7); color: #fff; }
+.arrows-diagram-title { font-size: 0.85rem; font-weight: 500; color: #e2e8f0; flex: 1; }
+.arrows-save-indicator { font-size: 0.7rem; color: #64748b; }
+.arrows-editor-canvas { flex: 1; position: relative; overflow: hidden; }
+
+/* Rename modal */
+.arrows-rename-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+.arrows-rename-modal { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.2rem; min-width: 300px; }
+.arrows-rename-modal h4 { margin: 0 0 0.8rem; font-size: 0.95rem; color: #e2e8f0; }
+.arrows-rename-modal input { width: 100%; padding: 0.5rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.85rem; }
+.arrows-rename-modal input:focus { outline: none; border-color: #3b82f6; }
+.arrows-rename-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.8rem; }
+.arrows-rename-actions button { padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer; border: none; }
+.arrows-rename-actions .arrows-rename-cancel { background: #334155; color: #e2e8f0; }
+.arrows-rename-actions .arrows-rename-save { background: #3b82f6; color: #fff; }
+
+/* Breadcrumb navigation */
+.arrows-breadcrumb { display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.8rem; font-size: 0.8rem; }
+.arrows-breadcrumb-link { color: #3b82f6; cursor: pointer; background: none; border: none; font-size: 0.8rem; padding: 0; }
+.arrows-breadcrumb-link:hover { text-decoration: underline; }
+.arrows-breadcrumb-sep { color: #475569; }
+.arrows-breadcrumb-current { color: #94a3b8; }
+
+/* Folder cards */
+.arrows-folder-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; cursor: pointer; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+.arrows-folder-card:hover { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+.arrows-folder-card-body { width: 100%; height: 140px; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; }
+.arrows-folder-icon { font-size: 2.5rem; opacity: 0.7; }
+.arrows-folder-count { font-size: 0.7rem; color: #64748b; }
+.arrows-folder-card-info { padding: 0.6rem 0.8rem; }
+.arrows-folder-card-name { font-size: 0.85rem; font-weight: 500; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Header buttons */
+.arrows-header-btns { display: flex; gap: 0.5rem; }
+.arrows-folder-btn { background: #334155; color: #e2e8f0; border: none; border-radius: 8px; padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+.arrows-folder-btn:hover { background: #475569; }
+
+/* Move-to-folder modal */
+.arrows-move-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+.arrows-move-modal { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.2rem; min-width: 300px; max-width: 400px; }
+.arrows-move-modal h4 { margin: 0 0 0.8rem; font-size: 0.95rem; color: #e2e8f0; }
+.arrows-move-list { max-height: 240px; overflow-y: auto; margin-bottom: 0.8rem; }
+.arrows-move-item { padding: 0.5rem 0.8rem; font-size: 0.85rem; color: #e2e8f0; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 0.5rem; }
+.arrows-move-item:hover { background: #334155; }
+.arrows-move-item.selected { background: #3b82f6; color: #fff; }
+.arrows-move-cancel { padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer; border: none; background: #334155; color: #e2e8f0; }
+
+/* Drag-and-drop */
+.arrows-card[draggable="true"] { cursor: grab; }
+.arrows-card.dragging { opacity: 0.4; }
+.arrows-folder-card.drag-over { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6; background: #1e3a5f; }
+.arrows-breadcrumb-link.drag-over { background: #334155; border-radius: 4px; padding: 0.1rem 0.4rem; }
 </style>
 </head>
 <body>
@@ -2245,6 +2340,9 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
       </button>
       <button class="tab-btn" onclick="switchTab('kidlearn')" title="Number Jungle 🌿">
         &#x1F33F;<span class="tab-label">Jungle</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('arrows')" title="Arrows">
+        &#x27A1;<span class="tab-label">Arrows</span>
       </button>
     </div>
     <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">&#x276F;</button>
@@ -2342,6 +2440,10 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
           </div>
           <button class="stack-btn" onclick="openStackTaskModal()">+ Task</button>
         </div>
+        <div class="stack-inbox" id="stackInbox"
+          ondragover="stackInboxDragOver(event)" ondrop="stackLaneDrop(event,'inbox')"
+          ondragleave="stackInboxDragLeave(event)">
+        </div>
         <div class="stack-board" id="stackBoard"
           ondragover="stackBoardDragOver(event)" ondrop="stackBoardDrop(event)"></div>
         <div class="stack-completed-sidebar" id="stackCompleted"></div>
@@ -2354,11 +2456,6 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
             <button class="stack-timebox-clear" onclick="event.stopPropagation();timeboxClearAll()" title="Clear all timebox assignments">Clear</button>
           </div>
           <div class="stack-timebox-body" id="timeboxBody"></div>
-        </div>
-        <div class="stack-inbox" id="stackInbox"
-          ondragover="stackInboxDragOver(event)" ondrop="stackLaneDrop(event,'inbox')"
-          ondragleave="stackInboxDragLeave(event)">
-          <div class="stack-inbox-resize" onmousedown="stackInboxResizeStart(event)"></div>
         </div>
         <div class="stack-stash" id="stackStash"
           ondragover="stackStashDragOver(event)" ondrop="stackStashDrop(event)"
@@ -2522,6 +2619,32 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, system-u
 
       <!-- Jungle decorations (outside kl-container, inside tab) -->
       <div id="klJungleDeco"></div>
+    </div>
+
+    <!-- ═══════ Arrows Tab ═══════ -->
+    <div class="tab-content" id="tab-arrows">
+      <!-- Catalog view -->
+      <div class="arrows-catalog" id="arrowsCatalog">
+        <div class="arrows-catalog-header">
+          <h3>Arrows</h3>
+          <div class="arrows-header-btns">
+            <button class="arrows-folder-btn" onclick="arrowsNewFolder()">+ New Folder</button>
+            <button class="arrows-new-btn" onclick="arrowsNewDiagram()">+ New Diagram</button>
+          </div>
+        </div>
+        <div class="arrows-breadcrumb" id="arrowsBreadcrumb"></div>
+        <div class="arrows-grid" id="arrowsGrid"></div>
+      </div>
+      <!-- Editor view -->
+      <div class="arrows-editor" id="arrowsEditor">
+        <div class="arrows-editor-toolbar">
+          <button class="arrows-back-btn" onclick="arrowsBackToCatalog()" title="Back to catalog">&larr;</button>
+          <span class="arrows-diagram-title" id="arrowsDiagramTitle"></span>
+          <button class="arrows-back-btn" onclick="arrowsSave()" title="Save now (Ctrl+S)" style="font-size:0.75rem;">&#x1F4BE;</button>
+          <span class="arrows-save-indicator" id="arrowsSaveIndicator"></span>
+        </div>
+        <div class="arrows-editor-canvas" id="arrowsCanvas"></div>
+      </div>
     </div>
 
   </div><!-- /mc-main -->
@@ -2943,7 +3066,7 @@ function navigateFromHash() {
   if (!hash) return false;
   const parts = hash.split('/');
   const tab = parts[0];
-  const validTabs = ['noteflow', 'tasks', 'projects', 'calendar', 'stack'];
+  const validTabs = ['noteflow', 'tasks', 'projects', 'calendar', 'stack', 'learning', 'neetcode', 'kidlearn', 'arrows'];
   if (!validTabs.includes(tab)) return false;
 
   _suppressHashUpdate = true;
@@ -3003,6 +3126,7 @@ function switchTab(tab) {
   else if (tab === 'learning') loadLearning();
   else if (tab === 'neetcode') loadNeetCode();
   else if (tab === 'kidlearn') klInit();
+  else if (tab === 'arrows') arrowsLoadCatalog();
 }
 
 // ══════════════════════════════════════════════
@@ -3647,7 +3771,7 @@ function saveStackState() {
   if (Object.keys(timeboxSlots).length) payload.timeboxSlots = timeboxSlots;
   if (Object.keys(timeboxDone).length) payload.timeboxDone = timeboxDone;
   if (Object.keys(timeboxHistory).length) payload.timeboxHistory = timeboxHistory;
-  api('PUT', '/api/stack', payload);
+  return api('PUT', '/api/stack', payload);
 }
 
 async function loadStackState() {
@@ -4082,6 +4206,16 @@ function renderStackBoard() {
     else activeItems.push(item);
   });
 
+  // Save scroll positions before re-render
+  const scrollPositions = {};
+  boardEl.querySelectorAll('.stack-lane').forEach(laneEl => {
+    const laneId = laneEl.dataset.laneId;
+    const cardsEl = laneEl.querySelector('.stack-lane-cards');
+    if (laneId && cardsEl && cardsEl.scrollTop > 0) {
+      scrollPositions[laneId] = cardsEl.scrollTop;
+    }
+  });
+
   let html = '';
   stackLanes.forEach((lane, idx) => {
     const laneItems = activeItems.filter(i => i.lane === lane.id);
@@ -4109,25 +4243,38 @@ function renderStackBoard() {
   html += `<div class="stack-add-lane" onclick="stackAddLane()" title="Add a new lane">+</div>`;
   boardEl.innerHTML = html;
 
+  // Restore scroll positions after re-render
+  Object.entries(scrollPositions).forEach(([laneId, scrollTop]) => {
+    const laneEl = boardEl.querySelector(`.stack-lane[data-lane-id="${laneId}"] .stack-lane-cards`);
+    if (laneEl) laneEl.scrollTop = scrollTop;
+  });
+
   // Inbox tray — preserve resize handle, rebuild header + cards
   const inboxEl = document.getElementById('stackInbox');
   if (inboxEl) {
     const inboxItems = activeItems.filter(i => i.lane === 'inbox');
+    // Save inbox scroll position
+    const oldInboxCards = inboxEl.querySelector('.stack-inbox-cards');
+    const inboxScroll = oldInboxCards ? oldInboxCards.scrollTop : 0;
     // Remove old header/cards but keep resize handle
     inboxEl.querySelectorAll('.stack-inbox-header, .stack-inbox-cards').forEach(el => el.remove());
-    let ih = `<div class="stack-inbox-header" onclick="stackInboxToggle()">`;
-    ih += `<span class="stack-inbox-toggle">&#9660;</span>`;
+    let ih = `<div class="stack-inbox-header">`;
     ih += `<span class="stack-inbox-label">Inbox</span>`;
     ih += `<span class="stack-inbox-count">${inboxItems.length}</span>`;
     ih += `</div>`;
     ih += `<div class="stack-inbox-cards">`;
     if (!inboxItems.length) {
-      ih += `<div class="stack-inbox-empty">new tasks land here — drag them into lanes</div>`;
+      ih += `<div class="stack-inbox-empty">drag tasks here</div>`;
     } else {
       inboxItems.forEach(item => { ih += renderStackCard(item); });
     }
     ih += `</div>`;
     inboxEl.insertAdjacentHTML('beforeend', ih);
+    // Restore inbox scroll position
+    if (inboxScroll > 0) {
+      const newInboxCards = inboxEl.querySelector('.stack-inbox-cards');
+      if (newInboxCards) newInboxCards.scrollTop = inboxScroll;
+    }
   }
 
   // Stash tray — render stashed lane chips
@@ -4541,8 +4688,8 @@ async function stackDeleteItem(id) {
   if (stackSelectedId === id) stackSelectedId = null;
   timeboxRemoveCard(id);
   delete timeboxDone[id];
-  saveStackState();
-  await loadStackTab();
+  await saveStackState();
+  renderStackBoard();
 }
 
 // ── Drag and drop (cross-lane) ──
@@ -4567,10 +4714,6 @@ function stackInboxDragOver(e) {
   e.preventDefault();
   const inbox = document.getElementById('stackInbox');
   if (!inbox) return;
-  // Auto-expand if collapsed and dragging over
-  if (!inbox.classList.contains('expanded')) {
-    stackInboxToggle();
-  }
   inbox.classList.add('drag-over');
 }
 
@@ -4579,41 +4722,9 @@ function stackInboxDragLeave(e) {
   if (inbox && !inbox.contains(e.relatedTarget)) inbox.classList.remove('drag-over');
 }
 
-let _inboxHeight = 220; // remembered expanded height
-function stackInboxToggle() {
-  const el = document.getElementById('stackInbox');
-  if (!el) return;
-  if (el.classList.contains('expanded')) {
-    el.classList.remove('expanded');
-    el.style.height = '36px';
-  } else {
-    el.classList.add('expanded');
-    el.style.height = _inboxHeight + 'px';
-  }
-}
-
-function stackInboxResizeStart(e) {
-  e.preventDefault();
-  const el = document.getElementById('stackInbox');
-  if (!el || el.classList.contains('collapsed')) return;
-  const startY = e.clientY;
-  const startH = el.offsetHeight;
-  const wrap = el.closest('.stack-board-wrap');
-  const maxH = wrap ? wrap.offsetHeight - 50 : 600;
-
-  function onMove(ev) {
-    const delta = startY - ev.clientY;
-    const newH = Math.max(100, Math.min(maxH, startH + delta));
-    el.style.height = newH + 'px';
-  }
-  function onUp() {
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-    _inboxHeight = el.offsetHeight;
-  }
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
-}
+// inbox is now a sidebar — no height tracking needed
+function stackInboxToggle() { /* sidebar — always visible */ }
+function stackInboxResizeStart() { /* sidebar — no resize */ }
 
 // ── Stash tray toggle + drag ──
 function stackStashToggle() {
@@ -4909,6 +5020,20 @@ function renderTimebox() {
     slots.push(timeboxGetSlotKey(slotDate));
   }
 
+  // Find cards in current slot that were rolled forward — map id -> earliest origin key
+  var _persistOrigin = {};
+  var _curIds = (timeboxSlots[nowKey] || []);
+  for (var _ci = 0; _ci < _curIds.length; _ci++) {
+    var _cid = _curIds[_ci];
+    var _hks = Object.keys(timeboxHistory);
+    for (var _hi = 0; _hi < _hks.length; _hi++) {
+      var _arr = timeboxHistory[_hks[_hi]] || [];
+      if (_arr.indexOf(_cid) !== -1) {
+        if (!_persistOrigin[_cid] || _hks[_hi] < _persistOrigin[_cid]) _persistOrigin[_cid] = _hks[_hi];
+      }
+    }
+  }
+
   let html = '';
   slots.forEach(key => {
     const isPast = key < nowKey;
@@ -4925,12 +5050,29 @@ function renderTimebox() {
     html += `<div class="timebox-cards" data-slot-key="${key}"
       ondragover="timeboxSlotDragOver(event)" ondragleave="timeboxSlotDragLeave(event)"
       ondrop="timeboxSlotDrop(event)">`;
-    cardIds.forEach(id => {
+    // Render undone cards first, then done cards (margin-left:auto right-aligns done)
+    cardIds.filter(id => !timeboxDone[id]).forEach(id => {
+      const item = stackItems.find(i => i.id === id);
+      if (item) html += renderTimeboxCard(item, key);
+    });
+    cardIds.filter(id => !!timeboxDone[id]).forEach(id => {
       const item = stackItems.find(i => i.id === id);
       if (item) html += renderTimeboxCard(item, key);
     });
     // Render ghost cards from history (past slots only)
     const ghostIds = (timeboxHistory[key] || []).filter(id => !cardIds.includes(id));
+    // Also fill in persistent copies in intermediate past slots (between origin and now)
+    if (isPast) {
+      var _pids = Object.keys(_persistOrigin);
+      for (var _pi = 0; _pi < _pids.length; _pi++) {
+        var _pid = _pids[_pi];
+        if (cardIds.indexOf(_pid) !== -1) continue;        // already a real card here
+        if (ghostIds.indexOf(_pid) !== -1) continue;       // already a ghost here
+        if (key >= _persistOrigin[_pid] && key < nowKey) {
+          ghostIds.push(_pid);  // treat as ghost so it renders below
+        }
+      }
+    }
     ghostIds.forEach(id => {
       const item = stackItems.find(i => i.id === id);
       if (item) {
@@ -9556,6 +9698,799 @@ setInterval(async () => {
     }
   } catch (e) { console.warn('Auto-refresh error:', e.message); }
 }, 3000);
+
+// ══════════════════════════════════════════════
+//  ARROWS TAB — Freeform Diagram Canvas
+// ══════════════════════════════════════════════
+
+const arrowsState = {
+  diagrams: [],
+  folders: [],
+  currentFolder: null, // null = root, string = folder id
+  currentId: null,
+  excalidrawAPI: null,
+  reactRoot: null,
+  saveTimer: null,
+  dirty: false,
+};
+
+async function arrowsLoadCatalog() {
+  try {
+    const res = await fetch('/api/arrows');
+    const data = await res.json();
+    arrowsState.diagrams = data.diagrams || [];
+    arrowsState.folders = data.folders || [];
+  } catch (e) {
+    arrowsState.diagrams = [];
+    arrowsState.folders = [];
+  }
+  arrowsRenderCatalog();
+}
+
+function arrowsRenderBreadcrumb() {
+  const bc = document.getElementById('arrowsBreadcrumb');
+  if (!arrowsState.currentFolder) {
+    bc.innerHTML = '';
+    return;
+  }
+  const folder = arrowsState.folders.find(f => f.id === arrowsState.currentFolder);
+  bc.innerHTML = `
+    <button class="arrows-breadcrumb-link" onclick="arrowsNavigateFolder(null)"
+      ondragover="arrowsDragOverBreadcrumb(event)" ondragleave="arrowsDragLeaveBreadcrumb(event)" ondrop="arrowsDropOnRoot(event)">All Diagrams</button>
+    <span class="arrows-breadcrumb-sep">/</span>
+    <span class="arrows-breadcrumb-current">${escapeHtml(folder ? folder.name : '?')}</span>
+  `;
+}
+
+function arrowsNavigateFolder(folderId) {
+  arrowsState.currentFolder = folderId;
+  arrowsRenderCatalog();
+}
+
+function arrowsRenderCatalog() {
+  const grid = document.getElementById('arrowsGrid');
+  const catalog = document.getElementById('arrowsCatalog');
+  const editor = document.getElementById('arrowsEditor');
+  catalog.style.display = '';
+  editor.classList.remove('active');
+
+  arrowsRenderBreadcrumb();
+
+  const currentFolder = arrowsState.currentFolder;
+  const diagrams = arrowsState.diagrams.filter(d => (d.folder || null) === currentFolder);
+  const folders = currentFolder === null ? arrowsState.folders : [];
+
+  if (folders.length === 0 && diagrams.length === 0) {
+    const msg = currentFolder
+      ? 'This folder is empty. Click "+ New Diagram" to add one.'
+      : 'No diagrams yet. Click "+ New Diagram" to start.';
+    grid.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding:2rem 0;">${msg}</div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Render folders first (only at root level)
+  html += folders.map(f => {
+    const count = arrowsState.diagrams.filter(d => d.folder === f.id).length;
+    return `<div class="arrows-folder-card" onclick="arrowsNavigateFolder('${f.id}')" oncontextmenu="arrowsFolderCtxMenu(event, '${f.id}')"
+      ondragover="arrowsDragOverFolder(event)" ondragleave="arrowsDragLeaveFolder(event)" ondrop="arrowsDropOnFolder(event, '${f.id}')">
+      <div class="arrows-folder-card-body">
+        <span class="arrows-folder-icon">&#x1F4C1;</span>
+        <span class="arrows-folder-count">${count} diagram${count !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="arrows-folder-card-info">
+        <div class="arrows-folder-card-name">${escapeHtml(f.name)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Render diagrams
+  html += diagrams.map(d => {
+    const thumb = d.thumbnail_svg
+      ? d.thumbnail_svg
+      : '<span class="arrows-empty-thumb">&#x2B1C;</span>';
+    const date = new Date(d.modified).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `<div class="arrows-card" draggable="true" onclick="arrowsOpenDiagram('${d.id}')" oncontextmenu="arrowsCtxMenu(event, '${d.id}')"
+      ondragstart="arrowsDragStart(event, '${d.id}')" ondragend="arrowsDragEnd(event)">
+      <div class="arrows-card-thumb">${thumb}</div>
+      <div class="arrows-card-info">
+        <div class="arrows-card-name">${escapeHtml(d.name)}</div>
+        <div class="arrows-card-date">${date}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.innerHTML = html;
+}
+
+async function arrowsNewDiagram() {
+  try {
+    const res = await fetch('/api/arrows', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Untitled', folder: arrowsState.currentFolder }),
+    });
+    const data = await res.json();
+    arrowsState.diagrams.unshift(data.diagram);
+    arrowsOpenDiagram(data.diagram.id);
+  } catch (e) {
+    console.error('Failed to create diagram:', e);
+  }
+}
+
+async function arrowsNewFolder() {
+  const name = prompt('Folder name:');
+  if (!name || !name.trim()) return;
+  try {
+    const res = await fetch('/api/arrows/folders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+    const data = await res.json();
+    arrowsState.folders.push(data.folder);
+    arrowsRenderCatalog();
+  } catch (e) {
+    console.error('Failed to create folder:', e);
+  }
+}
+
+async function arrowsOpenDiagram(id) {
+  arrowsState.currentId = id;
+  const entry = arrowsState.diagrams.find(d => d.id === id);
+  document.getElementById('arrowsDiagramTitle').textContent = entry ? entry.name : 'Diagram';
+  document.getElementById('arrowsSaveIndicator').textContent = '';
+
+  document.getElementById('arrowsCatalog').style.display = 'none';
+  document.getElementById('arrowsEditor').classList.add('active');
+
+  // Fetch scene data
+  let scene = { elements: [], appState: {}, files: {} };
+  try {
+    const res = await fetch(`/api/arrows/${id}`);
+    if (res.ok) scene = await res.json();
+  } catch (e) { /* use empty scene */ }
+
+  arrowsMountExcalidraw(scene);
+}
+
+function arrowsMountExcalidraw(scene) {
+  const container = document.getElementById('arrowsCanvas');
+
+  // Clean up previous instance
+  if (arrowsState.reactRoot) {
+    arrowsState.reactRoot.unmount();
+    arrowsState.reactRoot = null;
+    arrowsState.excalidrawAPI = null;
+  }
+
+  if (!window._excalidrawReady) {
+    container.innerHTML = '<div style="color:#94a3b8;padding:2rem">Loading Excalidraw…</div>';
+    window.addEventListener('excalidraw-ready', () => arrowsMountExcalidraw(scene), { once: true });
+    return;
+  }
+
+  arrowsState.reactRoot = ReactDOM.createRoot(container);
+  arrowsState.dirty = false;
+
+  const initialData = {
+    elements: scene.elements || [],
+    appState: {
+      ...(scene.appState || {}),
+      theme: 'dark',
+      viewBackgroundColor: '#0f172a',
+      currentItemFontFamily: 2,
+      currentItemStrokeColor: '#000000',
+    },
+    files: scene.files || {},
+  };
+
+  const element = React.createElement(ExcalidrawLib.Excalidraw, {
+    initialData: initialData,
+    theme: 'dark',
+    excalidrawAPI: (api) => {
+      arrowsState.excalidrawAPI = api;
+      // Diagnose theme state + force dark
+      setTimeout(() => {
+        try {
+          const st = api.getAppState();
+          console.log('[Arrows] theme:', st.theme, 'bg:', st.viewBackgroundColor);
+          console.log('[Arrows] excalidraw classes:', document.querySelector('.excalidraw')?.className);
+          api.updateScene({
+            appState: {
+              theme: 'dark',
+              viewBackgroundColor: '#0f172a',
+              currentItemFontFamily: 2,
+            },
+          });
+          const st2 = api.getAppState();
+          console.log('[Arrows] after force — theme:', st2.theme, 'bg:', st2.viewBackgroundColor);
+        } catch (e) { console.warn('theme force failed:', e); }
+      }, 500);
+    },
+    onChange: (elements, appState, files) => {
+      arrowsState.dirty = true;
+      arrowsScheduleSave();
+    },
+    UIOptions: {
+      canvasActions: {
+        loadScene: false,
+        export: false,
+        saveToActiveFile: false,
+      },
+    },
+  });
+
+  arrowsState.reactRoot.render(element);
+}
+
+function arrowsScheduleSave() {
+  if (arrowsState.saveTimer) clearTimeout(arrowsState.saveTimer);
+  document.getElementById('arrowsSaveIndicator').textContent = 'Unsaved changes';
+  arrowsState.saveTimer = setTimeout(() => arrowsSave(), 2500);
+}
+
+async function arrowsSave() {
+  if (!arrowsState.currentId || !arrowsState.excalidrawAPI) return;
+  if (!arrowsState.dirty) return;
+
+  const api = arrowsState.excalidrawAPI;
+  const elements = api.getSceneElements();
+  const appState = api.getAppState();
+  const files = api.getFiles();
+
+  // Generate SVG thumbnail
+  let thumbnailSvg = '';
+  try {
+    const svg = await window.ExcalidrawLib.exportToSvg({
+      elements: elements.filter(e => !e.isDeleted),
+      appState: { ...appState, exportBackground: true, viewBackgroundColor: '#0f172a' },
+      files: files,
+    });
+    // Shrink for catalog display
+    svg.setAttribute('width', '220');
+    svg.setAttribute('height', '140');
+    thumbnailSvg = svg.outerHTML;
+  } catch (e) {
+    console.warn('Thumbnail generation failed:', e);
+  }
+
+  const payload = {
+    scene: {
+      elements: elements,
+      appState: { viewBackgroundColor: appState.viewBackgroundColor || '#0f172a' },
+      files: files,
+    },
+    thumbnail_svg: thumbnailSvg,
+  };
+
+  try {
+    const res = await fetch(`/api/arrows/${arrowsState.currentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      arrowsState.dirty = false;
+      document.getElementById('arrowsSaveIndicator').textContent = 'Saved';
+      const updated = await res.json();
+      const idx = arrowsState.diagrams.findIndex(d => d.id === arrowsState.currentId);
+      if (idx >= 0) arrowsState.diagrams[idx] = updated.diagram;
+      setTimeout(() => {
+        if (!arrowsState.dirty) document.getElementById('arrowsSaveIndicator').textContent = '';
+      }, 2000);
+    }
+  } catch (e) {
+    document.getElementById('arrowsSaveIndicator').textContent = 'Save failed';
+    console.error('Save error:', e);
+  }
+}
+
+function arrowsBackToCatalog() {
+  // Save before leaving
+  if (arrowsState.dirty && arrowsState.excalidrawAPI) {
+    arrowsSave();
+  }
+  // Unmount Excalidraw to free memory
+  if (arrowsState.reactRoot) {
+    arrowsState.reactRoot.unmount();
+    arrowsState.reactRoot = null;
+    arrowsState.excalidrawAPI = null;
+  }
+  arrowsState.currentId = null;
+  if (arrowsState.saveTimer) { clearTimeout(arrowsState.saveTimer); arrowsState.saveTimer = null; }
+  document.getElementById('arrowsCanvas').innerHTML = '';
+  arrowsRenderCatalog();
+}
+
+// --- Keyboard shortcut: Ctrl/Cmd+S to save ---
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's' && currentTab === 'arrows' && arrowsState.currentId) {
+    e.preventDefault();
+    arrowsSave();
+  }
+});
+
+// --- Format Painter (injected into Excalidraw toolbar) ---
+
+let arrowsFormatStyle = null;
+let arrowsFormatActive = false;
+let arrowsFormatPrevSelection = null;
+
+// Paint-roller SVG icon (16x16)
+const FP_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="6" rx="1"/><path d="M19 5h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-8"/><path d="M12 11v6"/><rect x="9" y="17" width="6" height="5" rx="1"/></svg>';
+
+function arrowsInjectFormatPainterBtn() {
+  // Find Excalidraw's toolbar — it's the .App-toolbar inside the canvas container
+  const canvas = document.getElementById('arrowsCanvas');
+  if (!canvas) return false;
+  const toolbar = canvas.querySelector('.App-toolbar .Stack');
+  if (!toolbar) return false;
+  // Don't inject twice
+  if (document.getElementById('arrowsFormatPainter')) return true;
+
+  // Create a separator + button matching Excalidraw's toolbar style
+  const sep = document.createElement('div');
+  sep.style.cssText = 'width:1px;height:1.25rem;background:var(--default-border-color, rgba(255,255,255,0.15));margin:0 2px;flex-shrink:0;';
+
+  const btn = document.createElement('button');
+  btn.id = 'arrowsFormatPainter';
+  btn.className = 'arrows-format-painter-btn';
+  btn.title = 'Format Painter — select source, click, then click target';
+  btn.innerHTML = FP_ICON;
+  btn.onclick = arrowsToggleFormatPainter;
+
+  toolbar.appendChild(sep);
+  toolbar.appendChild(btn);
+  return true;
+}
+
+function arrowsToggleFormatPainter() {
+  const btn = document.getElementById('arrowsFormatPainter');
+  const api = arrowsState.excalidrawAPI;
+  if (!api || !btn) return;
+
+  if (arrowsFormatActive) {
+    arrowsFormatActive = false;
+    arrowsFormatStyle = null;
+    btn.classList.remove('active');
+    btn.title = 'Format Painter — select source, click, then click target';
+    return;
+  }
+
+  const selected = api.getSceneElements().filter(el => !el.isDeleted && api.getAppState().selectedElementIds[el.id]);
+  if (selected.length === 0) {
+    btn.title = 'Select an element first!';
+    setTimeout(() => { btn.title = 'Format Painter — select source, click, then click target'; }, 2000);
+    return;
+  }
+
+  const src = selected[0];
+  arrowsFormatStyle = {
+    strokeColor: src.strokeColor,
+    backgroundColor: src.backgroundColor,
+    fillStyle: src.fillStyle,
+    strokeWidth: src.strokeWidth,
+    strokeStyle: src.strokeStyle,
+    roughness: src.roughness,
+    opacity: src.opacity,
+    roundness: src.roundness,
+  };
+  if (src.type === 'text' || src.fontSize) {
+    arrowsFormatStyle.fontSize = src.fontSize;
+    arrowsFormatStyle.fontFamily = src.fontFamily;
+    arrowsFormatStyle.textAlign = src.textAlign;
+    arrowsFormatStyle.verticalAlign = src.verticalAlign;
+  }
+
+  arrowsFormatActive = true;
+  arrowsFormatPrevSelection = new Set(Object.keys(api.getAppState().selectedElementIds));
+  btn.classList.add('active');
+  btn.title = 'Style copied — now click the target element';
+}
+
+function arrowsApplyFormatPainter() {
+  if (!arrowsFormatActive || !arrowsFormatStyle) return;
+  const api = arrowsState.excalidrawAPI;
+  if (!api) return;
+
+  const currentSel = Object.keys(api.getAppState().selectedElementIds);
+  const currentSet = new Set(currentSel);
+  if (currentSel.length === 0) return;
+  const changed = currentSel.some(id => !arrowsFormatPrevSelection.has(id));
+  if (!changed) return;
+
+  const elements = api.getSceneElements();
+  const updated = elements.map(el => {
+    if (!el.isDeleted && currentSet.has(el.id)) {
+      const patch = { ...el };
+      if (arrowsFormatStyle.strokeColor !== undefined) patch.strokeColor = arrowsFormatStyle.strokeColor;
+      if (arrowsFormatStyle.backgroundColor !== undefined) patch.backgroundColor = arrowsFormatStyle.backgroundColor;
+      if (arrowsFormatStyle.fillStyle !== undefined) patch.fillStyle = arrowsFormatStyle.fillStyle;
+      if (arrowsFormatStyle.strokeWidth !== undefined) patch.strokeWidth = arrowsFormatStyle.strokeWidth;
+      if (arrowsFormatStyle.strokeStyle !== undefined) patch.strokeStyle = arrowsFormatStyle.strokeStyle;
+      if (arrowsFormatStyle.roughness !== undefined) patch.roughness = arrowsFormatStyle.roughness;
+      if (arrowsFormatStyle.opacity !== undefined) patch.opacity = arrowsFormatStyle.opacity;
+      if (arrowsFormatStyle.roundness !== undefined) patch.roundness = arrowsFormatStyle.roundness;
+      if (el.type === 'text' && arrowsFormatStyle.fontSize) {
+        patch.fontSize = arrowsFormatStyle.fontSize;
+        patch.fontFamily = arrowsFormatStyle.fontFamily;
+        if (arrowsFormatStyle.textAlign) patch.textAlign = arrowsFormatStyle.textAlign;
+        if (arrowsFormatStyle.verticalAlign) patch.verticalAlign = arrowsFormatStyle.verticalAlign;
+      }
+      patch.version = (patch.version || 0) + 1;
+      return patch;
+    }
+    return el;
+  });
+
+  api.updateScene({ elements: updated });
+  arrowsState.dirty = true;
+  arrowsScheduleSave();
+
+  arrowsFormatActive = false;
+  arrowsFormatStyle = null;
+  const btn = document.getElementById('arrowsFormatPainter');
+  if (btn) {
+    btn.classList.remove('active');
+    btn.title = 'Format Painter — select source, click, then click target';
+  }
+}
+
+// Poll: inject button once toolbar renders, and apply format when active
+setInterval(() => {
+  if (arrowsState.excalidrawAPI) {
+    arrowsInjectFormatPainterBtn();
+    if (arrowsFormatActive) arrowsApplyFormatPainter();
+  }
+}, 200);
+
+// --- Drag and drop ---
+
+let arrowsDragId = null;
+
+function arrowsDragStart(e, id) {
+  arrowsDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  requestAnimationFrame(() => e.target.closest('.arrows-card').classList.add('dragging'));
+}
+
+function arrowsDragEnd(e) {
+  arrowsDragId = null;
+  const el = e.target.closest('.arrows-card');
+  if (el) el.classList.remove('dragging');
+}
+
+function arrowsDragOverFolder(e) {
+  if (!arrowsDragId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function arrowsDragLeaveFolder(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function arrowsDropOnFolder(e, folderId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = arrowsDragId || e.dataTransfer.getData('text/plain');
+  if (!id) return;
+  const entry = arrowsState.diagrams.find(d => d.id === id);
+  if (!entry || entry.folder === folderId) return;
+  try {
+    await fetch(`/api/arrows/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: folderId }),
+    });
+    entry.folder = folderId;
+  } catch (err) { console.error('Drop move failed:', err); }
+  arrowsDragId = null;
+  arrowsRenderCatalog();
+}
+
+function arrowsDragOverBreadcrumb(e) {
+  if (!arrowsDragId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function arrowsDragLeaveBreadcrumb(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function arrowsDropOnRoot(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = arrowsDragId || e.dataTransfer.getData('text/plain');
+  if (!id) return;
+  const entry = arrowsState.diagrams.find(d => d.id === id);
+  if (!entry || !entry.folder) return;
+  try {
+    await fetch(`/api/arrows/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: null }),
+    });
+    entry.folder = null;
+  } catch (err) { console.error('Drop to root failed:', err); }
+  arrowsDragId = null;
+  arrowsRenderCatalog();
+}
+
+// --- Context menu (diagrams) ---
+
+let arrowsCtxTarget = null;
+
+function arrowsCtxMenu(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  arrowsCtxTarget = id;
+  arrowsCtxClose();
+  const menu = document.createElement('div');
+  menu.className = 'arrows-ctx-menu';
+  menu.id = 'arrowsCtxMenu';
+
+  const entry = arrowsState.diagrams.find(d => d.id === id);
+  const inFolder = entry && entry.folder;
+  const moveLabel = inFolder ? 'Move to root' : 'Move to folder...';
+
+  menu.innerHTML = `
+    <div class="arrows-ctx-item" onclick="arrowsRename()">Rename</div>
+    <div class="arrows-ctx-item" onclick="arrowsDuplicate()">Duplicate</div>
+    <div class="arrows-ctx-item" onclick="${inFolder ? 'arrowsMoveToRoot()' : 'arrowsShowMoveModal()'}">${moveLabel}</div>
+    <div class="arrows-ctx-item danger" onclick="arrowsDelete()">Delete</div>
+  `;
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', arrowsCtxClose, { once: true }), 0);
+}
+
+// --- Context menu (folders) ---
+
+let arrowsFolderCtxTarget = null;
+
+function arrowsFolderCtxMenu(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  arrowsFolderCtxTarget = id;
+  arrowsCtxClose();
+  const menu = document.createElement('div');
+  menu.className = 'arrows-ctx-menu';
+  menu.id = 'arrowsCtxMenu';
+  menu.innerHTML = `
+    <div class="arrows-ctx-item" onclick="arrowsRenameFolder()">Rename</div>
+    <div class="arrows-ctx-item danger" onclick="arrowsDeleteFolder()">Delete folder</div>
+  `;
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', arrowsCtxClose, { once: true }), 0);
+}
+
+function arrowsCtxClose() {
+  const old = document.getElementById('arrowsCtxMenu');
+  if (old) old.remove();
+}
+
+// --- Rename diagram ---
+
+function arrowsRename() {
+  arrowsCtxClose();
+  const entry = arrowsState.diagrams.find(d => d.id === arrowsCtxTarget);
+  if (!entry) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'arrows-rename-overlay';
+  overlay.id = 'arrowsRenameOverlay';
+  overlay.innerHTML = `
+    <div class="arrows-rename-modal">
+      <h4>Rename Diagram</h4>
+      <input type="text" id="arrowsRenameInput" value="${escapeHtml(entry.name)}" autofocus>
+      <div class="arrows-rename-actions">
+        <button class="arrows-rename-cancel" onclick="arrowsRenameClose()">Cancel</button>
+        <button class="arrows-rename-save" onclick="arrowsRenameSave()">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = document.getElementById('arrowsRenameInput');
+  input.focus();
+  input.select();
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') arrowsRenameSave();
+    if (e.key === 'Escape') arrowsRenameClose();
+  });
+}
+
+function arrowsRenameClose() {
+  const overlay = document.getElementById('arrowsRenameOverlay');
+  if (overlay) overlay.remove();
+}
+
+async function arrowsRenameSave() {
+  const input = document.getElementById('arrowsRenameInput');
+  const newName = input.value.trim();
+  if (!newName) return;
+  try {
+    await fetch(`/api/arrows/${arrowsCtxTarget}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName }),
+    });
+    const entry = arrowsState.diagrams.find(d => d.id === arrowsCtxTarget);
+    if (entry) entry.name = newName;
+  } catch (e) { console.error('Rename failed:', e); }
+  arrowsRenameClose();
+  arrowsRenderCatalog();
+}
+
+// --- Rename folder ---
+
+function arrowsRenameFolder() {
+  arrowsCtxClose();
+  const folder = arrowsState.folders.find(f => f.id === arrowsFolderCtxTarget);
+  if (!folder) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'arrows-rename-overlay';
+  overlay.id = 'arrowsRenameOverlay';
+  overlay.innerHTML = `
+    <div class="arrows-rename-modal">
+      <h4>Rename Folder</h4>
+      <input type="text" id="arrowsRenameInput" value="${escapeHtml(folder.name)}" autofocus>
+      <div class="arrows-rename-actions">
+        <button class="arrows-rename-cancel" onclick="arrowsRenameClose()">Cancel</button>
+        <button class="arrows-rename-save" onclick="arrowsRenameFolderSave()">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = document.getElementById('arrowsRenameInput');
+  input.focus();
+  input.select();
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') arrowsRenameFolderSave();
+    if (e.key === 'Escape') arrowsRenameClose();
+  });
+}
+
+async function arrowsRenameFolderSave() {
+  const input = document.getElementById('arrowsRenameInput');
+  const newName = input.value.trim();
+  if (!newName) return;
+  try {
+    await fetch(`/api/arrows/folders/${arrowsFolderCtxTarget}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName }),
+    });
+    const folder = arrowsState.folders.find(f => f.id === arrowsFolderCtxTarget);
+    if (folder) folder.name = newName;
+  } catch (e) { console.error('Rename folder failed:', e); }
+  arrowsRenameClose();
+  arrowsRenderCatalog();
+}
+
+// --- Delete folder ---
+
+async function arrowsDeleteFolder() {
+  arrowsCtxClose();
+  const folder = arrowsState.folders.find(f => f.id === arrowsFolderCtxTarget);
+  if (!folder) return;
+  const count = arrowsState.diagrams.filter(d => d.folder === arrowsFolderCtxTarget).length;
+  const extra = count > 0 ? ` Its ${count} diagram${count !== 1 ? 's' : ''} will be moved to root.` : '';
+  if (!confirm(`Delete folder "${folder.name}"?${extra}`)) return;
+  try {
+    await fetch(`/api/arrows/folders/${arrowsFolderCtxTarget}`, { method: 'DELETE' });
+    arrowsState.folders = arrowsState.folders.filter(f => f.id !== arrowsFolderCtxTarget);
+    arrowsState.diagrams.forEach(d => { if (d.folder === arrowsFolderCtxTarget) d.folder = null; });
+  } catch (e) { console.error('Delete folder failed:', e); }
+  arrowsRenderCatalog();
+}
+
+// --- Move diagram to folder ---
+
+async function arrowsMoveToRoot() {
+  arrowsCtxClose();
+  try {
+    await fetch(`/api/arrows/${arrowsCtxTarget}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: null }),
+    });
+    const entry = arrowsState.diagrams.find(d => d.id === arrowsCtxTarget);
+    if (entry) entry.folder = null;
+  } catch (e) { console.error('Move failed:', e); }
+  arrowsRenderCatalog();
+}
+
+function arrowsShowMoveModal() {
+  arrowsCtxClose();
+  if (arrowsState.folders.length === 0) {
+    alert('No folders yet. Create a folder first.');
+    return;
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'arrows-move-overlay';
+  overlay.id = 'arrowsMoveOverlay';
+  overlay.innerHTML = `
+    <div class="arrows-move-modal">
+      <h4>Move to folder</h4>
+      <div class="arrows-move-list">
+        ${arrowsState.folders.map(f => `
+          <div class="arrows-move-item" onclick="arrowsMoveTo('${f.id}')">
+            <span>&#x1F4C1;</span> ${escapeHtml(f.name)}
+          </div>
+        `).join('')}
+      </div>
+      <button class="arrows-move-cancel" onclick="arrowsMoveClose()">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function arrowsMoveClose() {
+  const overlay = document.getElementById('arrowsMoveOverlay');
+  if (overlay) overlay.remove();
+}
+
+async function arrowsMoveTo(folderId) {
+  try {
+    await fetch(`/api/arrows/${arrowsCtxTarget}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: folderId }),
+    });
+    const entry = arrowsState.diagrams.find(d => d.id === arrowsCtxTarget);
+    if (entry) entry.folder = folderId;
+  } catch (e) { console.error('Move failed:', e); }
+  arrowsMoveClose();
+  arrowsRenderCatalog();
+}
+
+// --- Duplicate & Delete ---
+
+async function arrowsDuplicate() {
+  arrowsCtxClose();
+  const entry = arrowsState.diagrams.find(d => d.id === arrowsCtxTarget);
+  if (!entry) return;
+  try {
+    const createRes = await fetch('/api/arrows', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: entry.name + ' (copy)', folder: entry.folder }),
+    });
+    const createData = await createRes.json();
+    const newId = createData.diagram.id;
+    const sceneRes = await fetch(`/api/arrows/${arrowsCtxTarget}`);
+    const scene = sceneRes.ok ? await sceneRes.json() : { elements: [], appState: {}, files: {} };
+    await fetch(`/api/arrows/${newId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene, thumbnail_svg: entry.thumbnail_svg || '' }),
+    });
+    await arrowsLoadCatalog();
+  } catch (e) { console.error('Duplicate failed:', e); }
+}
+
+async function arrowsDelete() {
+  arrowsCtxClose();
+  const entry = arrowsState.diagrams.find(d => d.id === arrowsCtxTarget);
+  if (!entry) return;
+  if (!confirm(`Delete "${entry.name}"?`)) return;
+  try {
+    await fetch(`/api/arrows/${arrowsCtxTarget}`, { method: 'DELETE' });
+    arrowsState.diagrams = arrowsState.diagrams.filter(d => d.id !== arrowsCtxTarget);
+  } catch (e) { console.error('Delete failed:', e); }
+  arrowsRenderCatalog();
+}
 </script>
 </body>
 </html>

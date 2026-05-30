@@ -360,6 +360,63 @@ def update_phase(board, project_id, phase_index, new_status):
     return proj, None
 
 
+def add_phase(board, project_id, name, description="", status="pending", after=None):
+    """Add a phase to a project. If after is given, insert after that phase name.
+    Returns (project, error_msg)."""
+    proj = find_project(board, project_id)
+    if not proj:
+        return None, f"Project '{project_id}' not found"
+
+    if "phases" not in proj:
+        proj["phases"] = []
+
+    # Check for duplicate name
+    for p in proj["phases"]:
+        if p["name"].lower() == name.lower():
+            return None, f"Phase '{name}' already exists in {project_id}"
+
+    valid = {"pending", "active", "done"}
+    if status not in valid:
+        return None, f"Invalid phase status '{status}' (must be pending/active/done)"
+
+    phase = {"name": name, "status": status, "description": description}
+
+    if after is not None:
+        idx = None
+        for i, p in enumerate(proj["phases"]):
+            if p["name"].lower() == after.lower():
+                idx = i
+                break
+        if idx is None:
+            return None, f"Phase '{after}' not found to insert after"
+        proj["phases"].insert(idx + 1, phase)
+    else:
+        proj["phases"].append(phase)
+
+    save_board(board)
+    return proj, None
+
+
+def remove_phase(board, project_id, phase_name):
+    """Remove a phase from a project. Returns (project, error_msg)."""
+    proj = find_project(board, project_id)
+    if not proj:
+        return None, f"Project '{project_id}' not found"
+
+    phases = proj.get("phases", [])
+    idx = None
+    for i, p in enumerate(phases):
+        if p["name"].lower() == phase_name.lower():
+            idx = i
+            break
+    if idx is None:
+        return None, f"Phase '{phase_name}' not found in {project_id}"
+
+    phases.pop(idx)
+    save_board(board)
+    return proj, None
+
+
 def reorder_projects(board, order):
     """Reorder projects by ID list. Returns error_msg or None."""
     existing_ids = {p["id"] for p in board["projects"]}

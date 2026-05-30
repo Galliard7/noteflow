@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import uuid
 from datetime import datetime
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -72,6 +73,58 @@ NEETCODE_TOPIC_LABELS = {
 }
 
 NEETCODE_DIFFICULTY_COLORS = {"easy": "#22c55e", "medium": "#eab308", "hard": "#ef4444"}
+
+ARROWS_DIR = os.path.expanduser("~/.openclaw/workspace/mission-control/arrows")
+ARROWS_MANIFEST = os.path.join(ARROWS_DIR, "manifest.json")
+
+
+def _load_arrows_manifest():
+    """Load arrows manifest (v2 format: {version, diagrams, folders}).
+    Auto-migrates from v1 flat array if needed."""
+    os.makedirs(ARROWS_DIR, exist_ok=True)
+    if not os.path.exists(ARROWS_MANIFEST):
+        empty = {"version": 2, "diagrams": [], "folders": []}
+        _save_arrows_manifest(empty)
+        return empty
+    with open(ARROWS_MANIFEST, "r") as f:
+        data = json.load(f)
+    # Migrate v1 (flat array) → v2
+    if isinstance(data, list):
+        for d in data:
+            d.setdefault("folder", None)
+        data = {"version": 2, "diagrams": data, "folders": []}
+        _save_arrows_manifest(data)
+    return data
+
+
+def _save_arrows_manifest(manifest):
+    """Save arrows manifest."""
+    os.makedirs(ARROWS_DIR, exist_ok=True)
+    with open(ARROWS_MANIFEST, "w") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+
+def _load_arrows_diagram(diagram_id):
+    """Load a single diagram's scene data."""
+    path = os.path.join(ARROWS_DIR, f"{diagram_id}.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def _save_arrows_diagram(diagram_id, scene):
+    """Save a diagram's scene data."""
+    path = os.path.join(ARROWS_DIR, f"{diagram_id}.json")
+    with open(path, "w") as f:
+        json.dump(scene, f, ensure_ascii=False)
+
+
+def _delete_arrows_diagram(diagram_id):
+    """Delete a diagram file."""
+    path = os.path.join(ARROWS_DIR, f"{diagram_id}.json")
+    if os.path.exists(path):
+        os.remove(path)
 
 
 def _evaluate_neetcode_mode(problems, profile, mode):
@@ -731,6 +784,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._api_neetcode_guided()
             elif parts == ["api", "neetcode", "guided", "ordering"]:
                 self._api_neetcode_guided_ordering()
+            # Arrows API
+            elif parts == ["api", "arrows"]:
+                self._api_arrows_list()
+            elif len(parts) == 3 and parts[:2] == ["api", "arrows"]:
+                self._api_arrows_get(parts[2])
+            elif parts == ["api", "arrows", "folders"]:
+                # GET /api/arrows/folders — listed via /api/arrows already
+                manifest = _load_arrows_manifest()
+                self._send_json({"folders": manifest["folders"]})
             else:
                 self._send_error(404, "Not found")
         except Exception as e:
@@ -780,6 +842,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._api_neetcode_rate()
             elif parts == ["api", "neetcode", "mode"]:
                 self._api_neetcode_set_mode()
+            # Arrows API
+            elif parts == ["api", "arrows"]:
+                self._api_arrows_create()
+            elif parts == ["api", "arrows", "folders"]:
+                self._api_arrows_folder_create()
             else:
                 self._send_error(404, "Not found")
         except Exception as e:
@@ -816,6 +883,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._api_stack_replace()
             elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
                 self._api_stack_update(parts[2])
+            # Arrows API
+            elif len(parts) == 4 and parts[:3] == ["api", "arrows", "folders"]:
+                self._api_arrows_folder_update(parts[3])
+            elif len(parts) == 3 and parts[:2] == ["api", "arrows"]:
+                self._api_arrows_update(parts[2])
             else:
                 self._send_error(404, "Not found")
         except Exception as e:
@@ -846,6 +918,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._api_board_delete_activity(parts[3])
             elif len(parts) == 3 and parts[:2] == ["api", "stack"]:
                 self._api_stack_delete(parts[2])
+            # Arrows API
+            elif len(parts) == 4 and parts[:3] == ["api", "arrows", "folders"]:
+                self._api_arrows_folder_delete(parts[3])
+            elif len(parts) == 3 and parts[:2] == ["api", "arrows"]:
+                self._api_arrows_delete(parts[2])
             else:
                 self._send_error(404, "Not found")
         except Exception as e:
@@ -2186,6 +2263,135 @@ class DashboardHandler(BaseHTTPRequestHandler):
         stack_data["items"] = new_items
         _save_stack(stack_data)
         self._send_json({"item": removed})
+
+    # --- API Handlers: Arrows ---
+
+    def _api_arrows_list(self):
+        """GET /api/arrows — list all diagrams and folders."""
+        manifest = _load_arrows_manifest()
+        self._send_json({"diagrams": manifest["diagrams"], "folders": manifest["folders"]})
+
+    def _api_arrows_get(self, diagram_id):
+        """GET /api/arrows/{id} — get diagram scene data."""
+        scene = _load_arrows_diagram(diagram_id)
+        if scene is None:
+            self._send_error(404, "Diagram not found")
+            return
+        self._send_json(scene)
+
+    def _api_arrows_create(self):
+        """POST /api/arrows — create a new diagram."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        name = data.get("name", "Untitled").strip() or "Untitled"
+        folder = data.get("folder", None)
+        diagram_id = str(uuid.uuid4())[:8]
+        now = datetime.utcnow().isoformat() + "Z"
+        entry = {
+            "id": diagram_id,
+            "name": name,
+            "created": now,
+            "modified": now,
+            "thumbnail_svg": "",
+            "folder": folder,
+        }
+        # Save empty scene
+        _save_arrows_diagram(diagram_id, {"elements": [], "appState": {}, "files": {}})
+        # Update manifest
+        manifest = _load_arrows_manifest()
+        manifest["diagrams"].insert(0, entry)
+        _save_arrows_manifest(manifest)
+        self._send_json({"diagram": entry}, 201)
+
+    def _api_arrows_update(self, diagram_id):
+        """PUT /api/arrows/{id} — update diagram (scene data, name, thumbnail, folder)."""
+        manifest = _load_arrows_manifest()
+        entry = next((d for d in manifest["diagrams"] if d["id"] == diagram_id), None)
+        if entry is None:
+            self._send_error(404, "Diagram not found")
+            return
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        now = datetime.utcnow().isoformat() + "Z"
+        if "name" in data:
+            entry["name"] = data["name"].strip() or entry["name"]
+        if "thumbnail_svg" in data:
+            entry["thumbnail_svg"] = data["thumbnail_svg"]
+        if "folder" in data:
+            entry["folder"] = data["folder"]
+        entry["modified"] = now
+        if "scene" in data:
+            _save_arrows_diagram(diagram_id, data["scene"])
+        _save_arrows_manifest(manifest)
+        self._send_json({"diagram": entry})
+
+    def _api_arrows_delete(self, diagram_id):
+        """DELETE /api/arrows/{id} — delete a diagram."""
+        manifest = _load_arrows_manifest()
+        old_len = len(manifest["diagrams"])
+        manifest["diagrams"] = [d for d in manifest["diagrams"] if d["id"] != diagram_id]
+        if len(manifest["diagrams"]) == old_len:
+            self._send_error(404, "Diagram not found")
+            return
+        _delete_arrows_diagram(diagram_id)
+        _save_arrows_manifest(manifest)
+        self._send_json({"ok": True})
+
+    # --- Arrows Folder API ---
+
+    def _api_arrows_folder_create(self):
+        """POST /api/arrows/folders — create a folder."""
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        name = data.get("name", "New Folder").strip() or "New Folder"
+        folder_id = str(uuid.uuid4())[:8]
+        now = datetime.utcnow().isoformat() + "Z"
+        folder = {"id": folder_id, "name": name, "created": now}
+        manifest = _load_arrows_manifest()
+        manifest["folders"].append(folder)
+        _save_arrows_manifest(manifest)
+        self._send_json({"folder": folder}, 201)
+
+    def _api_arrows_folder_update(self, folder_id):
+        """PUT /api/arrows/folders/{id} — rename a folder."""
+        manifest = _load_arrows_manifest()
+        folder = next((f for f in manifest["folders"] if f["id"] == folder_id), None)
+        if folder is None:
+            self._send_error(404, "Folder not found")
+            return
+        try:
+            data = self._read_body()
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
+        if "name" in data:
+            folder["name"] = data["name"].strip() or folder["name"]
+        _save_arrows_manifest(manifest)
+        self._send_json({"folder": folder})
+
+    def _api_arrows_folder_delete(self, folder_id):
+        """DELETE /api/arrows/folders/{id} — delete folder, move diagrams to root."""
+        manifest = _load_arrows_manifest()
+        old_len = len(manifest["folders"])
+        manifest["folders"] = [f for f in manifest["folders"] if f["id"] != folder_id]
+        if len(manifest["folders"]) == old_len:
+            self._send_error(404, "Folder not found")
+            return
+        # Move contained diagrams to root
+        for d in manifest["diagrams"]:
+            if d.get("folder") == folder_id:
+                d["folder"] = None
+        _save_arrows_manifest(manifest)
+        self._send_json({"ok": True})
 
 
 def main():
